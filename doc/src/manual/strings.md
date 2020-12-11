@@ -51,24 +51,24 @@ other subtypes of `AbstractChar`, e.g. to optimize operations for other
 input and shown:
 
 ```jldoctest
-julia> c = 'x'
+julia> 'x'
 'x': ASCII/Unicode U+0078 (category Ll: Letter, lowercase)
 
-julia> typeof(c)
+julia> typeof(ans)
 Char
 ```
 
 You can easily convert a `Char` to its integer value, i.e. code point:
 
 ```jldoctest
-julia> c = Int('x')
+julia> Int('x')
 120
 
-julia> typeof(c)
+julia> typeof(ans)
 Int64
 ```
 
-On 32-bit architectures, [`typeof(c)`](@ref) will be [`Int32`](@ref). You can convert an
+On 32-bit architectures, [`typeof(ans)`](@ref) will be [`Int32`](@ref). You can convert an
 integer value back to a `Char` just as easily:
 
 ```jldoctest
@@ -205,11 +205,13 @@ Using an index less than `begin` (`1`) or greater than `end` raises an error:
 
 ```jldoctest helloworldstring
 julia> str[begin-1]
-ERROR: BoundsError: attempt to access 14-codeunit String at index [0]
+ERROR: BoundsError: attempt to access String
+  at index [0]
 [...]
 
 julia> str[end+1]
-ERROR: BoundsError: attempt to access 14-codeunit String at index [15]
+ERROR: BoundsError: attempt to access String
+  at index [15]
 [...]
 ```
 
@@ -279,12 +281,11 @@ julia> s[1]
 '∀': Unicode U+2200 (category Sm: Symbol, math)
 
 julia> s[2]
-ERROR: StringIndexError: invalid index [2], valid nearby indices [1]=>'∀', [4]=>' '
-Stacktrace:
+ERROR: StringIndexError("∀ x ∃ y", 2)
 [...]
 
 julia> s[3]
-ERROR: StringIndexError: invalid index [3], valid nearby indices [1]=>'∀', [4]=>' '
+ERROR: StringIndexError("∀ x ∃ y", 3)
 Stacktrace:
 [...]
 
@@ -304,7 +305,7 @@ julia> s[end-1]
 ' ': ASCII/Unicode U+0020 (category Zs: Separator, space)
 
 julia> s[end-2]
-ERROR: StringIndexError: invalid index [9], valid nearby indices [7]=>'∃', [10]=>' '
+ERROR: StringIndexError("∀ x ∃ y", 9)
 Stacktrace:
 [...]
 
@@ -324,7 +325,7 @@ julia> s[1:1]
 "∀"
 
 julia> s[1:2]
-ERROR: StringIndexError: invalid index [2], valid nearby indices [1]=>'∀', [4]=>' '
+ERROR: StringIndexError("∀ x ∃ y", 2)
 Stacktrace:
 [...]
 
@@ -379,7 +380,7 @@ You can also use the [`eachindex`](@ref) function to iterate over the valid char
 
 ```jldoctest unicodestring
 julia> collect(eachindex(s))
-7-element Vector{Int64}:
+7-element Array{Int64,1}:
   1
   4
   5
@@ -548,7 +549,7 @@ they are entered as literal expressions:
 
 ```jldoctest
 julia> v = [1,2,3]
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  1
  2
  3
@@ -756,10 +757,10 @@ using non-standard string literals prefixed with various identifiers beginning w
 basic regular expression literal without any options turned on just uses `r"..."`:
 
 ```jldoctest
-julia> re = r"^\s*(?:#|$)"
+julia> r"^\s*(?:#|$)"
 r"^\s*(?:#|$)"
 
-julia> typeof(re)
+julia> typeof(ans)
 Regex
 ```
 
@@ -842,7 +843,7 @@ julia> m.match
 "acd"
 
 julia> m.captures
-3-element Vector{Union{Nothing, SubString{String}}}:
+3-element Array{Union{Nothing, SubString{String}},1}:
  "a"
  "c"
  "d"
@@ -851,7 +852,7 @@ julia> m.offset
 1
 
 julia> m.offsets
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  1
  2
  3
@@ -863,7 +864,7 @@ julia> m.match
 "ad"
 
 julia> m.captures
-3-element Vector{Union{Nothing, SubString{String}}}:
+3-element Array{Union{Nothing, SubString{String}},1}:
  "a"
  nothing
  "d"
@@ -872,7 +873,7 @@ julia> m.offset
 1
 
 julia> m.offsets
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  1
  0
  2
@@ -1030,7 +1031,7 @@ produce arrays of bytes. Here is an example using all three:
 
 ```jldoctest
 julia> b"DATA\xff\u2200"
-8-element Base.CodeUnits{UInt8, String}:
+8-element Base.CodeUnits{UInt8,String}:
  0x44
  0x41
  0x54
@@ -1050,12 +1051,12 @@ julia> isvalid("DATA\xff\u2200")
 false
 ```
 
-As it was mentioned `CodeUnits{UInt8, String}` type behaves like read only array of `UInt8` and
+As it was mentioned `CodeUnits{UInt8,String}` type behaves like read only array of `UInt8` and
 if you need a standard vector you can convert it using `Vector{UInt8}`:
 
 ```jldoctest
 julia> x = b"123"
-3-element Base.CodeUnits{UInt8, String}:
+3-element Base.CodeUnits{UInt8,String}:
  0x31
  0x32
  0x33
@@ -1064,11 +1065,11 @@ julia> x[1]
 0x31
 
 julia> x[1] = 0x32
-ERROR: setindex! not defined for Base.CodeUnits{UInt8, String}
+ERROR: setindex! not defined for Base.CodeUnits{UInt8,String}
 [...]
 
 julia> Vector{UInt8}(x)
-3-element Vector{UInt8}:
+3-element Array{UInt8,1}:
  0x31
  0x32
  0x33
@@ -1080,11 +1081,11 @@ is encoded as two bytes in UTF-8:
 
 ```jldoctest
 julia> b"\xff"
-1-element Base.CodeUnits{UInt8, String}:
+1-element Base.CodeUnits{UInt8,String}:
  0xff
 
 julia> b"\uff"
-2-element Base.CodeUnits{UInt8, String}:
+2-element Base.CodeUnits{UInt8,String}:
  0xc3
  0xbf
 ```

@@ -67,7 +67,6 @@ Base.Math.cosd
 Base.Math.tand
 Base.Math.sinpi
 Base.Math.cospi
-Base.Math.sincospi
 Base.sinh(::Number)
 Base.cosh(::Number)
 Base.tanh(::Number)
@@ -162,7 +161,6 @@ Base.reim
 Base.conj
 Base.angle
 Base.cis
-Base.cispi
 Base.binomial
 Base.factorial
 Base.gcd
@@ -199,7 +197,7 @@ and
 \oplus `⊕`
 
 The complete list is in the parser code:
-<https://github.com/JuliaLang/julia/blob/master/src/julia-parser.scm>
+https://github.com/JuliaLang/julia/blob/master/src/julia-parser.scm
 
 Those that are parsed like `*` (in terms of precedence) include
 `* / ÷ % & ⋅ ∘ × |\\| ∩ ∧ ⊗ ⊘ ⊙ ⊚ ⊛ ⊠ ⊡ ⊓ ∗ ∙ ∤ ⅋ ≀ ⊼ ⋄ ⋆ ⋇ ⋉ ⋊ ⋋ ⋌ ⋏ ⋒ ⟑ ⦸ ⦼ ⦾ ⦿ ⧶ ⧷ ⨇ ⨰ ⨱ ⨲ ⨳ ⨴ ⨵ ⨶ ⨷ ⨸ ⨻ ⨼ ⨽ ⩀ ⩃ ⩄ ⩋ ⩍ ⩎ ⩑ ⩓ ⩕ ⩘ ⩚ ⩜ ⩞ ⩟ ⩠ ⫛ ⊍ ▷ ⨝ ⟕ ⟖ ⟗`

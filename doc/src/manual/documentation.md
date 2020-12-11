@@ -1,7 +1,7 @@
-# [Documentation](@id man-documentation)
+# Documentation
 
 Julia enables package developers and users to document functions, types and other objects easily
-via a built-in documentation system.
+via a built-in documentation system since Julia 0.4.
 
 The basic syntax is simple: any string appearing at the toplevel right before an object
 (function, macro, type or instance) will be interpreted as documenting it (these are called
@@ -29,9 +29,8 @@ Here is a more complex example, still using Markdown:
 """
     bar(x[, y])
 
-Compute the Bar index between `x` and `y`.
-
-If `y` is unspecified, compute the Bar index between all pairs of columns of `x`.
+Compute the Bar index between `x` and `y`. If `y` is missing, compute
+the Bar index between all pairs of columns of `x`.
 
 # Examples
 ```julia-repl

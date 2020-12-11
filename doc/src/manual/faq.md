@@ -28,7 +28,7 @@ session (technically, in module `Main`), it is always present.
 If memory usage is your concern, you can always replace objects with ones that consume less memory.
  For example, if `A` is a gigabyte-sized array that you no longer need, you can free the memory
 with `A = nothing`.  The memory will be released the next time the garbage collector runs; you can force
-this to happen with [`GC.gc()`](@ref Base.GC.gc). Moreover, an attempt to use `A` will likely result in an error, because most methods are not defined on type `Nothing`.
+this to happen with [`gc()`](@ref Base.GC.gc). Moreover, an attempt to use `A` will likely result in an error, because most methods are not defined on type `Nothing`.
 
 ### How can I modify the declaration of a type in my session?
 
@@ -147,7 +147,7 @@ but you *can* change its content. For example:
 
 ```jldoctest
 julia> x = [1,2,3]
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  1
  2
  3
@@ -161,7 +161,7 @@ julia> change_array!(x)
 5
 
 julia> x
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  5
  2
  3
@@ -228,7 +228,7 @@ julia> function printargs(args...)
 printargs (generic function with 1 method)
 
 julia> printargs(1, 2, 3)
-Tuple{Int64, Int64, Int64}
+Tuple{Int64,Int64,Int64}
 Arg #1 = 1
 Arg #2 = 2
 Arg #3 = 3
@@ -253,7 +253,7 @@ julia> function threeargs(a, b, c)
 threeargs (generic function with 1 method)
 
 julia> x = [1, 2, 3]
-3-element Vector{Int64}:
+3-element Array{Int64,1}:
  1
  2
  3
@@ -308,7 +308,7 @@ julia> threetup()
 (3, 3)
 
 julia> threearr()
-2-element Vector{Int64}:
+2-element Array{Int64,1}:
  3
  3
 ```
@@ -410,16 +410,16 @@ is bounded and wraps around at either end so that adding, subtracting and multip
 can overflow or underflow, leading to some results that can be unsettling at first:
 
 ```jldoctest
-julia> x = typemax(Int)
+julia> typemax(Int)
 9223372036854775807
 
-julia> y = x+1
+julia> ans+1
 -9223372036854775808
 
-julia> z = -y
+julia> -ans
 -9223372036854775808
 
-julia> 2*z
+julia> 2*ans
 0
 ```
 
@@ -980,11 +980,3 @@ If this describes you, you may also be interested in reading our [guidelines for
 
 Links to each of these download types can be found on the download page at [https://julialang.org/downloads/](https://julialang.org/downloads/).
 Note that not all versions of Julia are available for all platforms.
-
-### How can I transfer the list of installed packages after updating my version of Julia?
-
-Each minor version of julia has its own default [environment](https://docs.julialang.org/en/v1/manual/code-loading/#Environments-1). As a result, upon installing a new minor version of Julia, the packages you added using the previous minor version will not be available by default. The environment for a given julia version is defined by the files `Project.toml` and `Manifest.toml` in a folder matching the version number in `.julia/environments/`, for instance, ` .julia/environments/v1.3`.
-
-If you install a new minor version of Julia, say `1.4`, and want to use in its default environment the same packages as in a previous version (e.g. `1.3`), you can copy the contents of the file `Project.toml` from the `1.3` folder to `1.4`. Then, in a session of the new Julia version, enter the "package management mode" by typing the key `]`, and run the command [`instantiate`](https://julialang.github.io/Pkg.jl/v1/api/#Pkg.instantiate).
-
-This operation will resolve a set of feasible packages from the copied file that are compatible with the target Julia version, and will install or update them if suitable. If you want to reproduce not only the set of packages, but also the versions you were using in the previous Julia version, you should also copy the `Manifest.toml` file before running the Pkg command `instantiate`. However, note that packages may define compatibility constraints that may be affected by changing the version of Julia, so the exact set of versions you had in `1.3` may not work for `1.4`.

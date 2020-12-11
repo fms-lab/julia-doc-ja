@@ -1,0 +1,12 @@
+/*.o
+/*.a
+/*.do
+/*.exe
+/*.obj
+/*.lib
+/*.pdb
+/*.exp
+/*.map
+/flisp
+/flisp-debug
+/flisp-release

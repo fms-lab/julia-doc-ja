@@ -52,7 +52,7 @@ the abstract `DataType` [`AbstractFloat`](@ref) has four (concrete) subtypes:
 
 ```jldoctest; setup = :(using InteractiveUtils)
 julia> subtypes(AbstractFloat)
-4-element Vector{Any}:
+4-element Array{Any,1}:
  BigFloat
  Float16
  Float32

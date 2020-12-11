@@ -33,9 +33,6 @@ deps: $(SRCCACHE)/UnicodeData-$(UNICODE_DATA_VERSION).txt
 	$(JLCHECKSUM) "$<"
 	cp "$<" UnicodeData.txt
 
-checksum-unicodedata: $(SRCCACHE)/UnicodeData-$(UNICODE_DATA_VERSION).txt
-	$(JLCHECKSUM) "$<"
-
 clean:
 	-rm -rf _build/* deps/* docbuild.log UnicodeData.txt
 

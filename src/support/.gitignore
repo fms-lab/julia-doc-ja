@@ -1,0 +1,7 @@
+/*.o
+/*.do
+/*.obj
+/*.lib
+/*.pdb
+/libsupport.a
+/libsupport-debug.a

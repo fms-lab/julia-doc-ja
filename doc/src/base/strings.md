@@ -7,7 +7,7 @@ Base.codepoint
 Base.length(::AbstractString)
 Base.sizeof(::AbstractString)
 Base.:*(::Union{AbstractChar, AbstractString}, ::Union{AbstractChar, AbstractString}...)
-Base.:^(::Union{AbstractString, AbstractChar}, ::Integer)
+Base.:^(::AbstractString, ::Integer)
 Base.string
 Base.repeat(::AbstractString, ::Integer)
 Base.repeat(::AbstractChar, ::Integer)
@@ -20,7 +20,6 @@ Base.ncodeunits(::AbstractString)
 Base.codeunit
 Base.codeunits
 Base.ascii
-Base.Regex
 Base.@r_str
 Base.SubstitutionString
 Base.@s_str

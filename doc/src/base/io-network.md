@@ -19,7 +19,6 @@ Base.read!
 Base.readbytes!
 Base.unsafe_read
 Base.unsafe_write
-Base.readeach
 Base.peek
 Base.position
 Base.seek

@@ -68,8 +68,8 @@ if [ $(git describe --tags --exact-match 2> /dev/null) ]; then
 else
     tagged_commit="false"
 fi
-fork_master_distance=$(git rev-list HEAD ^"$(echo $origin)master" | wc -l | sed -e 's/[^[:digit:]]//g')
-fork_master_timestamp=$(git show -s $(git merge-base HEAD $(echo $origin)master) --format=format:"%ct")
+fork_master_distance=$(git rev-list HEAD ^"$(echo $origin)main" | wc -l | sed -e 's/[^[:digit:]]//g')
+fork_master_timestamp=$(git show -s $(git merge-base HEAD $(echo $origin)main) --format=format:"%ct")
 
 # Check for errors and emit default value for missing numbers.
 if [ -z "$build_number" ]; then

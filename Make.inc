@@ -1430,7 +1430,8 @@ endif
 endif
 
 JULIA_EXECUTABLE_debug := $(build_bindir)/julia-debug$(EXE)
-JULIA_EXECUTABLE_release := $(build_bindir)/julia$(EXE)
+# JULIA_EXECUTABLE_release := $(build_bindir)/julia$(EXE)
+JULIA_EXECUTABLE_release := /opt/julia-1.5.3/bin/julia$(EXE)
 JULIA_EXECUTABLE := $(JULIA_EXECUTABLE_$(JULIA_BUILD_MODE))
 
 JULIA_SYSIMG_debug := $(build_private_libdir)/sys-debug.$(SHLIB_EXT)

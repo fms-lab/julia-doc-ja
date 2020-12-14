@@ -202,7 +202,7 @@ else
 end
 
 makedocs(
-    build     = joinpath(buildroot, "doc", "_build", (render_pdf ? "pdf" : "html"), "en"),
+    build     = joinpath(buildroot, "doc", "_build", (render_pdf ? "pdf" : "html"), "ja"),
     modules   = [Base, Core, [Base.root_module(Base, stdlib.stdlib) for stdlib in STDLIB_DOCS]...],
     clean     = true,
     doctest   = ("doctest=fix" in ARGS) ? (:fix) : ("doctest=only" in ARGS) ? (:only) : ("doctest=true" in ARGS) ? true : false,
@@ -259,8 +259,8 @@ end
 deploydocs(
     repo = "github.com/JuliaLang/docs.julialang.org.git",
     deploy_config = BuildBotConfig(),
-    target = joinpath(buildroot, "doc", "_build", "html", "en"),
-    dirname = "en",
+    target = joinpath(buildroot, "doc", "_build", "html", "ja"),
+    dirname = "ja",
     devurl = devurl,
     versions = Versions(["v#.#", devurl => devurl]),
 )

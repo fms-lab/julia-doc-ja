@@ -1,20 +1,17 @@
-# Parallel Computing
+# 並列計算
 
-Julia supports three main categories of features for concurrent and parallel programming:
+Juliaは並行および並列プログラミングに向けた，3つの主要な機能カテゴリをサポートしています:
 
-1. Asynchronous "tasks", or coroutines
-2. Multi-threading
-3. Distributed computing
+1. 非同期的な「タスク」，言い換えるとコルーチン
+2. マルチスレッディング
+3. 分散計算
 
-Julia Tasks allow suspending and resuming computations
-for I/O, event handling, producer-consumer processes, and similar patterns.
-Tasks can synchronize through operations like [`wait`](@ref) and [`fetch`](@ref), and
-communicate via [`Channel`](@ref)s.
+Julia Tasksにより，I/O，イベント処理，producer-consumer処理，および同様のパターンの計算を，
+一時停止したり再開したりすることが可能になります．
+Tasksは[`wait`](@ref)や[`fetch`](@ref)などの操作を介して同期し，[`Channel`](@ref)を介して通信できます．
 
-Multi-threading functionality builds on tasks by allowing them to run simultaneously
-on more than one thread or CPU core, sharing memory.
+マルチスレッディング機能は，タスクをメモリを共有しながら複数のスレッドまたはCPUコアで
+同時に実行できるようにすることにより，タスクの上で構築される．
 
-Finally, distributed computing runs multiple processes with separate memory spaces,
-potentially on different machines.
-This functionality is provided by the `Distributed` standard library as well as
-external packages like `MPI.jl` and `DistributedArrays.jl`.
+最後に，分散計算は，場合によっては異なるマシン上で分割されたメモリ空間を用いながら，複数のプロセスを実行します．
+この機能は，`Distributed`標準ライブラリと，`MPI.jl`や`DistributedArrays.jl`といった外部パッケージにより提供されます．

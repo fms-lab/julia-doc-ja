@@ -1431,7 +1431,8 @@ endif
 
 JULIA_EXECUTABLE_debug := $(build_bindir)/julia-debug$(EXE)
 # JULIA_EXECUTABLE_release := $(build_bindir)/julia$(EXE)
-JULIA_EXECUTABLE_release := /opt/julia-1.5.3/bin/julia$(EXE)
+JULIA_EXECUTABLE_release := $(shell which julia)
+# JULIA_EXECUTABLE_release := /opt/julia-1.5.3/bin/julia$(EXE)
 # JULIA_EXECUTABLE_release := /usr/local/bin/julia$(EXE)
 JULIA_EXECUTABLE := $(JULIA_EXECUTABLE_$(JULIA_BUILD_MODE))
 

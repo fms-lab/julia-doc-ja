@@ -1,29 +1,25 @@
-# Multi-processing and Distributed Computing
+# 複数プロセス処理と分散計算
 
-An implementation of distributed memory parallel computing is provided by module `Distributed`
-as part of the standard library shipped with Julia.
+分散メモリ型の並列計算の実装は，Julia同梱の標準ライブラリの一部として`Distributed`モジュールによって提供されます．
 
-Most modern computers possess more than one CPU, and several computers can be combined together
-in a cluster. Harnessing the power of these multiple CPUs allows many computations to be completed
-more quickly. There are two major factors that influence performance: the speed of the CPUs themselves,
-and the speed of their access to memory. In a cluster, it's fairly obvious that a given CPU will
-have fastest access to the RAM within the same computer (node). Perhaps more surprisingly, similar
-issues are relevant on a typical multicore laptop, due to differences in the speed of main memory
-and the [cache](https://www.akkadia.org/drepper/cpumemory.pdf). Consequently, a good multiprocessing
-environment should allow control over the "ownership" of a chunk of memory by a particular CPU.
-Julia provides a multiprocessing environment based on message passing to allow programs to run
-on multiple processes in separate memory domains at once.
+ほとんどの現代の計算機は2つ以上のCPUを搭載しており，クラスタ内で複数の計算機をまとめて用いることができます．
+これらの複数CPUの力を使いこなすことで，より多くの計算をより高速に行うことが可能となります．
+性能に影響を及ぼすのは2つの大きな要因があります: CPUのスピードそのものと，CPUがメモリへアクセスする速度です．
+クラスタにおいては，ある特定のCPUが同じコンピュータ（ノード）内のRAMに最速でアクセスできることはほぼ自明です．
+おそらくもっと驚くべきことに，メインメモリと[キャッシュ](https://www.akkadia.org/drepper/cpumemory.pdf)の速度
+が異なることが原因で，同様の問題が一般的なマルチコアラップトップにも関連してきます．
+したがって，優れたマルチプロセシング環境では，特定のCPUによってメモリチャンクの「所有権」を制御できるべきです．
+Juliaはメッセージパッシングに基づいてマルチプロセシング環境を提供し，別々のメモリドメイン内の複数プロセス上で
+プログラムを一度に実行することを可能にします．
 
-Julia's implementation of message passing is different from other environments such as MPI[^1].
-Communication in Julia is generally "one-sided", meaning that the programmer needs to explicitly
-manage only one process in a two-process operation. Furthermore, these operations typically do
-not look like "message send" and "message receive" but rather resemble higher-level operations
-like calls to user functions.
 
-Distributed programming in Julia is built on two primitives: *remote references* and *remote calls*.
-A remote reference is an object that can be used from any process to refer to an object stored
-on a particular process. A remote call is a request by one process to call a certain function
-on certain arguments on another (possibly the same) process.
+Juliaのメッセージパッシングの実装は，MPI[^1]などほかの環境とは異なるものとなっています．
+Julia内の通信は一般的には「片側(one-sided)」です，すなわちプログラマは2プロセスの操作の内，1つのプロセス
+のみを明示的に管理する必要があります．さらには，これらの操作は典型的には「メッセージ送信」や「メッセージ受信」
+のようには見えず，ユーザ関数を呼び出すような高レベルな操作に似たものとなります．
+
+Juliaにおける分散計算は，2つのプリミティブによって構成されます: *リモートリファレンス*と*リモートコール*です．
+リモートリファレンスは，任意のプロセスから，特定のプロセスに格納されているオブジェクトを参照するために使うことができるものです．リモートコールは1つのプロセスによるリクエストで，別の（同じでも良い）プロセス上で関数と引数を指定しながら呼び出すためのものです．
 
 Remote references come in two flavors: [`Future`](@ref Distributed.Future) and [`RemoteChannel`](@ref).
 

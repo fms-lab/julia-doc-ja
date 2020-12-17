@@ -1,7 +1,5 @@
 # プログラミング言語Julia公式ドキュメント邦訳
 
-[![version 1][docs-img]](https://julia-doc-ja.github.io/)
-
 ## 概要
 
 [プログラミング言語Juliaの公式ドキュメント](https://docs.julialang.org/en/v1/)の邦訳です．

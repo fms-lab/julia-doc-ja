@@ -1,15 +1,23 @@
-# プログラミング言語Julia公式ドキュメント邦訳
+# プログラミング言語Julia公式ドキュメント日本語化プロジェクト
 
 ## 概要
 
-[プログラミング言語Juliaの公式ドキュメント](https://docs.julialang.org/en/v1/)の邦訳です．
+[プログラミング言語Juliaの公式ドキュメント](https://docs.julialang.org/en/v1/)を日本語に翻訳するプロジェクトです．
+現在はJulia 1.5のドキュメントの対応を進めています．
+
+- https://fms-lab.github.io/julia-doc-ja/v1.5/
 
 ## ビルド方法
 
-本リポジトリのルートディレクトリで以下を実行してください．
+本リポジトリのmainブランチのルートディレクトリで以下のコマンドを実行してください．
+`doc/src`内のMarkdownファイルが変換され，`doc/_build`にHTMLファイルが生成されます．
 
 ```bash
 $make docs
 ```
 
-正常に動作した場合は`doc/_build`配下にHTMLファイルが生成されます．
+gh-pagesブランチ内のファイルは`doc/_build`内に生成されたものです．
+
+## ライセンス
+
+- [MIT ライセンス](https://tldrlegal.com/license/mit-license)

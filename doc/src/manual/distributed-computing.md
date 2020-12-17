@@ -21,23 +21,23 @@ Julia内の通信は一般的には「片側(one-sided)」です，すなわち�
 Juliaにおける分散計算は，2つのプリミティブによって構成されます: *リモートリファレンス*と*リモートコール*です．
 リモートリファレンスは，任意のプロセスから，特定のプロセスに格納されているオブジェクトを参照するために使うことができるものです．リモートコールは1つのプロセスによるリクエストで，別の（同じでも良い）プロセス上で関数と引数を指定しながら呼び出すためのものです．
 
-Remote references come in two flavors: [`Future`](@ref Distributed.Future) and [`RemoteChannel`](@ref).
+リモートリファレンスには2つのフレーバーがあります: [`Future`](@ref Distributed.Future) and [`RemoteChannel`](@ref)です．
 
-A remote call returns a [`Future`](@ref Distributed.Future) to its result. Remote calls return immediately; the process
-that made the call proceeds to its next operation while the remote call happens somewhere else.
-You can wait for a remote call to finish by calling [`wait`](@ref) on the returned [`Future`](@ref Distributed.Future),
-and you can obtain the full value of the result using [`fetch`](@ref).
+リモートコールは，[`Future`](@ref Distributed.Future)をその結果に返します．リモートコールは直ちに結果を返します，
+すなわちリモート呼び出しが別の場所で発生している間に，呼び出しを行ったプロセスは次の操作に進みます．
+あなたはリモートコールが終わるのを[`wait`](@ref)を返される[`Future`](@ref Distributed.Future)上で呼ぶことで待つことができ，
+また[`fetch`](@ref)を用いて結果のすべての値を取得することができます．
 
-On the other hand, [`RemoteChannel`](@ref) s are rewritable. For example, multiple processes can
-co-ordinate their processing by referencing the same remote `Channel`.
 
-Each process has an associated identifier. The process providing the interactive Julia prompt
-always has an `id` equal to 1. The processes used by default for parallel operations are referred
-to as "workers". When there is only one process, process 1 is considered a worker. Otherwise,
-workers are considered to be all processes other than process 1. As a result, adding 2 or more
-processes is required to gain benefits from parallel processing methods like [`pmap`](@ref). Adding
-a single process is beneficial if you just wish to do other things in the main process while a long
-computation is running on the worker.
+一方で，[`RemoteChannel`](@ref)は上書き可能です．例えば，複数のプロセスが同じリモートの`Channel`を参照することにより
+それらの処理を組み合わせることができます．
+
+
+各プロセスは識別子を持ちます．インタラクティブなJuliaプロンプトを提供するプロセスは常に1という`id`を持ちます．
+並列操作に用いられるプロセスはデフォルトでは「ワーカ」として参照されます．プロセスが一つだけの時は，プロセス1が
+ワーカとしてとらえられます．そうでない場合は，ワーカはプロセス1以外のすべてのプロセスであるととらえられます．
+結果として，[`pmap`](@ref)のような並列処理メソッドから恩恵を得るためには，2つ以上のプロセスが必要となります．
+長い計算がワーカ上で実行されている間にメインプロセスで他のことをやらせたい場合は，シングルプロセスを1つ足すことで恩恵を得られます．
 
 Let's try this out. Starting with `julia -p n` provides `n` worker processes on the local machine.
 Generally it makes sense for `n` to equal the number of CPU threads (logical cores) on the machine. Note that the `-p`

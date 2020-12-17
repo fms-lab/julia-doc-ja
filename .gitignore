@@ -1,4 +1,4 @@
 deps/
 _build/
 UnicodeData.txt
-doc/src
+src/

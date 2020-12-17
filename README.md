@@ -1,4 +1,4 @@
-# プログラミング言語Julia公式ドキュメント日本語化プロジェクト(Julia Documentation Translate Project for ja)
+# Julia公式ドキュメント日本語化プロジェクト
 
 ## 概要
 

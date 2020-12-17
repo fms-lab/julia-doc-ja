@@ -1,6 +1,6 @@
 # プログラミング言語Julia公式ドキュメント邦訳
 
-[![version 1.5.3][docs-img]](https://julia-doc-ja.github.io/)
+[![version 1][docs-img]](https://julia-doc-ja.github.io/)
 
 ## 概要
 

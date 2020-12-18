@@ -39,10 +39,9 @@ Juliaにおける分散計算は，2つのプリミティブによって構成�
 結果として，[`pmap`](@ref)のような並列処理メソッドから恩恵を得るためには，2つ以上のプロセスが必要となります．
 長い計算がワーカ上で実行されている間にメインプロセスで他のことをやらせたい場合は，シングルプロセスを1つ足すことで恩恵を得られます．
 
-Let's try this out. Starting with `julia -p n` provides `n` worker processes on the local machine.
-Generally it makes sense for `n` to equal the number of CPU threads (logical cores) on the machine. Note that the `-p`
-argument implicitly loads module `Distributed`.
-
+これを試してみましょう．`julia -p n`で始めると，`n`はローカルマシン上にn個のワーカプロセスを提供します．
+一般的に`n`はマシン上のCPUスレッド数（論理コア数）と同じにするのが理にかなっています．`-p`引数は，暗黙の内に
+`Distributed`モジュールをロードすることに注意してください．
 
 ```julia
 $ ./julia -p 2
@@ -59,21 +58,24 @@ julia> fetch(s)
  1.16296  1.60607
 ```
 
-The first argument to [`remotecall`](@ref) is the function to call. Most parallel programming
-in Julia does not reference specific processes or the number of processes available, but [`remotecall`](@ref)
-is considered a low-level interface providing finer control. The second argument to [`remotecall`](@ref)
-is the `id` of the process that will do the work, and the remaining arguments will be passed to
-the function being called.
+[`remotecall`](@ref)の第一引数は呼び出される関数です．Juliaにおける並列プログラミングのほとんどは，
+特定のプロセスや利用可能なプロセス数を参照しませんが，[`remotecall`](@ref)はより細かい制御を
+提供する低レベルのインタフェースと考えられています．[`remotecall`](@ref)の第二引数は処理を行う
+プロセスの`id`で，残りの引数は呼び出される関数に渡されます．
 
-As you can see, in the first line we asked process 2 to construct a 2-by-2 random matrix, and
-in the second line we asked it to add 1 to it. The result of both calculations is available in
-the two futures, `r` and `s`. The [`@spawnat`](@ref) macro evaluates the expression in the second
-argument on the process specified by the first argument.
+1行目ではプロセス2に2x2のランダム行列を構築するように求め，2行目ではこれに1を加えるように求めていることが
+見て取れます．両方の計算結果は，2つのフューチャ，`r`と`s`で利用可能です．[`@spawnat`](@ref)マクロは，
+第一引数で指定されたプロセス上で第二引数内の表現を評価します．
+
 
 Occasionally you might want a remotely-computed value immediately. This typically happens when
 you read from a remote object to obtain data needed by the next local operation. The function
 [`remotecall_fetch`](@ref) exists for this purpose. It is equivalent to `fetch(remotecall(...))`
 but is more efficient.
+リモートで計算された値がすぐに必要になることがあるかもしれません．これは典型的には，次のローカル操作で必要な
+データを取得するために，リモートオブジェクトから読み出しを行う時に起こります．この目的のために，[`remotecall_fetch`](@ref)
+関数が存在します．これは`fetch(remotecall(...))`と等価ですが，より効率的です．
+
 
 ```julia-repl
 julia> remotecall_fetch(getindex, 2, r, 1, 1)
@@ -82,9 +84,12 @@ julia> remotecall_fetch(getindex, 2, r, 1, 1)
 
 Remember that [`getindex(r,1,1)`](@ref) is [equivalent](@ref man-array-indexing) to `r[1,1]`, so this call fetches
 the first element of the future `r`.
+[`getindex(r,1,1)`](@ref)は`r[1,1]`と[equivalent](@ref man-array-indexing)であるため，この呼び出しはフューチャ`r`の
+最初の要素をフェッチすることを覚えておいてください．
 
 To make things easier, the symbol `:any` can be passed to [`@spawnat`], which picks where to do
 the operation for you:
+より簡単にするために，シンボル`:any`を[`@spawnat`]に渡すことができ，これにより操作を行う場所を選択します．
 
 ```julia-repl
 julia> r = @spawnat :any rand(2,2)
@@ -99,35 +104,31 @@ julia> fetch(s)
  1.20939  1.57158
 ```
 
-Note that we used `1 .+ fetch(r)` instead of `1 .+ r`. This is because we do not know where the
-code will run, so in general a [`fetch`](@ref) might be required to move `r` to the process
-doing the addition. In this case, [`@spawnat`](@ref) is smart enough to perform the computation
-on the process that owns `r`, so the [`fetch`](@ref) will be a no-op (no work is done).
+ここで，私たちが`1 .+ r`ではなく，`1 .+ fetch(r)`を用いていることに注意してください．これはコードがどこで
+実行されるのかを知ることができないため，一般的には，加算を行うプロセスに`r`を移動させるのに[`fetch`](@ref)が
+必要になる場合があるからです．この場合，[`@spawnat`](@ref)は`r`を所有しているプロセス上で計算を実行するのに
+十分賢いので，[`fetch`](@ref)はno-opです（処理は行われません）．
 
-(It is worth noting that [`@spawnat`](@ref) is not built-in but defined in Julia as a [macro](@ref man-macros).
-It is possible to define your own such constructs.)
+（[`@spawnat`](@ref)は組み込みではなく，Juliaで[macro](@ref man-macros)として定義されているのは注記に値します．
+このような構造体を独自に定義することも可能です．）
 
-An important thing to remember is that, once fetched, a [`Future`](@ref Distributed.Future) will cache its value
-locally. Further [`fetch`](@ref) calls do not entail a network hop. Once all referencing [`Future`](@ref Distributed.Future)s
-have fetched, the remote stored value is deleted.
+覚えておくべき重要なことは，一度フェッチされると，[`Future`](@ref Distributed.Future)はその値をローカルにキャッシュする
+ということです．さらなる[`fetch`](@ref)の呼び出しは，ネットワークホップを必要としません．すべての参照する
+[`Future`](@ref Distributed.Future)sをフェッチされると，リモートに格納されている値は削除される．
 
-[`@async`](@ref) is similar to [`@spawnat`](@ref), but only runs tasks on the local process. We
-use it to create a "feeder" task for each process. Each task picks the next index that needs to
-be computed, then waits for its process to finish, then repeats until we run out of indices. Note
-that the feeder tasks do not begin to execute until the main task reaches the end of the [`@sync`](@ref)
-block, at which point it surrenders control and waits for all the local tasks to complete before
-returning from the function.
-As for v0.7 and beyond, the feeder tasks are able to share state via `nextidx` because
-they all run on the same process.
-Even if `Tasks` are scheduled cooperatively, locking may still be required in some contexts, as in
-[asynchronous I/O](@ref faq-async-io).
-This means context switches only occur at well-defined points: in this case,
-when [`remotecall_fetch`](@ref) is called. This is the current state of implementation and it may change
-for future Julia versions, as it is intended to make it possible to run up to N `Tasks` on M `Process`, aka
-[M:N Threading](https://en.wikipedia.org/wiki/Thread_(computing)#Models). Then a lock acquiring\releasing
-model for `nextidx` will be needed, as it is not safe to let multiple processes read-write a resource at
-the same time.
-
+[`@async`](@ref)は[`@spawnet`](@ref)と似ていますが，ローカルプロセス上でしかタスクを動かしません．
+これを使って，各プロセスに「フィーダ」タスクを作成します．各タスクは計算が必要な次のインデックスを指定し，
+そのプロセスが終了するのを待ち，インデックスが無くなるまでこれを繰り返します．メインタスクが[`@sync`](@ref)の
+最終ブロック，すなわち制御を放棄し関数から戻る前にすべてのローカルタスクが完了するのを末ポイントに到達するまで，
+フィーダタスクは実行を開始しないことに注意してください．
+v0.7以降では，フィーダタスクは，すべて同じプロセス上で実行されるため，`nextidx`を介して状態を共有することが
+できます．`Task`が協調的にスケジュールされていたとしても，[asynchronous I/O](@ref faq-async-io)のように，
+コンテキストによってはロックが必要になる場合があります．
+これは，コンテキストスイッチは良く定義されたポイント，この場合は [`remotecall_fetch`](@ref)が呼ばれた時のみ発生する
+ことを意味します．これは現在の実装の状態であり，将来のJuliaのバージョンでは，M個の`Process`上でN個まで`Tasks`を実行
+する，[M:N Threading](https://en.wikipedia.org/wiki/Thread_(computing)#Models)を可能にするために変更される
+可能性があります．その場合，複数のプロセスに同時に単一のリソースへの読み書きを行わせるのはセーフでないため，
+`nextidx`用のロック獲得/再解放モデルが必要になります．
 
 
 ## [Code Availability and Loading Packages](@id code-availability)

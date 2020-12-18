@@ -67,11 +67,6 @@ julia> fetch(s)
 見て取れます．両方の計算結果は，2つのフューチャ，`r`と`s`で利用可能です．[`@spawnat`](@ref)マクロは，
 第一引数で指定されたプロセス上で第二引数内の表現を評価します．
 
-
-Occasionally you might want a remotely-computed value immediately. This typically happens when
-you read from a remote object to obtain data needed by the next local operation. The function
-[`remotecall_fetch`](@ref) exists for this purpose. It is equivalent to `fetch(remotecall(...))`
-but is more efficient.
 リモートで計算された値がすぐに必要になることがあるかもしれません．これは典型的には，次のローカル操作で必要な
 データを取得するために，リモートオブジェクトから読み出しを行う時に起こります．この目的のために，[`remotecall_fetch`](@ref)
 関数が存在します．これは`fetch(remotecall(...))`と等価ですが，より効率的です．
@@ -82,13 +77,9 @@ julia> remotecall_fetch(getindex, 2, r, 1, 1)
 0.18526337335308085
 ```
 
-Remember that [`getindex(r,1,1)`](@ref) is [equivalent](@ref man-array-indexing) to `r[1,1]`, so this call fetches
-the first element of the future `r`.
 [`getindex(r,1,1)`](@ref)は`r[1,1]`と[equivalent](@ref man-array-indexing)であるため，この呼び出しはフューチャ`r`の
 最初の要素をフェッチすることを覚えておいてください．
 
-To make things easier, the symbol `:any` can be passed to [`@spawnat`], which picks where to do
-the operation for you:
 より簡単にするために，シンボル`:any`を[`@spawnat`]に渡すことができ，これにより操作を行う場所を選択します．
 
 ```julia-repl

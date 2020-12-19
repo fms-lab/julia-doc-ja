@@ -14,7 +14,7 @@ Juliaはメッセージパッシングに基づいてマルチプロセシング
 
 
 Juliaのメッセージパッシングの実装は，MPI[^1]などほかの環境とは異なるものとなっています．
-Julia内の通信は一般的には「片側(one-sided)」です，すなわちプログラマは2プロセスの操作の内，1つのプロセス
+Julia内の通信は一般的には「一方向的(one-sided)」です，すなわちプログラマは2プロセスの操作の内，1つのプロセス
 のみを明示的に管理する必要があります．さらには，これらの操作は典型的には「メッセージ送信」や「メッセージ受信」
 のようには見えず，ユーザ関数を呼び出すような高レベルな操作に似たものとなります．
 
@@ -122,10 +122,12 @@ v0.7以降では，フィーダタスクは，すべて同じプロセス上で�
 `nextidx`用のロック獲得/再解放モデルが必要になります．
 
 
-## [Code Availability and Loading Packages](@id code-availability)
+## [コードの利用可能性とパッケージの読み込み](@id code-availability)
 
 Your code must be available on any process that runs it. For example, type the following into
 the Julia prompt:
+あなたのコードは，それを実行する全てのプロセスで利用可能でなければなりません．例えば，
+Juliaプロンプトに以下のように入力します:
 
 ```julia-repl
 julia> function rand2(dims...)
@@ -143,11 +145,11 @@ Stacktrace:
 [...]
 ```
 
-Process 1 knew about the function `rand2`, but process 2 did not.
+プロセス1は関数`rand2`を知っていましたが，プロセス2は知りませんでした．
 
-Most commonly you'll be loading code from files or packages, and you have a considerable amount
-of flexibility in controlling which processes load code. Consider a file, `DummyModule.jl`,
-containing the following code:
+ほとんどの場合，あなたはファイルやパッケージからコードをロードすることになりますが，どのプロセスが
+コードをロードするのかはかなり柔軟に制御することができます．以下のようなコードを含む`DummyModule.jl`
+というファイルを考えてみましょう:
 
 ```julia
 module DummyModule
@@ -165,10 +167,9 @@ println("loaded")
 end
 ```
 
-In order to refer to `MyType` across all processes, `DummyModule.jl` needs to be loaded on
-every process.  Calling `include("DummyModule.jl")` loads it only on a single process.  To
-load it on every process, use the [`@everywhere`](@ref) macro (starting Julia with `julia -p
-2`):
+全てのプロセスにわたって`MyType`を参照するためには，全てのプロセスで`DummyModule.jl`をロードする
+必要があります．`include("DummyModule.jl")`を呼び出すと，単一のプロセス上でのみロードされます．
+全てのプロセスでロードするには，[`@everywhere`](@ref)マクロを使用します．(`julia -p 2`でJuliaを開始します．):
 
 ```julia-repl
 julia> @everywhere include("DummyModule.jl")
@@ -177,9 +178,8 @@ loaded
       From worker 2:    loaded
 ```
 
-As usual, this does not bring `DummyModule` into scope on any of the process, which requires
-`using` or `import`.  Moreover, when `DummyModule` is brought into scope on one process, it
-is not on any other:
+いつものように，これは`DummyModule`をどのプロセスのスコープにも入れません，`using`または`import`を
+必要とします．さらに，`DummyModule`を1つのプロセスのスコープに入れると，他のプロセスではスコープに入れません:
 
 ```julia-repl
 julia> using .DummyModule
@@ -196,38 +196,37 @@ julia> fetch(@spawnat 2 DummyModule.MyType(7))
 MyType(7)
 ```
 
-However, it's still possible, for instance, to send a `MyType` to a process which has loaded
-`DummyModule` even if it's not in scope:
+しかしながら，例えば，スコープに入っていないとしても，`DummyModule`をロードしたプロセスに
+`MyType`を送ることは可能です．
 
 ```julia-repl
 julia> put!(RemoteChannel(2), MyType(7))
 RemoteChannel{Channel{Any}}(2, 1, 13)
 ```
 
-A file can also be preloaded on multiple processes at startup with the `-L` flag, and a
-driver script can be used to drive the computation:
+`-L`フラグを使って起動時に複数のプロセスにファイルをプリロードしたり，ドライバスクリプトを
+使って計算を駆動したりすることもできます:
 
 ```
 julia -p <n> -L file1.jl -L file2.jl driver.jl
 ```
 
-The Julia process running the driver script in the example above has an `id` equal to 1, just
-like a process providing an interactive prompt.
+上の例のドライバスクリプトを実行しているJuliaプロセスは，対話型プロンプトを提供するプロセスと
+同じように`id`として1を持ちます．
 
-Finally, if `DummyModule.jl` is not a standalone file but a package, then `using
-DummyModule` will _load_ `DummyModule.jl` on all processes, but only bring it into scope on
-the process where `using` was called.
+最後に，`DummyModule.jl`がスタンドアロンファイルではなくパッケージである場合，`using DummyModule`
+は全てのプロセスで`DummyModule.jl`を_ロード_しますが，`using`が呼ばれたプロセスでのみスコープに入ります．
 
-## Starting and managing worker processes
+## ワーカプロセスの開始と管理
 
-The base Julia installation has in-built support for two types of clusters:
+基本となるJuliaのインストールでは，2種類のクラスタがサポートされています:
 
-  * A local cluster specified with the `-p` option as shown above.
-  * A cluster spanning machines using the `--machine-file` option. This uses a passwordless `ssh` login
-    to start Julia worker processes (from the same path as the current host) on the specified machines.
+  * 上で示した通り，`-p`オプションで指定されたローカルクラスタ．
+  * `--machine-file`オプションを使ったマシンをまたいだクラスタ．これはパスワードなしの`ssh`ログインを
+	使用して，指定されたマシン上で（現在のホストと同じパスから）Juliaワーカプロセスを起動します．
 
-Functions [`addprocs`](@ref), [`rmprocs`](@ref), [`workers`](@ref), and others are available
-as a programmatic means of adding, removing and querying the processes in a cluster.
+[`addprocs`](@ref), [`rmprocs`](@ref), [`workers`](@ref)などの関数が，クラスタ内のプロセスを追加，
+削除，クエリするためのプログラム的な手段として利用できます．
 
 ```julia-repl
 julia> using Distributed
@@ -238,30 +237,27 @@ julia> addprocs(2)
  3
 ```
 
-Module `Distributed` must be explicitly loaded on the master process before invoking [`addprocs`](@ref).
-It is automatically made available on the worker processes.
+モジュール`Distributed`は[`addprocs`](@ref)を呼び出す前に，マスタプロセス上で明示的にロードされなければなりません．
+ワーカプロセス上では自動的に利用可能になります．
 
-Note that workers do not run a `~/.julia/config/startup.jl` startup script, nor do they synchronize
-their global state (such as global variables, new method definitions, and loaded modules) with any
-of the other running processes. You may use `addprocs(exeflags="--project")` to initialize a worker with
-a particular environment, and then `@everywhere using <modulename>` or `@everywhere include("file.jl")`.
+ワーカは`~/.julia/config/startup.jl`スタートアップスクリプトを実行せず，またワーカはグローバル状態
+（グローバル変数，新しいメソッド定義，ロードされたモジュール）を他の実行中のプロセスと同期させません．
+特定の環境でワーカを初期化するために，`addprocs(exeflags="--project")`を使用し，その後`@everywhere using <modulename>`
+または`@everywhere include("file.jl")`を使用することができます．
 
-Other types of clusters can be supported by writing your own custom `ClusterManager`, as described
-below in the [ClusterManagers](@ref) section.
+他のタイプのクラスタは，以下の[ClusterManagers](@ref)で説明されているように，独自のカスタム`ClusterManager`
+を書くことでサポートすることができます．
 
-## Data Movement
+## データ移動
 
-Sending messages and moving data constitute most of the overhead in a distributed program. Reducing
-the number of messages and the amount of data sent is critical to achieving performance and scalability.
-To this end, it is important to understand the data movement performed by Julia's various distributed
-programming constructs.
+メッセージの送信とデータの移動は，分散プログラムのオーバーヘッドの大部分を占めています．
+メッセージの数と送信されるデータの量を減らすことは，パフォーマンスとスケーラビリティを達成するために非常に重要です．
+この目的のために，Juliaの様々な分散プログラミング構造によって実行されるデータ移動を理解することが重要です．
 
-[`fetch`](@ref) can be considered an explicit data movement operation, since it directly asks
-that an object be moved to the local machine. [`@spawnat`](@ref) (and a few related constructs)
-also moves data, but this is not as obvious, hence it can be called an implicit data movement
-operation. Consider these two approaches to constructing and squaring a random matrix:
+考えることができます．[`@spawnat`](@ref)（といくつかの関連する構造）もデータを移動しますが，これは明らかではないので，
+暗黙のデータ移動操作と呼ぶことができます．ランダム行列を構築して二乗するための2つのアプローチを考えてみましょう:
 
-Method 1:
+メソッド1:
 
 ```julia-repl
 julia> A = rand(1000,1000);
@@ -273,7 +269,7 @@ julia> Bref = @spawnat :any A^2;
 julia> fetch(Bref);
 ```
 
-Method 2:
+メソッド2:
 
 ```julia-repl
 julia> Bref = @spawnat :any rand(1000,1000)^2;
@@ -283,19 +279,18 @@ julia> Bref = @spawnat :any rand(1000,1000)^2;
 julia> fetch(Bref);
 ```
 
-The difference seems trivial, but in fact is quite significant due to the behavior of [`@spawnat`](@ref).
-In the first method, a random matrix is constructed locally, then sent to another process where
-it is squared. In the second method, a random matrix is both constructed and squared on another
-process. Therefore the second method sends much less data than the first.
+これらの違いは些細なように見えますが，実際には[`@spawnat`](@ref)の振る舞いによってかなり大きな違いがあります．
+1つめのメソッドでは，ランダム行列が局所的に構築され，別のプロセスに送られて二乗されます．2つめのメソッドでは，
+ランダム行列は，別のプロセスで構築も二乗もされます．ゆえに，2つめのメソッドは1つめのメソッドよりもはるかに少ないデータを送信します．
 
-In this toy example, the two methods are easy to distinguish and choose from. However, in a real
-program designing data movement might require more thought and likely some measurement. For example,
-if the first process needs matrix `A` then the first method might be better. Or, if computing
-`A` is expensive and only the current process has it, then moving it to another process might
-be unavoidable. Or, if the current process has very little to do between the [`@spawnat`](@ref)
-and `fetch(Bref)`, it might be better to eliminate the parallelism altogether. Or imagine `rand(1000,1000)`
-is replaced with a more expensive operation. Then it might make sense to add another [`@spawnat`](@ref)
-statement just for this step.
+このおもちゃの例では，この2つの方法は簡単に区別して選択することができます．しかし，実際のプログラムでは，
+データ移動の設計をするにはより多くの考えが必要であり，おそらく何らかの測定が必要になる場合があります．
+例えば，1つめのプロセスが行列`A`を必要とする場合，1つめのメソッドが良いかもしれません．あるいは，`A`の
+計算コストが高く現在のプロセスだけがそれを持っている場合は，他のプロセスへの移動は避けられないかもしれません．
+あるいは，現在のプロセスが[`@spawnat`](@ref)と`fetch(Bref)`の間にほとんど何もしない場合には，並列性を完全に
+排除した方が良いかもしれません．あるいは，`rand(1000,1000)`がより計算コストのかかる処理に置き換えられることを
+想像してみてください．その場合，このステップのためだけに，別の[`@spawnat`](@ref)文を追加するのが理にかなっている
+かもしれません．
 
 ## Global variables
 Expressions executed remotely via `@spawnat`, or closures specified for remote execution using

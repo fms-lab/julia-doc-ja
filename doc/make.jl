@@ -198,6 +198,7 @@ else
         analytics = "UA-28835595-6",
         collapselevel = 1,
         sidebar_sitename = false,
+        edit_link = "main",
     )
 end
 

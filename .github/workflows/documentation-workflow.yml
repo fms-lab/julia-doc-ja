@@ -21,7 +21,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout
+      - name: Checkout main branch
         uses: actions/checkout@v2
  
       - name: Setup Julia environment
@@ -39,17 +39,20 @@ jobs:
       - name: Build docs
         run: make docs
 
-      - name: Checkout other repo
+      - name: Checkout gh-pages branch
         uses: actions/checkout@v2
         with:
           ref: gh-pages
           path: public
 
-      - name: test1
-        run: ls ./doc/_build/html/ja
+      - name: Update documentation
+        run: \cp ./doc/_build/html/ja/* ./public/v1.5.3
 
-      - name: test2
-        run: ls
-
-      - name: test3
-        run: ls ./public/v1.5.3
+      - name: Commit&Push new doc to pg-pages
+        run: |
+          git config --global user.name "Yohei Motomura"
+          git config --global user.email "y.motomura0426@gmail.com"
+          cd public
+          git add .
+          git commit -m "Update documentation by GitHub Action"
+          git push

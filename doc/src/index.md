@@ -35,9 +35,6 @@ Markdown.parse("""
 ### [はじめに](@id man-introduction)
 
 科学技術計算には常に最高の性能が求められますが，この分野のエキスパートたちは静的型付け言語より低速な動的言語を使って仕事をしています．私達はこの分野で動的言語を用いることにたくさんの利点があることを理解していますし，動的言語が使われないようにしたいわけでもありません．
-Scientific computing has traditionally required the highest performance, yet domain experts have
-largely moved to slower dynamic languages for daily work. We believe there are many good reasons
-to prefer dynamic languages for these applications, and we do not expect their use to diminish.
 Fortunately, modern language design and compiler techniques make it possible to mostly eliminate
 the performance trade-off and provide a single environment productive enough for prototyping and
 efficient enough for deploying performance-intensive applications. The Julia programming language

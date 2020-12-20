@@ -124,8 +124,6 @@ v0.7以降では，フィーダタスクは，すべて同じプロセス上で�
 
 ## [コードの利用可能性とパッケージの読み込み](@id code-availability)
 
-Your code must be available on any process that runs it. For example, type the following into
-the Julia prompt:
 あなたのコードは，それを実行する全てのプロセスで利用可能でなければなりません．例えば，
 Juliaプロンプトに以下のように入力します:
 
@@ -292,30 +290,28 @@ julia> fetch(Bref);
 想像してみてください．その場合，このステップのためだけに，別の[`@spawnat`](@ref)文を追加するのが理にかなっている
 かもしれません．
 
-## Global variables
-Expressions executed remotely via `@spawnat`, or closures specified for remote execution using
-`remotecall` may refer to global variables. Global bindings under module `Main` are treated
-a little differently compared to global bindings in other modules. Consider the following code
-snippet:
+## グローバル変数
+`@spawnat`経由でリモート実行される式や，`remotecall`を使ってリモートで実行するために指定されたクロージャは，
+グローバル変数を参照することがあります．`Main`モジュールの下のグローバルバインディングは，
+他のモジュールのグローバルバインディングとは少し違った扱いになります．以下のコードスニペットを考えてみましょう:
 
 ```julia-repl
 A = rand(10,10)
 remotecall_fetch(()->sum(A), 2)
 ```
 
-In this case [`sum`](@ref) MUST be defined in the remote process.
-Note that `A` is a global variable defined in the local workspace. Worker 2 does not have a variable called
-`A` under `Main`. The act of shipping the closure `()->sum(A)` to worker 2 results in `Main.A` being defined
-on 2. `Main.A` continues to exist on worker 2 even after the call `remotecall_fetch` returns. Remote calls
-with embedded global references (under `Main` module only) manage globals as follows:
+この場合，[`sum`](@ref)はリモートプロセスで定義されなければなりません．`A`はローカルのワークスペースで定義された
+グローバル変数であることに注意してください．ワーカ2は`Main`の下に`A`という変数を持っていません．クロージャ`()->sum(A)`
+をワーカ2に送る行為は`Main.A`がワーカ2に定義される結果となります．`remotecall_fetch`の呼び出しがリターンされた後も，
+ワーカ2の上に`Main.A`は存在し続けます．グローバル参照が埋め込まれたリモート呼び出し（`Main`モジュールの下でのみ）は，
+以下のようにグローバルを管理します:
 
-- New global bindings are created on destination workers if they are referenced as part of a remote call.
+- リモートコールの一部といして参照されている場合，宛先ワーカに新しいグローバルバインディングが作成されます
 
-- Global constants are declared as constants on remote nodes too.
+- グローバル定数はリモートノード上でも定数として宣言されます．
 
-- Globals are re-sent to a destination worker only in the context of a remote call, and then only
-  if its value has changed. Also, the cluster does not synchronize global bindings across nodes.
-  For example:
+- グローバル変数が宛先ワーカに再送信されるのは，リモート呼び出しのコンテキストのみで，その値が変更された
+  場合のみです．また，クラスタはノード間でグローバルバインディングを同期化しません．例えば以下のようになります:
 
   ```julia
   A = rand(10,10)
@@ -325,19 +321,21 @@ with embedded global references (under `Main` module only) manage globals as fol
   A = nothing
   ```
 
-  Executing the above snippet results in `Main.A` on worker 2 having a different value from
-  `Main.A` on worker 3, while the value of `Main.A` on node 1 is set to `nothing`.
+  上記のスニペットを実行すると，ワーカ2の`Main.A`はワーカ3の`Main.A`とは異なる値を持ち，
+  ノード1の`Main.A`の値は何も設定されません．
 
-As you may have realized, while memory associated with globals may be collected when they are reassigned
-on the master, no such action is taken on the workers as the bindings continue to be valid.
-[`clear!`](@ref) can be used to manually reassign specific globals on remote nodes to `nothing` once
-they are no longer required. This will release any memory associated with them as part of a regular garbage
-collection cycle.
+お気付きかもしれませんが，マスタ上で再割り当てられたされたときにグローバルに関連付けられたメモリが収集される
+場合がありますが，バインディングが有効であり続けるため，ワーカにはそのようなアクションは実行されません．
+[`clear!`](@ref)を使用すると，リモートのノード上の特定のグローバルが不要になったら，手動でそれらを`nothing`へ
+再割り当てすることができます．これにより，通常のガベージコレクションサイクルの一部として，それらに関連付けられた
+メモリが解放されます．
 
-Thus programs should be careful referencing globals in remote calls. In fact, it is preferable to avoid them
-altogether if possible. If you must reference globals, consider using `let` blocks to localize global variables.
+したがって，プログラムはリモート呼び出しの際のグローバルの参照に注意する必要があります．実際には，可能であれば
+完全に避けることが望ましいです．グローバルを参照する必要がある場合は，グローバル変数をローカライズするために，
+`let`ブロックを使用することを検討してください．
 
-For example:
+
+以下は例です:
 
 ```julia-repl
 julia> A = rand(10,10);
@@ -359,8 +357,8 @@ Core                Module
 Main                Module
 ```
 
-As can be seen, global variable `A` is defined on worker 2, but `B` is captured as a local variable
-and hence a binding for `B` does not exist on worker 2.
+このように，グローバル変数`A`はワーカ2上で定義されていますが，`B`はローカル変数として捉えられているため，
+ワーカ2上には`B`のバインディングが存在しません．
 
 
 ## Parallel Map and Loops

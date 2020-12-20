@@ -54,5 +54,5 @@ jobs:
           git config --global user.email "y.motomura0426@gmail.com"
           cd public
           git add .
-          git commit -m "Build based on ${{ github.sha }}"
+          git commit -m "Build based on ${{ github.sha }} by GitHub Actions"
           git push

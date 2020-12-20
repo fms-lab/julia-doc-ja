@@ -18,7 +18,7 @@ end
 import Markdown
 Markdown.parse(String(take!(io)))
 ```
-Please read the [release notes](NEWS.md) to see what has changed since the last release.
+前回のリリース以降の変更点については，[リリースノート](NEWS.md)をご覧ください．
 
 ```@eval
 release = isempty(VERSION.prerelease)
@@ -28,18 +28,14 @@ url = "https://raw.githubusercontent.com/JuliaLang/docs.julialang.org/assets/$(f
 import Markdown
 Markdown.parse("""
 !!! note
-    The documentation is also available in PDF format: [$file]($url).
+    ドキュメントはPDF形式でもご覧いただけます: [$file]($url).
+
 """)
 ```
 
 ### [はじめに](@id man-introduction)
 
-科学技術計算には常に最高の性能が求められますが，この分野のエキスパートたちは静的型付け言語より低速な動的言語を使って仕事をしています．私達はこの分野で動的言語を用いることにたくさんの利点があることを理解していますし，動的言語が使われないようにしたいわけでもありません．
-Fortunately, modern language design and compiler techniques make it possible to mostly eliminate
-the performance trade-off and provide a single environment productive enough for prototyping and
-efficient enough for deploying performance-intensive applications. The Julia programming language
-fills this role: it is a flexible dynamic language, appropriate for scientific and numerical computing,
-with performance comparable to traditional statically-typed languages.
+　科学技術計算では常に高速に動作することが求められてる一方で，この分野の専門家の多くは静的型付け言語より低速に動作する動的型付け言語を使って仕事をしています．私達は動的型付け言語を用いることに多くの利点があることを理解していますし，動的型付け言語が使われないようにしたいわけでもありません．幸いなことに，最新の言語設計やコンパイラ技術の進歩により，性能と生産性のトレードオフの問題をほとんど解決することができ，「プロトタイピングに十分な生産性」と「性能を重視するアプリケーションのデプロイに十分な効率性」を単一の環境で両立することが可能になっています．Juliaは「柔軟な動的型付け言語」と「静的型付け言語と同等の性能」を両立する科学技術計算に適した言語です．
 
 Because Julia's compiler is different from the interpreters used for languages like Python or
 R, you may find that Julia's performance is unintuitive at first. If you find that something is

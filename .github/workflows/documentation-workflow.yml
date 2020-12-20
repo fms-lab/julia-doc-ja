@@ -46,7 +46,7 @@ jobs:
           path: public
 
       - name: Update documentation
-        run: \cp ./doc/_build/html/ja/* ./public/v1.5.3
+        run: \cp -r ./doc/_build/html/ja/* ./public/v1.5.3
 
       - name: Commit&Push new doc to pg-pages
         run: |

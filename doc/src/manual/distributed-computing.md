@@ -361,12 +361,12 @@ Main                Module
 ワーカ2上には`B`のバインディングが存在しません．
 
 
-## Parallel Map and Loops
+## 並列マップとループ
 
-Fortunately, many useful parallel computations do not require data movement. A common example
-is a Monte Carlo simulation, where multiple processes can handle independent simulation trials
-simultaneously. We can use [`@spawnat`](@ref) to flip coins on two processes. First, write the following
-function in `count_heads.jl`:
+幸いなことに多くの有用な並列計算はデータ移動を必要としません．一般的な例としては，
+複数のプロセスが独立したシミュレーション試行を同時に処理することができるモンテカルロシミュレーションがあります．
+ここでは，[`@spawnat`](@ref)を使って，2つのプロセスでコインを反転させることができます．まず，`count_heads.jl`に
+以下のような関数を書きます:
 
 ```julia
 function count_heads(n)
@@ -378,8 +378,8 @@ function count_heads(n)
 end
 ```
 
-The function `count_heads` simply adds together `n` random bits. Here is how we can perform some
-trials on two machines, and add together the results:
+関数`count_heads`は，単純に`n`個のランダムビットを加算します．ここでは，2つのマシンでいくつかの
+試行を行い，その結果を足し合わせる方法を示します．
 
 ```julia-repl
 julia> @everywhere include_string(Main, $(read("count_heads.jl", String)), "count_heads.jl")
@@ -394,19 +394,18 @@ julia> fetch(a)+fetch(b)
 100001564
 ```
 
-This example demonstrates a powerful and often-used parallel programming pattern. Many iterations
-run independently over several processes, and then their results are combined using some function.
-The combination process is called a *reduction*, since it is generally tensor-rank-reducing: a
-vector of numbers is reduced to a single number, or a matrix is reduced to a single row or column,
-etc. In code, this typically looks like the pattern `x = f(x,v[i])`, where `x` is the accumulator,
-`f` is the reduction function, and the `v[i]` are the elements being reduced. It is desirable
-for `f` to be associative, so that it does not matter what order the operations are performed
-in.
+この例は，今日六でよく使われる並列プログラミングパターンを示しています．多くの反復処理はいくつかの
+プロセスで独立して実行され，その結果が何らかの関数を使って結合されます．
+この組み合わせのプロセスは*reduction*と呼ばれます，なぜならそれは一般的にtensor-rank-reducingだからです: 
+あるベクトルが1つの数に削減されたり，行列が1つの行や列に削減されたりすることから，こう呼びます．
+コードでは，これは通常，`x = f(x,v[i])`というパターンのように見えます．ここで`x`はアキュムレータ，
+`f`はリダクション関数，`v[i]`はリデュースされる要素です．演算がどのような順序で実行されても問題ないように，
+`f`は結合律を満たしていることが望ましいです．
 
-Notice that our use of this pattern with `count_heads` can be generalized. We used two explicit
-[`@spawnat`](@ref) statements, which limits the parallelism to two processes. To run on any number
-of processes, we can use a *parallel for loop*, running in distributed memory, which can be written
-in Julia using [`@distributed`](@ref) like this:
+`count_heads`でのこのパターンの使用は一般化できることに注意してください．2つの明示的な[`@spawnat`](@ref)文を
+使用しているので，並列処理は2つのプロセスに制限されています．任意の数のプロセスで実行するためには，
+分散メモリで実行する*parallel for loop*を使うことができ，これはJuliaでは[`@distributed`](@ref)を
+使って以下のように書くことができます:
 
 ```julia
 nheads = @distributed (+) for i = 1:200000000
@@ -414,17 +413,16 @@ nheads = @distributed (+) for i = 1:200000000
 end
 ```
 
-This construct implements the pattern of assigning iterations to multiple processes, and combining
-them with a specified reduction (in this case `(+)`). The result of each iteration is taken as
-the value of the last expression inside the loop. The whole parallel loop expression itself evaluates
-to the final answer.
+この構文は複数のプロセスに反復処理を割り当て，指定されたリダクション（ここでは`(+)`）と組み合わせるパターンを
+実装しています．各反復の結果は，ループ内の最後の式の値として取られます．並列ループ全体の式自体は，
+最終的な答えとして評価されます．
 
-Note that although parallel for loops look like serial for loops, their behavior is dramatically
-different. In particular, the iterations do not happen in a specified order, and writes to variables
-or arrays will not be globally visible since iterations run on different processes. Any variables
-used inside the parallel loop will be copied and broadcast to each process.
 
-For example, the following code will not work as intended:
+並列ループはシリアルループのように見えますが，動作は劇的に異なることに注意してください．特に，
+反復は指定された順序では行われず，変数や配列への書き込みは，反復が異なるプロセスで実行されるため，
+グローバルには表示されません．並列ループ内で使用される変数は全てコピーされ，各プロセスにブロードキャストされます．
+
+例えば，以下のようなコードは意図通りには動きません:
 
 ```julia
 a = zeros(100000)
@@ -433,9 +431,9 @@ a = zeros(100000)
 end
 ```
 
-This code will not initialize all of `a`, since each process will have a separate copy of it.
-Parallel for loops like these must be avoided. Fortunately, [Shared Arrays](@ref man-shared-arrays) can be used
-to get around this limitation:
+このコードでは，各プロセスが個別のコピーを持つことになるので，全ての`a`を初期化することはできません．
+このようなループのための並列化は避けなければなりません．幸いなことに，[Shared Arrays](@ref man-shared-arrays)
+を使うことで，この制限を回避することができます:
 
 ```julia
 using SharedArrays
@@ -446,7 +444,7 @@ a = SharedArray{Float64}(10)
 end
 ```
 
-Using "outside" variables in parallel loops is perfectly reasonable if the variables are read-only:
+変数が読み取り専用であれば，並列ループで「外部」変数を使用するのは完全に合理的です:
 
 ```julia
 a = randn(1000)
@@ -455,18 +453,16 @@ a = randn(1000)
 end
 ```
 
-Here each iteration applies `f` to a randomly-chosen sample from a vector `a` shared by all processes.
+ここでは，各反復処理は，全ての処理で共有されるベクトル`a`からランダムに選択されたサンプルに対して`f`を適用します．
 
-As you could see, the reduction operator can be omitted if it is not needed. In that case, the
-loop executes asynchronously, i.e. it spawns independent tasks on all available workers and returns
-an array of [`Future`](@ref Distributed.Future) immediately without waiting for completion. The caller can wait for
-the [`Future`](@ref Distributed.Future) completions at a later point by calling [`fetch`](@ref) on them, or wait
-for completion at the end of the loop by prefixing it with [`@sync`](@ref), like `@sync @distributed for`.
+ここで見た通り，リダクション演算子は必要なければ省略することができます．その場合，ループは非同期に実行される．
+つまり，利用可能な全てのワーカ上で独立したタスクを生成し，完了を待たずに直ちに[`Future`](@ref Distributed.Future)の
+配列を返します．呼び出し元は，[`Future`](@ref Distributed.Future)の完了を後のポイントで[`fetch`](@ref)を呼び出すことで
+待つか，ループの最後に`@sync @distributed for`のように[`@sync`](@ref)を接頭辞としてつけることにより完了を待つことができる．
 
-In some cases no reduction operator is needed, and we merely wish to apply a function to all integers
-in some range (or, more generally, to all elements in some collection). This is another useful
-operation called *parallel map*, implemented in Julia as the [`pmap`](@ref) function. For example,
-we could compute the singular values of several large random matrices in parallel as follows:
+場合によってはリダクション演算子は必要とされず，ある範囲の全ての整数（またはより一般的には，あるコレクションの全ての要素）
+に関数を適用したいだけの場合もあります．これは*parallel map*と呼ばれるもう一つの便利な操作で，Juliaでは
+[`pmap`](@ref)関数として実装されています．例えば，以下のようにいくつかの大きな乱数行列の特異値を並列に計算することができます:
 
 ```julia-repl
 julia> M = Matrix{Float64}[rand(1000,1000) for i = 1:10];
@@ -474,64 +470,58 @@ julia> M = Matrix{Float64}[rand(1000,1000) for i = 1:10];
 julia> pmap(svdvals, M);
 ```
 
-Julia's [`pmap`](@ref) is designed for the case where each function call does a large amount
-of work. In contrast, `@distributed for` can handle situations where each iteration is tiny, perhaps
-merely summing two numbers. Only worker processes are used by both [`pmap`](@ref) and `@distributed for`
-for the parallel computation. In case of `@distributed for`, the final reduction is done on the calling
-process.
+Juliaの[`pmap`](@ref)は各関数呼び出しが大量の作業を行う場合のために設計されています．
+対照的に`@distributed for`は，それぞれの反復が小さなもので，おそらく2つの数値を合計するだけのような状況を
+扱うことができます．[`pmap`](@ref)と`@distributed for`は並列計算のためにワーカプロセスのみを使用します．
+`@distributed for`を使う場合には，最終的なリダクションは呼び出したプロセスで行われます．
 
-## Remote References and AbstractChannels
+## リモートリファレンスとアブストラクトチャネル
 
-Remote references always refer to an implementation of an `AbstractChannel`.
+リモートリファレンスは常に`AbstractChannel`の実装を参照します．
 
-A concrete implementation of an `AbstractChannel` (like `Channel`), is required to implement
-[`put!`](@ref), [`take!`](@ref), [`fetch`](@ref), [`isready`](@ref) and [`wait`](@ref).
-The remote object referred to by a [`Future`](@ref Distributed.Future) is stored in a `Channel{Any}(1)`, i.e., a
-`Channel` of size 1 capable of holding objects of `Any` type.
+（`Channel`のような）`AbstractChannel`の具体的な実装は[`put!`](@ref)，[`take!`](@ref)， [`fetch`](@ref)，
+[`isready`](@ref)および[`wait`](@ref)を実装するのに必要とされます．
+[`Future`](@ref Distributed.Future)によって参照されるリモートオブジェクトは，`Channel{Any}(1)`，すなわち
+`Any`タイプのオブジェクトを保持することのできるサイズ1の`Channel`に格納されます．
 
-[`RemoteChannel`](@ref), which is rewritable, can point to any type and size of channels, or any
-other implementation of an `AbstractChannel`.
+[`RemoteChannel`](@ref)は上書き可能ですが，任意の型やサイズのチャネル，あるいは`AbstractChannel`の
+他の実装を指定することができます．
 
-The constructor `RemoteChannel(f::Function, pid)()` allows us to construct references to channels
-holding more than one value of a specific type. `f` is a function executed on `pid` and it must
-return an `AbstractChannel`.
+コンストラクタ`RemoteChannel(f::Function, pid)()`を使用すると，特定の型の複数の値を保持するチャネルへの
+参照を作成することができます．`f`は`pid`上で実行される関数であり，`AbstractChannel`を返さなければなりません．
 
-For example, `RemoteChannel(()->Channel{Int}(10), pid)`, will return a reference to a channel
-of type `Int` and size 10. The channel exists on worker `pid`.
+例えば，`RemoteChannel(()->Channel{Int}(10), pid)`はInt型でサイズ10のチャネルへの参照を返します．
+このチャネルはワーカ`pid`上に存在します．
 
-Methods [`put!`](@ref), [`take!`](@ref), [`fetch`](@ref), [`isready`](@ref) and [`wait`](@ref)
-on a [`RemoteChannel`](@ref) are proxied onto the backing store on the remote process.
+[`RemoteChannel`](@ref)上のメソッド[`put!`](@ref)，[`take!`](@ref)，[`fetch`](@ref)，[`isready`](@ref)および[`wait`](@ref)
+は，リモートプロセス上のバッキングストアにプロキシされます．
 
-[`RemoteChannel`](@ref) can thus be used to refer to user implemented `AbstractChannel` objects.
-A simple example of this is provided in `dictchannel.jl` in the
-[Examples repository](https://github.com/JuliaAttic/Examples), which uses a dictionary as its
-remote store.
+このように，[`RemoteChannel`](@ref)はユーザが実装した`AbstractChannel`オブジェクトを参照するために
+使用することができます．この単純な例は，[Examples repository](https://github.com/JuliaAttic/Examples)
+の`dictchannel.jl`で提供されており，リモートストアとして辞書を使用しています．
 
 
-## Channels and RemoteChannels
+## チャネルとリモートチャネル
 
-  * A [`Channel`](@ref) is local to a process. Worker 2 cannot directly refer to a [`Channel`](@ref) on worker 3 and
-    vice-versa. A [`RemoteChannel`](@ref), however, can put and take values across workers.
-  * A [`RemoteChannel`](@ref) can be thought of as a *handle* to a [`Channel`](@ref).
-  * The process id, `pid`, associated with a [`RemoteChannel`](@ref) identifies the process where
-    the backing store, i.e., the backing [`Channel`](@ref) exists.
-  * Any process with a reference to a [`RemoteChannel`](@ref) can put and take items from the channel.
-    Data is automatically sent to (or retrieved from) the process a [`RemoteChannel`](@ref) is associated
-    with.
-  * Serializing  a [`Channel`](@ref) also serializes any data present in the channel. Deserializing it therefore
-    effectively makes a copy of the original object.
-  * On the other hand, serializing a [`RemoteChannel`](@ref) only involves the serialization of an
-    identifier that identifies the location and instance of [`Channel`](@ref) referred to by the handle. A
-    deserialized [`RemoteChannel`](@ref) object (on any worker), therefore also points to the same
-    backing store as the original.
+  * [`Channel`](@ref)はプロセスに対してローカルなものです．ワーカ2がワーカ3の[`Channel`](@ref)を直接参照することはできません
+	が，[`RemoteChannel`](@ref)はワーカ間で値を入れたり出したりすることができます．
+  * [`RemoteChannel`](@ref)は[`Channel`](@ref)の*handle*と考えることができます．
+  * [`RemoteChannel`](@ref)に関連付けられたプロセスid`pid`は，バッキングストアが存在するプロセス
+	言い換えるとバッキング[`Channel`](@ref)が存在するプロセスを識別します．
+  * [`RemoteChannel`](@ref)への参照を持つ全てのプロセスは，チャネルからアイテムを入れたり出したりできます．
+	データは[`RemoteChannel`](@ref)が関連付けられているプロセスに自動的に送信されます（またはそこから取得されます）．
+  * [`Channel`](@ref)をシリアライズすると，チャネル内に存在する全てのデータもシリアライズされます．そのため，
+	チャネルをデシリアライズすると，元のオブジェクトのコピーが効果的に作成されます．
+  * 一方，[`RemoteChannel`](@ref)をシリアライズすると，ハンドルが参照している[`Channel`](@ref)の場所とインスタンス
+	を識別する識別子のシリアライズのみが行われます．したがって，（任意のワーカ上の）デシリアライズされた
+	[`RemoteChannel`](@ref)オブジェクトはオリジナルと同じバッキングストアを指すことになります
 
-The channels example from above can be modified for interprocess communication,
-as shown below.
+上記のチャネルの例は，以下のようにプロセス間通信のために変更することができます．
 
-We start 4 workers to process a single `jobs` remote channel. Jobs, identified by an id (`job_id`),
-are written to the channel. Each remotely executing task in this simulation reads a `job_id`,
-waits for a random amount of time and writes back a tuple of `job_id`, time taken and its own
-`pid` to the results channel. Finally all the `results` are printed out on the master process.
+単一の`jobs`リモートチャネルを処理するために4つのワーカを起動します．Jobsは`job_id`によって識別され，
+そのチャネルに書き込まれます．このシミュレーションでは各リモート実行タスクは`job_id`を読み込み，
+ランダムな時間だけ待機し，`job_id`，かかった時間，自身の`pid`のタプルを結果チャネルに書き戻します．
+最後に，全ての結果がマスタプロセスに出力されます．
 
 ```julia-repl
 julia> addprocs(4); # add worker processes
@@ -583,55 +573,52 @@ julia> @elapsed while n > 0 # print out results
 0.055971741
 ```
 
-### Remote References and Distributed Garbage Collection
+### リモートリファレンスと分散ガベージコレクション
 
-Objects referred to by remote references can be freed only when *all* held references
-in the cluster are deleted.
+リモートリファレンスによって参照されるオブジェクトはクラスタ内で保持されている*全ての*参照が
+削除されたときにのみ解放されることができます．
 
-The node where the value is stored keeps track of which of the workers have a reference to it.
-Every time a [`RemoteChannel`](@ref) or a (unfetched) [`Future`](@ref Distributed.Future) is serialized to a worker,
-the node pointed to by the reference is notified. And every time a [`RemoteChannel`](@ref) or
-a (unfetched) [`Future`](@ref Distributed.Future) is garbage collected locally, the node owning the value is again
-notified. This is implemented in an internal cluster aware serializer. Remote references are only
-valid in the context of a running cluster. Serializing and deserializing references to and from
-regular `IO` objects is not supported.
+値が格納されているノードは，どのワーカがその値への参照を持っているかを追跡します．
+[`RemoteChannel`](@ref)や（フェッチされていない）[`Future`](@ref Distributed.Future)がワーカにシリアライズされるたびに，
+参照先のノードが通知されます．また，[`RemoteChannel`](@ref)や（フェッチされていない）[`Future`](@ref Distributed.Future)が
+ローカルでガベージコレクションされるたびに，値を所有するノードは再度通知される．これは内部クラスタを意識した
+シリアライザで実装されています．リモート参照は実行中のクラスタのコンテキストでのみ有効です．通常の`IO`オブジェクトへの，
+または通常の`IO`オブジェクトからの参照のシリアライズとデシリアライズはサポートされていません．
 
-The notifications are done via sending of "tracking" messages--an "add reference" message when
-a reference is serialized to a different process and a "delete reference" message when a reference
-is locally garbage collected.
+この通知は参照が別のプロセスにシリアライズされた場合は，「参照を追加」メッセージ，参照がローカルで
+ガベージコレクションされた場合には「参照を削除」メッセージという「トラッキングメッセージ」の送信によって
+行われます．
 
-Since [`Future`](@ref Distributed.Future)s are write-once and cached locally, the act of [`fetch`](@ref)ing a
-[`Future`](@ref Distributed.Future) also updates reference tracking information on the node owning the value.
+[`Future`](@ref Distributed.Future)は一度限りの書き込みでローカルにキャッシュされるので，
+[`Future`](@ref Distributed.Future)を[`fetch`](@ref)する行為は，値を所有しているノードの参照トラッキング情報も更新する．
 
-The node which owns the value frees it once all references to it are cleared.
+値を所有しているノードは，値への全ての参照がクリアされると，値を解放します．
 
-With [`Future`](@ref Distributed.Future)s, serializing an already fetched [`Future`](@ref Distributed.Future) to a different node also
-sends the value since the original remote store may have collected the value by this time.
+[`Future`](@ref Distributed.Future)では，オリジナルのリモートストアがこの時点までに値を収集している場合があるので，
+すでに別のノードへフェッチされた[`Future`](@ref Distributed.Future)をシリアライズした時も値を送信します．
 
-It is important to note that *when* an object is locally garbage collected depends on the size
-of the object and the current memory pressure in the system.
+オブジェクトが*いつ*ローカルでガベージコレクションされるのかが，オブジェクトのサイズとシステム内の
+現在のメモリプレッシャに依存することに注意することは重要です．
 
-In case of remote references, the size of the local reference object is quite small, while the
-value stored on the remote node may be quite large. Since the local object may not be collected
-immediately, it is a good practice to explicitly call [`finalize`](@ref) on local instances
-of a [`RemoteChannel`](@ref), or on unfetched [`Future`](@ref Distributed.Future)s. Since calling [`fetch`](@ref)
-on a [`Future`](@ref Distributed.Future) also removes its reference from the remote store, this is not required on
-fetched [`Future`](@ref Distributed.Future)s. Explicitly calling [`finalize`](@ref) results in an immediate message
-sent to the remote node to go ahead and remove its reference to the value.
+リモートリファレンスの場合，ローカルリファレンスオブジェクトのサイズはかなり小さいですが，リモートノードに
+格納されている値はかなり大きいかもしれません．ローカルオブジェクトはすぐに収集されない可能性があるので，
+[`RemoteChannel`](@ref)のローカルインスタンスや，フェッチされていない[`Future`](@ref Distributed.Future)に
+対して明示的に[`finalize`](@ref)を呼び出すのが良い方法です．[`Future`](@ref Distributed.Future)に対して，
+[`fetch`](@ref)を呼び出すと，リモートストアからの参照も削除されるので，フェッチされた[`Future`](@ref Distributed.Future)sに
+対してはこれは必要ありません．明示的に[`finalize`](@ref)を呼び出すと，リモートノードに値への参照を削除するための
+即時メッセージが送信されます．
 
-Once finalized, a reference becomes invalid and cannot be used in any further calls.
+一度ファイナライズされると，参照は無効になり，それ以降の呼び出しでは使用できなくなります．
 
+## ローカルな呼び出し
 
-## Local invocations
-
-Data is necessarily copied over to the remote node for execution. This is the case for both
-remotecalls and when data is stored to a[`RemoteChannel`](@ref) / [`Future`](@ref Distributed.Future) on
-a different node. As expected, this results in a copy of the serialized objects
-on the remote node. However, when the destination node is the local node, i.e.
-the calling process id is the same as the remote node id, it is executed
-as a local call. It is usually(not always) executed in a different task - but there is no
-serialization/deserialization of data. Consequently, the call refers to the same object instances
-as passed - no copies are created. This behavior is highlighted below:
+実行のためにデータは必然敵にリモートノードにコピーされる．これはリモートコールの場合と，
+データが別のノードの[`RemoteChannel`](@ref) / [`Future`](@ref Distributed.Future)に格納されている場合の両方に当てはまる．
+予想通り，これはリモートノード上のシリアライズされたオブジェクトのコピーになります．しかし，宛先ノードが
+ローカルノードである場合，つまり呼び出し元のプロセスIDがリモートノードIDと同じである場合は，ローカルコールとして
+実行されます．通常は（常にではありませんが）別のタスクで実行されますが，データのシリアライズ/デシリアライズは
+行われません．その結果，コールは渡されたものと同じオブジェクトインスタンスを参照します，この時コピーは作成されません．
+この動作を以下に示します．
 
 ```julia-repl
 julia> using Distributed;
@@ -673,15 +660,15 @@ julia> println("Num Unique objects : ", length(unique(map(objectid, result))));
 Num Unique objects : 3
 ```
 
-As can be seen, [`put!`](@ref) on a locally owned [`RemoteChannel`](@ref) with the same
-object `v` modifed between calls results in the same single object instance stored. As
-opposed to copies of `v` being created when the node owning `rc` is a different node.
+見て取られるように，ローカルに所有されている[`RemoteChannel`](@ref)に呼び出しの間に修正された
+同一のオブジェクト`v`を[`put!`](@ref)すると，同じ単一のオブジェクトインスタンスが格納されます．
+これは，`rc`を所有しているノードが別のノードである場合に`v`のコピーが作成されるのとは対照的です．
 
-It is to be noted that this is generally not an issue. It is something to be factored in only
-if the object is both being stored locally and modifed post the call. In such cases it may be
-appropriate to store a `deepcopy` of the object.
+これは一般的には問題ではないことに注意してください．これは，オブジェクトがローカルに保存されている場合と，
+呼び出し後に変更されている場合にのみ考慮すべきことです．そのような場合は，オブジェクトの`deepcopy`を
+保存するのが適切かもしれません．
 
-This is also true for remotecalls on the local node as seen in the following example:
+これは，次の例のようにローカルノード上のリモートコールにも当てはまります:
 
 ```julia-repl
 julia> using Distributed; addprocs(1);
@@ -701,14 +688,12 @@ julia> println("v=$v, v2=$v2, ", v === v2);
 v=[0], v2=[1], false
 ```
 
-As can be seen once again, a remote call onto the local node behaves just like a direct invocation.
-The call modifies local objects passed as arguments. In the remote invocation, it operates on
-a copy of the arguments.
+再度見て取れるように，ローカルノードへのリモート呼び出しは，直接呼び出しと同じように動作します．
+呼び出しは引数として渡されたローカルオブジェクトを変更します．リモート呼び出しでは，引数のコピーを操作します．
 
-To repeat, in general this is not an issue. If the local node is also being used as a compute
-node, and the arguments used post the call, this behavior needs to be factored in and if required
-deep copies of arguments must be passed to the call invoked on the local node. Calls on remote nodes
-will always operate on copies of arguments.
+繰り返しになりますが，これは一般的には問題になりません．ローカルノードが計算ノードとしても使用されており，
+呼び出し後に引数が使用されている場合，要求された引数のディープコピーをローカルノードで実行するコールへ渡さねば
+ならないときには，このディープコピーの中で，この動作を考慮する必要があります．
 
 
 

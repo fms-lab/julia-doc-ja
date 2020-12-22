@@ -699,40 +699,40 @@ v=[0], v2=[1], false
 
 ## [Shared Arrays](@id man-shared-arrays)
 
-Shared Arrays use system shared memory to map the same array across many processes. While there
-are some similarities to a [`DArray`](https://github.com/JuliaParallel/DistributedArrays.jl), the
-behavior of a [`SharedArray`](@ref) is quite different. In a [`DArray`](https://github.com/JuliaParallel/DistributedArrays.jl),
-each process has local access to just a chunk of the data, and no two processes share the same
-chunk; in contrast, in a [`SharedArray`](@ref) each "participating" process has access to the
-entire array.  A [`SharedArray`](@ref) is a good choice when you want to have a large amount of
-data jointly accessible to two or more processes on the same machine.
+Shared Arraysはシステムの共有メモリを使用して，多くのプロセスにわたって同じ配列をマッピングします．
+[`DArray`](https://github.com/JuliaParallel/DistributedArrays.jl)といくつかの類似点がありますが，
+[`SharedArray`](@ref)の動作はかなり異なります．[`DArray`](https://github.com/JuliaParallel/DistributedArrays.jl)では，
+各プロセスはデータのチャンクへのローカルアクセス権を持ち，2つのプロセスが同じチャンクを共有することはありません:
+対照的に，[`SharedArray`](@ref)では各「参加」プロセスは，配列全体にアクセスすることができます．
+[`SharedArray`](@ref)は，同じマシン上の2つ以上のプロセスが共同でアクセスできる大量のデータを持ちたい場合に良い選択です．
 
-Shared Array support is available via module `SharedArrays` which must be explicitly loaded on
-all participating workers.
 
-[`SharedArray`](@ref) indexing (assignment and accessing values) works just as with regular arrays,
-and is efficient because the underlying memory is available to the local process. Therefore,
-most algorithms work naturally on [`SharedArray`](@ref)s, albeit in single-process mode. In cases
-where an algorithm insists on an [`Array`](@ref) input, the underlying array can be retrieved
-from a [`SharedArray`](@ref) by calling [`sdata`](@ref). For other `AbstractArray` types, [`sdata`](@ref)
-just returns the object itself, so it's safe to use [`sdata`](@ref) on any `Array`-type object.
+Shared Arrayのサポートは，参加している全てのワーカ上で明示的にロードされなければならない`SharedArrays`
+モジュールを介して利用可能です．
 
-The constructor for a shared array is of the form:
+[`SharedArray`](@ref)のインデクシング（値の代入とアクセス）は通常の配列と同じように動作し，
+ローカルプロセスで利用可能なメモリ上で動作しているので効率的です．したがって，シングルプロセスモードとはいえ，
+ほとんどのアルゴリズムは自然に[`SharedArray`](@ref)s上で動作します．アルゴリズムが[`Array`](@ref)入力を要求
+する場合，[`sdata`](@ref)を呼ぶことによって，[`SharedArray`](@ref)からその下にある配列を取得することができます．
+他の`AbstractArray`型の場合，[`sdata`](@ref)はオブジェクト自体を返すだけなので，どんな`Array`型のオブジェクト上で
+[`sdata`](@ref)を使ってもセーフです．
+
+Shared Arrayのコンストラクタは以下の形式です:
 
 ```julia
 SharedArray{T,N}(dims::NTuple; init=false, pids=Int[])
 ```
 
-which creates an `N`-dimensional shared array of a bits type `T` and size `dims` across the processes specified
-by `pids`. Unlike distributed arrays, a shared array is accessible only from those participating
-workers specified by the `pids` named argument (and the creating process too, if it is on the
-same host). Note that only elements that are [`isbits`](@ref) are supported in a SharedArray.
+これは`pids`で指定されたプロセス間でビット型`T`とサイズ`dims`の`N`次元のshared arrayを作成します．
+分散配列とは異なり，shared arrayは引数に指定された`pids`で指定された参加ワーカからのみアクセス可能です（
+同じホスト上にある場合は作成プロセスからもアクセス可能です．）SharedArrayでは，[`isbits`](@ref)である
+要素のみがサポートされていることに注意してください．
 
-If an `init` function, of signature `initfn(S::SharedArray)`, is specified, it is called on all
-the participating workers. You can specify that each worker runs the `init` function on a distinct
-portion of the array, thereby parallelizing initialization.
+シグネチャ`initfn(S::SharedArray)`の`init`関数が指定された場合，参加している全てのワーカ上で呼び出されます．
+各ワーカが配列の異なる部分で`init`関数を実行できるように指定することで，初期化を並列化することができます．
 
-Here's a brief example:
+
+以下に簡単な例を示します:
 
 ```julia-repl
 julia> using Distributed
@@ -761,9 +761,8 @@ julia> S
  2  7  4  4
 ```
 
-[`SharedArrays.localindices`](@ref) provides disjoint one-dimensional ranges of indices, and is sometimes
-convenient for splitting up tasks among processes. You can, of course, divide the work any way
-you wish:
+[`SharedArrays.localindices`](@ref)はインデックスの不連続な一次元の範囲を提供し，プロセス間でタスクを分割するのに
+便利なことがあります．もちろん好きなように作業を分割することができます:
 
 ```julia-repl
 julia> S = SharedArray{Int,2}((3,4), init = S -> S[indexpids(S):length(procs(S)):length(S)] = repeat([myid()], length( indexpids(S):length(procs(S)):length(S))))
@@ -773,8 +772,8 @@ julia> S = SharedArray{Int,2}((3,4), init = S -> S[indexpids(S):length(procs(S))
  4  4  4  4
 ```
 
-Since all processes have access to the underlying data, you do have to be careful not to set up
-conflicts. For example:
+全てのプロセスが下にあるデータにアクセスできるので，コンフリクトを起こさないように気を付けなければなりません．
+例えば:
 
 ```julia
 @sync begin
@@ -786,22 +785,20 @@ conflicts. For example:
 end
 ```
 
-would result in undefined behavior. Because each process fills the *entire* array with its own
-`pid`, whichever process is the last to execute (for any particular element of `S`) will have
-its `pid` retained.
+これは定義されていない挙動を生む結果となります．各々のプロセスは自身の`pid`で配列*全体*を埋めるので，
+最後に（Sの任意の特定の要素に対して）実行したプロセスがいずれであっても，その`pid`を保持することになります．
 
-As a more extended and complex example, consider running the following "kernel" in parallel:
+より拡張された複雑な例として，以下の「カーネル」を並列に実行することを考えてみましょう:
 
 ```julia
 q[i,j,t+1] = q[i,j,t] + u[i,j,t]
 ```
 
-In this case, if we try to split up the work using a one-dimensional index, we are likely to run
-into trouble: if `q[i,j,t]` is near the end of the block assigned to one worker and `q[i,j,t+1]`
-is near the beginning of the block assigned to another, it's very likely that `q[i,j,t]` will
-not be ready at the time it's needed for computing `q[i,j,t+1]`. In such cases, one is better
-off chunking the array manually. Let's split along the second dimension.
-Define a function that returns the `(irange, jrange)` indices assigned to this worker:
+この場合，1次元のインデックスを使って作業を分割しようとすると，問題が発生する可能性があります:
+`q[i,j,t]`があるワーカに割り当てられたブロックの終わり近くにあり，`q[i,j,t+1]`が別のワーカに割り当て
+られたブロックの始まり近くにある場合，`q[i,j,t]`が`q[i,j,t+1]`を計算するのに必要な時間に準備できていない
+可能性が高いです．このような場合には，手動で配列をチャンクした方が良いでしょう．2つ目の次元に沿って
+分割してみましょう．このワーカに割り当てられた`(irange, jrange)`インデックスを返す関数を定義します:
 
 ```julia-repl
 julia> @everywhere function myrange(q::SharedArray)
@@ -815,7 +812,7 @@ julia> @everywhere function myrange(q::SharedArray)
        end
 ```
 
-Next, define the kernel:
+次に，カーネルを定義します:
 
 ```julia-repl
 julia> @everywhere function advection_chunk!(q, u, irange, jrange, trange)
@@ -827,20 +824,20 @@ julia> @everywhere function advection_chunk!(q, u, irange, jrange, trange)
        end
 ```
 
-We also define a convenience wrapper for a `SharedArray` implementation
+`SharedArray`実装のために便利なラッパも定義します:
 
 ```julia-repl
 julia> @everywhere advection_shared_chunk!(q, u) =
            advection_chunk!(q, u, myrange(q)..., 1:size(q,3)-1)
 ```
 
-Now let's compare three different versions, one that runs in a single process:
+では3つの異なるバージョンを比べてみましょう．シングルプロセスで動作させた場合:
 
 ```julia-repl
 julia> advection_serial!(q, u) = advection_chunk!(q, u, 1:size(q,1), 1:size(q,2), 1:size(q,3)-1);
 ```
 
-one that uses [`@distributed`](@ref):
+[`@distributed`](@ref)を使った場合:
 
 ```julia-repl
 julia> function advection_parallel!(q, u)
@@ -855,7 +852,7 @@ julia> function advection_parallel!(q, u)
        end;
 ```
 
-and one that delegates in chunks:
+そしてチャンクに委譲した場合:
 
 ```julia-repl
 julia> function advection_shared!(q, u)
@@ -868,7 +865,7 @@ julia> function advection_shared!(q, u)
        end;
 ```
 
-If we create `SharedArray`s and time these functions, we get the following results (with `julia -p 4`):
+`SharedArray`sを作成してこれらの関数を実行すると，以下のような結果が得られます（`julia -p 4`を用いた場合）:
 
 ```julia-repl
 julia> q = SharedArray{Float64,3}((500,500,500));
@@ -876,7 +873,7 @@ julia> q = SharedArray{Float64,3}((500,500,500));
 julia> u = SharedArray{Float64,3}((500,500,500));
 ```
 
-Run the functions once to JIT-compile and [`@time`](@ref) them on the second run:
+関数を一度実行してJITコンパイルし，2回目の実行時に [`@time`](@ref)で計測します:
 
 ```julia-repl
 julia> @time advection_serial!(q, u);
@@ -894,15 +891,16 @@ julia> @time advection_shared!(q,u);
  238.119 milliseconds (2264 allocations: 169 KB)
 ```
 
-The biggest advantage of `advection_shared!` is that it minimizes traffic among the workers, allowing
-each to compute for an extended time on the assigned piece.
+`advection_shared!`の最大の利点は，ワーカ間のトラフィックを最小限に抑え，各ワーカが割り当てられたピースで
+長時間計算することを可能にすることです．
 
-### Shared Arrays and Distributed Garbage Collection
+### Shared Arraysと分散ガベージコレクション
 
-Like remote references, shared arrays are also dependent on garbage collection on the creating
-node to release references from all participating workers. Code which creates many short lived
-shared array objects would benefit from explicitly finalizing these objects as soon as possible.
-This results in both memory and file handles mapping the shared segment being released sooner.
+リモートリファレンスと同様に，shared arraysもまた，参加している全てのワーカから参照を解放をするのに，
+作成ノードのガベージコレクションに依存しています．短期間で多くのshared arrayオブジェクトを作成するコードでは，
+これらのオブジェクトをできるだけ早く明示的にファイナライズすることが有益です．これにより，共有セグメントを
+マッピングするメモリとファイルハンドルの両方がより早く解放されるようになります．
+
 
 ## ClusterManagers
 

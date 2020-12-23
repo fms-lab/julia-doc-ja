@@ -904,53 +904,49 @@ julia> @time advection_shared!(q,u);
 
 ## ClusterManagers
 
-The launching, management and networking of Julia processes into a logical cluster is done via
-cluster managers. A `ClusterManager` is responsible for
+論理クラスタへのJuliaプロセスの起動，管理，ネットワーキングは，クラスタマネージャを介して行われます．
+`ClusterManager`は以下を担当します:
 
-  * launching worker processes in a cluster environment
-  * managing events during the lifetime of each worker
-  * optionally, providing data transport
+  * クラスタ環境下におけるワーカプロセスの起動
+  * 各ワーカのライフタイムの間のイベント管理
+  * オプションで，データ転送を提供
 
-A Julia cluster has the following characteristics:
+Juliaクラスタは以下のような特徴を持ちます:
 
-  * The initial Julia process, also called the `master`, is special and has an `id` of 1.
-  * Only the `master` process can add or remove worker processes.
-  * All processes can directly communicate with each other.
+  * 最初のJuliaプロセスは`master`とも呼ばれますが，これは特別なもので，`id`として1を持ちます．
+  * `master`プロセスだけが，ワーカプロセスを追加したり削除したりできます．
+  * 全てのプロセスはお互いに直接通信することができます．
 
-Connections between workers (using the in-built TCP/IP transport) is established in the following
-manner:
+ワーカ間の接続（ビルトインのTCP/IP転送を利用）は，以下のような形で確立されます:
 
-  * [`addprocs`](@ref) is called on the master process with a `ClusterManager` object.
-  * [`addprocs`](@ref) calls the appropriate [`launch`](@ref) method which spawns required number
-    of worker processes on appropriate machines.
-  * Each worker starts listening on a free port and writes out its host and port information to [`stdout`](@ref).
-  * The cluster manager captures the [`stdout`](@ref) of each worker and makes it available to the
-    master process.
-  * The master process parses this information and sets up TCP/IP connections to each worker.
-  * Every worker is also notified of other workers in the cluster.
-  * Each worker connects to all workers whose `id` is less than the worker's own `id`.
-  * In this way a mesh network is established, wherein every worker is directly connected with every
-    other worker.
+  * マスタプロセス上で，`ClusterManager`とともに，[`addprocs`](@ref)を呼び出します．
+  * [`addprocs`](@ref)は適切な [`launch`](@ref)を呼び，適切なマシン上で要求された数のワーカを生成します．
+  * 各ワーカはフリーなポートをリスンし始め，[`stdout`](@ref)にそのホストとポート情報を書き出します．
+  * クラスタマネージャは各ワーカの [`stdout`](@ref)をキャプチャし，マスタプロセスで利用できるようにします．
+  * マスタプロセ薄は個の情報をパース氏，各ワーカとのTCP/IP接続をセットアップします．
+  * 全てのワーカはクラスタ内の他のワーカにも通知されます．
+  * 各ワーカは自分自身の`id`よりも小さい`id`を持つ全てのワーカに接続します．
+  * このようにして，メッシュネットワークが確立され，そこでは全てのワーカが全ての他のワーカと直接つなげられています．
 
-While the default transport layer uses plain [`TCPSocket`](@ref), it is possible for a Julia cluster to
-provide its own transport.
+デフォルトのトランスポートレイヤは[`TCPSocket`](@ref)を用いていますが，Juliaクラスタでは独自のトランスポートを
+提供することができます．
 
-Julia provides two in-built cluster managers:
+Juliaは2つのビルトインなクラスタマネージャを提供します:
 
-  * `LocalManager`, used when [`addprocs()`](@ref) or [`addprocs(np::Integer)`](@ref) are called
-  * `SSHManager`, used when [`addprocs(hostnames::Array)`](@ref) is called with a list of hostnames
+  * [`addprocs()`](@ref)または[`addprocs(np::Integer)`](@ref)が呼ばれたときに使用される`LocalManager`
+  * [`addprocs(hostnames::Array)`](@ref)がホストネームのリスト共に呼び出された時に使用される`SSHManager`
 
-`LocalManager` is used to launch additional workers on the same host, thereby leveraging multi-core
-and multi-processor hardware.
+`LocalManager`は同じホスト上でワーカを追加して起動するのに用いられ，それによりマルチコア，マルチプロセッサ
+なハードウェアを有効活用します．
 
 Thus, a minimal cluster manager would need to:
+したがって，最小限のクラスタマネージャは以下のようである必要があります: 
 
-  * be a subtype of the abstract `ClusterManager`
-  * implement [`launch`](@ref), a method responsible for launching new workers
-  * implement [`manage`](@ref), which is called at various events during a worker's lifetime (for
-    example, sending an interrupt signal)
+  * アブストラクトな`ClusterManager`のサブタイプであること
+  * 新しいワーカを起動することを担当するメソッドである[`launch`](@ref)を実装すること
+  * ワーカのライフタイムの間の様々なイベント（例えば，割り込み信号の送信）の際に呼ばれる，[`manage`](@ref)を実装すること
 
-[`addprocs(manager::FooManager)`](@ref addprocs) requires `FooManager` to implement:
+[`addprocs(manager::FooManager)`](@ref addprocs)は`FooManager`が実装されていることを必要とします:
 
 ```julia
 function launch(manager::FooManager, params::Dict, launched::Array, c::Condition)
@@ -962,8 +958,7 @@ function manage(manager::FooManager, id::Integer, config::WorkerConfig, op::Symb
 end
 ```
 
-As an example let us see how the `LocalManager`, the manager responsible for starting workers
-on the same host, is implemented:
+例として，同じホスト上でワーカの起動を担当するマネージャである`LocalManager`がどのように実装されているかを見てみましょう:
 
 ```julia
 struct LocalManager <: ClusterManager
@@ -979,36 +974,32 @@ function manage(manager::LocalManager, id::Integer, config::WorkerConfig, op::Sy
 end
 ```
 
-The [`launch`](@ref) method takes the following arguments:
+[`launch`](@ref)メソッドは以下のような引数を取ります:
 
-  * `manager::ClusterManager`: the cluster manager that [`addprocs`](@ref) is called with
-  * `params::Dict`: all the keyword arguments passed to [`addprocs`](@ref)
-  * `launched::Array`: the array to append one or more `WorkerConfig` objects to
-  * `c::Condition`: the condition variable to be notified as and when workers are launched
+  * `manager::ClusterManager`: [`addprocs`](@ref)が呼び出されるクラスタマネージャ
+  * `params::Dict`: [`addprocs`](@ref)に渡される全てのキーワード引数
+  * `launched::Array`: 1つ以上の`WorkerConfig`オブジェクトをアペンドするための配列
+  * `c::Condition`: ワーカの起動時に通知される条件変数
 
-The [`launch`](@ref) method is called asynchronously in a separate task. The termination of
-this task signals that all requested workers have been launched. Hence the [`launch`](@ref)
-function MUST exit as soon as all the requested workers have been launched.
+[`launch`](@ref)メソッドは，別のタスクで非同期的に呼び出されます．このタスクの終了は，
+要求された全てのワーカが起動されたことを示しています．したがって，要求された全てのワーカが
+起動されたらすぐに，[`launch`](@ref)関数は終了されなければなりません．
 
-Newly launched workers are connected to each other and the master process in an all-to-all manner.
-Specifying the command line argument `--worker[=<cookie>]` results in the launched processes
-initializing themselves as workers and connections being set up via TCP/IP sockets.
+新たに起動されたワーカは，お互いとマスタプロセスに網羅的に接続されます．コマンドライン引数`--worker[=<cookie>]`
+を指定すると，起動されたプロセスがワーカとして初期化され，TCP/IPソケットを介して接続がセットアップされます．
 
-All workers in a cluster share the same [cookie](@ref man-cluster-cookie) as the master. When the cookie is
-unspecified, i.e, with the `--worker` option, the worker tries to read it from its standard input.
- `LocalManager` and `SSHManager` both pass the cookie to newly launched workers via their
- standard inputs.
+クラスタ内の全てのワーカはマスタと同じ[cookie](@ref man-cluster-cookie)を共有します．クッキーが指定されていない場合，
+つまり`--worker`を指定した場合，ワーカはそれを標準入力から読み込もうとします．
+`LocalManager`と`SSHManager`はどちらも自らの標準入力を介して，新しく起動されたワーカにクッキーを渡します．
 
-By default a worker will listen on a free port at the address returned by a call to [`getipaddr()`](@ref).
-A specific address to listen on may be specified by optional argument `--bind-to bind_addr[:port]`.
-This is useful for multi-homed hosts.
 
-As an example of a non-TCP/IP transport, an implementation may choose to use MPI, in which case
-`--worker` must NOT be specified. Instead, newly launched workers should call `init_worker(cookie)`
-before using any of the parallel constructs.
+デフォルトではワーカは[`getipaddr()`](@ref)の呼び出しで返されたアドレスの空きポートをリスンします．
+リスンする特定のアドレスはオプションの引数`--bind-to bind_addr[:port]`で指定できます．これはマルチホームホストに便利です．
 
-For every worker launched, the [`launch`](@ref) method must add a `WorkerConfig` object (with
-appropriate fields initialized) to `launched`
+非TCP/IPトランスポートの例として，実装はMPIを使用することを選ぶことができるが，その場合は`--worker`は指定してはならない．
+代わりに，新しく起動されたワーカは，並列構成を使う前に`init_worker(cookie)`を呼び出さねばなりません．
+
+起動された全てのワーカに対して，[`launch`](@ref)は`WorkerConfig`オブジェクトを（適切なフィールドを初期化しながら）`launched`に追加しなければなりません．
 
 ```julia
 mutable struct WorkerConfig
@@ -1039,32 +1030,31 @@ mutable struct WorkerConfig
 end
 ```
 
-Most of the fields in `WorkerConfig` are used by the inbuilt managers. Custom cluster managers
-would typically specify only `io` or `host` / `port`:
+`WorkerConfig`のフィールドのほとんどは，ビルトインのマネージャで使用されます．カスタムクラスタマネージャは通常，
+`io`または`host` / `port`のみを指定します:
 
-  * If `io` is specified, it is used to read host/port information. A Julia worker prints out its
-    bind address and port at startup. This allows Julia workers to listen on any free port available
-    instead of requiring worker ports to be configured manually.
-  * If `io` is not specified, `host` and `port` are used to connect.
-  * `count`, `exename` and `exeflags` are relevant for launching additional workers from a worker.
-    For example, a cluster manager may launch a single worker per node, and use that to launch additional
-    workers.
+  * `io`が指定された場合，それはホスト/ポート情報を読み込むために使用されます．Juliaワーカは起動時に
+	バインドアドレスとポートを出力します．これにより，ワーカのポートを手動で設定することを要求する代わりに
+	Juliaワーカは空いている任意ポートをリスンすることができます．
+  * `io`が指定されていない場合，`host`と`port`が接続に用いられます．
+  * `count`，`exename`，および`exeflags`は，ワーカから追加のワーカを起動する際に関連します．
+	例えばクラスタマネージャはノードごとに単一のワーカを起動し，それを使用して追加のワーカを起動することができます．
 
-      * `count` with an integer value `n` will launch a total of `n` workers.
-      * `count` with a value of `:auto` will launch as many workers as the number of CPU threads (logical cores) on that machine.
-      * `exename` is the name of the `julia` executable including the full path.
-      * `exeflags` should be set to the required command line arguments for new workers.
-  * `tunnel`, `bind_addr`, `sshflags` and `max_parallel` are used when a ssh tunnel is required to
-    connect to the workers from the master process.
-  * `userdata` is provided for custom cluster managers to store their own worker-specific information.
+	  * `count`に整数値`n`を指定すると合計`n`個のワーカが起動されます．
+	  * `count`に`:auto`の値を指定すると，そのマシンのCPUスレッド（論理コア）の数と同じ数のワーカを起動します．
+	  * `exename`はフルパスを含む`julia`実行ファイルの名前です．
+	  * `exeflags`は新しいワーカに必要なコマンドライン引数に設定してください．
+  * `tunnel`，`bind_addr`，`sshflags`および`max_parallel`はマスタプロセスからワーカに接続するために
+	sshトンネルが必要な場合に使用されます．
+  * `userdata`はカスタムクラスタマネージャが独自のワーカの固有の情報を保存するために提供されます．
 
-`manage(manager::FooManager, id::Integer, config::WorkerConfig, op::Symbol)` is called at different
-times during the worker's lifetime with appropriate `op` values:
+`manage(manager::FooManager, id::Integer, config::WorkerConfig, op::Symbol)`は以下のような`op`値を指定して，
+ワーカのライフタイム中に異なるタイミングで呼び出されます: 
 
-  * with `:register`/`:deregister` when a worker is added / removed from the Julia worker pool.
-  * with `:interrupt` when `interrupt(workers)` is called. The `ClusterManager` should signal the
-    appropriate worker with an interrupt signal.
-  * with `:finalize` for cleanup purposes.
+  * Juliaワーカプールでワーカが追加削除されたときに指定する`:register`/`:deregister`
+  * `interrupt(workers)`が呼び出されたときに指定する`:interrupt`．`ClusterManager`は適切なワーカに対して，
+	割り込み信号を送信しなければなりません．
+  * クリーンアップのために指定する`:finalize`．
 
 ### Cluster Managers with Custom Transports
 

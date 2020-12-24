@@ -504,7 +504,7 @@ Juliaの[`pmap`](@ref)は各関数呼び出しが大量の作業を行う場合�
 ## チャネルとリモートチャネル
 
   * [`Channel`](@ref)はプロセスに対してローカルなものです．ワーカ2がワーカ3の[`Channel`](@ref)を直接参照することはできません
-	が，[`RemoteChannel`](@ref)はワーカ間で値を入れたり出したりすることができます．
+が，[`RemoteChannel`](@ref)はワーカ間で値を入れたり出したりすることができます．
   * [`RemoteChannel`](@ref)は[`Channel`](@ref)の*handle*と考えることができます．
   * [`RemoteChannel`](@ref)に関連付けられたプロセスid`pid`は，バッキングストアが存在するプロセス
 	言い換えるとバッキング[`Channel`](@ref)が存在するプロセスを識別します．

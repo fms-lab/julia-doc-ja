@@ -37,21 +37,9 @@ Markdown.parse("""
 
 　科学技術計算では常に高速に動作することが求められてる一方で，この分野の専門家の多くは静的型付け言語より低速に動作する動的型付け言語を使って仕事をしています．私達は動的型付け言語を用いることに多くの利点があることを理解していますし，動的型付け言語が使われないようにしたいわけでもありません．幸いなことに，最新の言語設計やコンパイラ技術の進歩により，性能と生産性のトレードオフの問題をほとんど解決することができ，「プロトタイピングに十分な生産性」と「性能を重視するアプリケーションのデプロイに十分な効率性」を単一の環境で両立することが可能になっています．Juliaは「柔軟な動的型付け言語」と「静的型付け言語と同等の性能」を両立する科学技術計算に適した言語です．
 
-Because Julia's compiler is different from the interpreters used for languages like Python or
-R, you may find that Julia's performance is unintuitive at first. If you find that something is
-slow, we highly recommend reading through the [Performance Tips](@ref man-performance-tips) section before trying anything
-else. Once you understand how Julia works, it's easy to write code that's nearly as fast as C.
+JuliaのコンパイラはPythonやRなどの言語に使われているインタプリタとは異なるので，最初はJuliaのパフォーマンスは直感に反するかもしれません．もし何か遅いと感じたら他のことを試す前にまずは[Performance Tips](@ref man-performance-tips)を読むことを強くお勧めします．一度Juliaの仕組みを理解すれば，C言語とほぼ同じ速さのコードを簡単に書くことができるでしょう．
 
-Julia features optional typing, multiple dispatch, and good performance, achieved using type inference
-and [just-in-time (JIT) compilation](https://en.wikipedia.org/wiki/Just-in-time_compilation),
-implemented using [LLVM](https://en.wikipedia.org/wiki/Low_Level_Virtual_Machine). It is multi-paradigm,
-combining features of imperative, functional, and object-oriented programming. Julia provides
-ease and expressiveness for high-level numerical computing, in the same way as languages such
-as R, MATLAB, and Python, but also supports general programming. To achieve this, Julia builds
-upon the lineage of mathematical programming languages, but also borrows much from popular dynamic
-languages, including [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language)), [Perl](https://en.wikipedia.org/wiki/Perl_(programming_language)),
-[Python](https://en.wikipedia.org/wiki/Python_(programming_language)), [Lua](https://en.wikipedia.org/wiki/Lua_(programming_language)),
-and [Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language)).
+Juliaは省略可能な型付け，多重ディスパッチ，高パフォーマンスを特徴としています．これらは[Low Level Virtual Machine(LLVM)](https://en.wikipedia.org/wiki/Low_Level_Virtual_Machine)を用いた型推論機能や[Just-In-Time(JIT)コンパイル](https://en.wikipedia.org/wiki/Just-in-time_compilation)を実装することにより実現されています．また，Juliaは命令型，関数型，オブジェクト指向プログラムの特徴を組み合わせたマルチパラダイム言語です．JuliaはRやMATLAB，Pythonなどの言語と同様に高度な数値計算を容易に表現することができます．さらに数値計算だけではなく汎用的なプログラミングもサポートしています．これはJuliaが数学的なプログラミング言語の系譜をベースにしているだけではなく，[Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language))，[Perl](https://en.wikipedia.org/wiki/Perl_(programming_language))，[Python](https://en.wikipedia.org/wiki/Python_(programming_language))，[Lua](https://en.wikipedia.org/wiki/Lua_(programming_language))，[Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language))などの人気な動的型付け言語の特徴も多く取り入れているからです．
 
 The most significant departures of Julia from typical dynamic languages are:
 

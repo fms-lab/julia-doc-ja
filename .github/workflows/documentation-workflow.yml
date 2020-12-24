@@ -48,7 +48,7 @@ jobs:
       - name: Update julia v1.5.3 documentation
         run: \cp -r ./doc/_build/html/ja/* ./public/v1.5.3
 
-      - name: Commit and Push new documentation to pg-pages
+      - name: Commit and Push new documentation to gh-pages
         run: |
           git config --global user.name "Yohei Motomura"
           git config --global user.email "y.motomura0426@gmail.com"

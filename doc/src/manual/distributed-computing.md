@@ -1286,8 +1286,7 @@ MPI.Finalize()
 mpirun -np 4 ./julia example.jl
 ```
 
-[^1]:
-    MPIはこの文脈ではMPI-1標準を指しています．MPI-2以降，MPI標準化委員会は，リモートメモリアクセス(RMA)と総称される新しい通信メカニズムのセットを導入しました．MPI標準にrmaを追加した動機は，一方向的な通信パターンを容易にすることでした．最新のMPI企画についての詳細は，<https://mpi-forum.org/docs>を参照してください．
+[^1]: MPIはこの文脈ではMPI-1標準を指しています．MPI-2以降，MPI標準化委員会は，リモートメモリアクセス(RMA)と総称される新しい通信メカニズムのセットを導入しました．MPI標準にrmaを追加した動機は，一方向的な通信パターンを容易にすることでした．最新のMPI企画についての詳細は，<https://mpi-forum.org/docs>を参照してください．
 
 [^2]:
     [Julia GPU man pages](http://juliagpu.github.io/CUDAnative.jl/stable/man/usage.html#Julia-support-1)

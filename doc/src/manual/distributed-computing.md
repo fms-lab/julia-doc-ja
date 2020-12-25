@@ -1046,9 +1046,6 @@ end
 
 ### カスタムトランスポートを使用したクラスタマネージャ
 
-Replacing the default TCP/IP all-to-all socket connections with a custom transport layer is a
-little more involved. Each Julia process has as many communication tasks as the workers it is
-connected to. For example, consider a Julia cluster of 32 processes in an all-to-all mesh network:
 デフォルトのTCP/IPのall-to-allなソケット接続をカスタムのトランスポートレイヤに置き換えるのはもう少し複雑です．
 各Juliaプロセスは，接続されているワーカの数だけ通信タスクを持っています．例えば，32プロセスからなるJulia
 クラスタがall-to-allなメッシュネットワークにあるとします:
@@ -1290,7 +1287,9 @@ mpirun -np 4 ./julia example.jl
 ```
 
 [^1]:
-    この文脈では，MPIはMPI-1標準を指しています．MPI-2以降，MPI標準化委員会は，リモートメモリアクセス(RMA)と総称される新しい通信メカニズムのセットを導入しました．MPI標準にrmaを追加した動機は，一方向的な通信パターンを容易にすることでした．最新のMPI企画についての詳細は，<https://mpi-forum.org/docs>を参照してください．
+    この文脈では，MPIはMPI-1標準を指しています．MPI-2以降，MPI標準化委員会は，リモートメモリアクセス(RMA)と
+    総称される新しい通信メカニズムのセットを導入しました．MPI標準にrmaを追加した動機は，一方向的な通信パター
+    ンを容易にすることでした．最新のMPI企画についての詳細は，<https://mpi-forum.org/docs>を参照してください．
 
 [^2]:
     [Julia GPU man pages](http://juliagpu.github.io/CUDAnative.jl/stable/man/usage.html#Julia-support-1)

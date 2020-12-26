@@ -261,9 +261,6 @@ Juliaでスレッドを使用する際に注意すべき制限と警告がいく
   * `@spawn`によって使用されるスケジュールは非決定的なものであり，これに頼るべきではありません．
   * 計算に縛られた，メモリを割り当てないタスクは，メモリを割り当てている他のスレッドでガベージコレクションが実行されるのを防ぐことができます．これらのケースでは，GCの実行を許可するために`GC.safepoint()`への手動呼び出しを挿入する必要があるかもしれません．この制限は将来的には削除される予定です．
   * 型，メソッド，モジュール定義の`include`や`eval`などのトップレベルの操作を並行して実行しないようにしてください．
-  * Be aware that finalizers registered by a library may break if threads are enabled.
-    This may require some transitional work across the ecosystem before threading
-    can be widely adopted with confidence. See the next section for further details.
   * スレッドが有効になっている場合，ライブラリによって登録されたファイナライザが壊れる可能性があることに注意してください．これはスレッド化が自信を持って広く採用されるようになるまでは，エコシステム全体での移行作業が必要になるかもしれません．詳細は次のセクションを参照してください．
 
 ## ファイナライザのセーフな利用方法

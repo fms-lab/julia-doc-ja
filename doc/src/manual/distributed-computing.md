@@ -979,7 +979,7 @@ end
 要求された全てのワーカが起動されたことを示しています．したがって，要求された全てのワーカが
 起動されたらすぐに，[`launch`](@ref)関数は終了されなければなりません．
 
-新たに起動されたワーカは，お互いとマスタプロセスに網羅的に接続されます．コマンドライン引数`--worker[=<cookie>]`
+新たに起動されたワーカは，お互いとマスタプロセスにall-to-allに接続されます．コマンドライン引数`--worker[=<cookie>]`
 を指定すると，起動されたプロセスがワーカとして初期化され，TCP/IPソケットを介して接続がセットアップされます．
 
 クラスタ内の全てのワーカはマスタと同じ[cookie](@ref man-cluster-cookie)を共有します．クッキーが指定されていない場合，
@@ -1044,167 +1044,122 @@ end
   * `interrupt(workers)`が呼び出されたときに指定する`:interrupt`．`ClusterManager`は適切なワーカに対して，割り込み信号を送信しなければなりません．
   * クリーンアップのために指定する`:finalize`．
 
-### Cluster Managers with Custom Transports
+### カスタムトランスポートを使用したクラスタマネージャ
 
-Replacing the default TCP/IP all-to-all socket connections with a custom transport layer is a
-little more involved. Each Julia process has as many communication tasks as the workers it is
-connected to. For example, consider a Julia cluster of 32 processes in an all-to-all mesh network:
+デフォルトのTCP/IPのall-to-allなソケット接続をカスタムのトランスポートレイヤに置き換えるのはもう少し複雑です．
+各Juliaプロセスは，接続されているワーカの数だけ通信タスクを持っています．例えば，32プロセスからなるJulia
+クラスタがall-to-allなメッシュネットワークにあるとします:
 
-  * Each Julia process thus has 31 communication tasks.
-  * Each task handles all incoming messages from a single remote worker in a message-processing loop.
+  * 各Juliaプロセスは31個の通信タスクを持っています．
+  * 各タスクは，メッセージ処理のループで単一のリモートワーカからの全ての着信メッセージを処理します．
   * The message-processing loop waits on an `IO` object (for example, a [`TCPSocket`](@ref) in the default
     implementation), reads an entire message, processes it and waits for the next one.
-  * Sending messages to a process is done directly from any Julia task--not just communication tasks--again,
-    via the appropriate `IO` object.
+  * メッセージ処理ループは，`IO`オブジェクト（例えば，デフォルトの実装では[`TCPSocket`](@ref)）上で待機し，メッセージ全体を読み込んで処理し，次のメッセージを待ちます．
+  * プロセスへのメッセージの送信は，通信タスクだけでなく，Juliaタスクからも，適切な`IO`オブジェクトを介して直接行われます．
 
-Replacing the default transport requires the new implementation to set up connections to remote
-workers and to provide appropriate `IO` objects that the message-processing loops can wait on.
-The manager-specific callbacks to be implemented are:
+デフォルトのトランスポートを置き換えるには，新しい実装でリモートワーカへの接続を設定し，メッセージ処理ループが
+待機できる適切な`IO`オブジェクトを提供する必要があります．マネージャ固有のコールバックは以下の通り実装されます:
 
 ```julia
 connect(manager::FooManager, pid::Integer, config::WorkerConfig)
 kill(manager::FooManager, pid::Int, config::WorkerConfig)
 ```
 
-The default implementation (which uses TCP/IP sockets) is implemented as `connect(manager::ClusterManager, pid::Integer, config::WorkerConfig)`.
+デフォルトの実装（TCP/IPソケットを使用）は，`connect(manager::ClusterManager, pid::Integer, config::WorkerConfig)`として実装されています．
 
-`connect` should return a pair of `IO` objects, one for reading data sent from worker `pid`, and
-the other to write data that needs to be sent to worker `pid`. Custom cluster managers can use
-an in-memory `BufferStream` as the plumbing to proxy data between the custom, possibly non-`IO`
-transport and Julia's in-built parallel infrastructure.
+`connect`はワーカ`pid`から送信されたデータを読み込むための`IO`オブジェクトと，ワーカ`pid`に送信する必要が
+あるデータを書き込むための`IO`オブジェクトのペアを返す必要があります．カスタムクラスタマネージャは，
+カスタマイズされたおそらく`IO`ではないトランスポートと，Juliaのビルトインな並列インフラストラクチャの間で，
+データをプロキシするための配管として，インメモリの`BufferStream`を使用することができます．
 
-A `BufferStream` is an in-memory [`IOBuffer`](@ref) which behaves like an `IO`--it is a stream which can
-be handled asynchronously.
+`BufferStream`はインメモリの[`IOBuffer`](@ref)で，`IO`のように振舞います，すなわち非同期に処理できるストリームです．
 
-The folder `clustermanager/0mq` in the [Examples repository](https://github.com/JuliaAttic/Examples)
-contains an example of using ZeroMQ to connect Julia workers
-in a star topology with a 0MQ broker in the middle. Note: The Julia processes are still all *logically*
-connected to each other--any worker can message any other worker directly without any awareness
-of 0MQ being used as the transport layer.
+[Examples repository](https://github.com/JuliaAttic/Examples)レポジトリの`clustermanager/0mq`フォルダには，
+ZeroMQを利用して0MQブローカを中央に配置したスター型のトポロジでJuliaワーカを接続する例があります．
+注意: Juliaプロセスは全て，まだ*論理的*に接続されています，つまりどのワーカもトランスポートレイヤとして使用されている
+0MQを意識することなく，他のワーカに直接メッセージを送ることができます．
 
 When using custom transports:
+カスタムトランスポートを使用する場合は:
 
-  * Julia workers must NOT be started with `--worker`. Starting with `--worker` will result in the
-    newly launched workers defaulting to the TCP/IP socket transport implementation.
-  * For every incoming logical connection with a worker, `Base.process_messages(rd::IO, wr::IO)()`
-    must be called. This launches a new task that handles reading and writing of messages from/to
-    the worker represented by the `IO` objects.
-  * `init_worker(cookie, manager::FooManager)` *must* be called as part of worker process initialization.
-  * Field `connect_at::Any` in `WorkerConfig` can be set by the cluster manager when [`launch`](@ref)
-    is called. The value of this field is passed in all [`connect`](@ref) callbacks. Typically,
-    it carries information on *how to connect* to a worker. For example, the TCP/IP socket transport
-    uses this field to specify the `(host, port)` tuple at which to connect to a worker.
+  * Juliaワーカは`--worker`で開始してはなりません．`--worker`をつけて起動すると，新しく起動されたワーカはTCP/IPソケットトランスポートの実装をデフォルトにします．
+  * ワーカとの論理接続を受信するたびに，`Base.process_messages(rd::IO, wr::IO)()`が呼び出されなければなりません．これは`IO`オブジェクトであらわされるワーカとの間のメッセージの読み書きを処理する新しいタスクを起動します．
+  * `init_worker(cookie, manager::FooManager)`はワーカプロセスの初期化の一部として呼び出されなければなりません．
+  * `WorkerConfig`の中の`connect_at::Any`フィールドは，[`launch`](@ref)が呼ばれた時にクラスタマネージャによって設定することができます．このフィールドの値は全ての[`connect`](@ref)コールバックで渡されます．通常，このフィールドはワーカへの接続方法に関する情報を保持します．例えば，TCP/IPソケットトランスポートはこのフィールドを利用して，ワーカに接続するための`(host, port)`タプルを指定します．
 
-`kill(manager, pid, config)` is called to remove a worker from the cluster. On the master process,
-the corresponding `IO` objects must be closed by the implementation to ensure proper cleanup.
-The default implementation simply executes an `exit()` call on the specified remote worker.
+`kill(manager, pid, config)`はクラスタからワーカを削除するために呼び出されます．マスタプロセス上では，
+適切なクリーンアップを確実にするために，対応する`IO`オブジェクトは実装によってクローズされなければなりません．
+デフォルトの実装では，指定されたリモートワーカに対して，`exit()`を実行するだけです．
 
-The Examples folder `clustermanager/simple` is an example that shows a simple implementation using UNIX domain
-sockets for cluster setup.
+Examplesフォルダの`clustermanager/simple`は，クラスタのセットアップにUNIXドメインソケットを使用した簡単な実装を示す例です．
 
-### Network Requirements for LocalManager and SSHManager
+### LocalManagerとSSHManagerのネットワーク要件
 
-Julia clusters are designed to be executed on already secured environments on infrastructure such
-as local laptops, departmental clusters, or even the cloud. This section covers network security
-requirements for the inbuilt `LocalManager` and `SSHManager`:
+Juliaクラスタはローカルのラップトップ，部署のクラスタ，クラウドといった，インフラストラクチャ上にすでに
+セキュアにされている環境下で実行されるように設計されています．このセクションでは，ビルトインである
+`LocalManager`と`SSHManager`のネットワークセキュリティ要件について説明します:
 
-  * The master process does not listen on any port. It only connects out to the workers.
-  * Each worker binds to only one of the local interfaces and listens on an ephemeral port number
-    assigned by the OS.
-  * `LocalManager`, used by `addprocs(N)`, by default binds only to the loopback interface. This means
-    that workers started later on remote hosts (or by anyone with malicious intentions) are unable
-    to connect to the cluster. An `addprocs(4)` followed by an `addprocs(["remote_host"])` will fail.
-    Some users may need to create a cluster comprising their local system and a few remote systems.
-    This can be done by explicitly requesting `LocalManager` to bind to an external network interface
-    via the `restrict` keyword argument: `addprocs(4; restrict=false)`.
-  * `SSHManager`, used by `addprocs(list_of_remote_hosts)`, launches workers on remote hosts via SSH.
-    By default SSH is only used to launch Julia workers. Subsequent master-worker and worker-worker
-    connections use plain, unencrypted TCP/IP sockets. The remote hosts must have passwordless login
-    enabled. Additional SSH flags or credentials may be specified via keyword argument `sshflags`.
-  * `addprocs(list_of_remote_hosts; tunnel=true, sshflags=<ssh keys and other flags>)` is useful when
-    we wish to use SSH connections for master-worker too. A typical scenario for this is a local laptop
-    running the Julia REPL (i.e., the master) with the rest of the cluster on the cloud, say on Amazon
-    EC2. In this case only port 22 needs to be opened at the remote cluster coupled with SSH client
-    authenticated via public key infrastructure (PKI). Authentication credentials can be supplied
-    via `sshflags`, for example ```sshflags=`-i <keyfile>` ```.
+  * マスタプロセスはどのポートもリスンせず，ワーカに対して外向きにのみ接続します．
+  * 各ワーカはローカルインタフェースの1つだけにバインドし，OSによって割り当てられた，エフェメラルなポート番号でリスンします．
+  * `addprocs(N)`が使用する`LocalManager`は，デフォルトでは，ループバックインタフェースにのみバインドします．これはあとからリモートホスト上で起動されたワーカが（あるいは悪意のある者によって起動されたものが）クラスタに接続できないことを意味します．`addprocs(["remote_host"])`の後に`addprocs(4)`を実行しても失敗します．ユーザによってはローカルシステムといくつかのリモートシステムからなるクラスタを作成する必要があるかもしれません．これは外部ネットワークインタフェースをバインドするように，キーワード引数`restrict`を`addprocs(4; restrict=false)`と設定しながら，明示的に`LocalManager`に要求することで行うことができます．
+  * `addprocs(list_of_remote_hosts)`によって使用される`SSHManager`は，SSH経由でリモートホスト上のワーカを起動します．デフォルトでは，SSHはJuliaのワーカを起動するためのみに使用されます．その後のマスタ-ワーカ間およびワーカ-ワーカ間の接続では，プレーンで暗号化されていないTCP/IPソケットを使用します．リモートホストはパスワードなしのログインが有効になっている必要があります．追加のSSHフラグや認証情報は，キーワード引数`sshflags`で指定できます．
+  * `addprocs(list_of_remote_hosts; tunnel=true, sshflags=<ssh keys and other flags>)`はマスタ-ワーカ間にもSSH接続を使用したい場合に便利です．典型的なシナリオは，Julia REPL（すなわちマスタ）を実行しているローカルのラップトップと，クラウド上のクラスタの残りの部分，例えばAmazon EC2上のものですが，それらが一緒に動いているような場合です．この場合，公開鍵インフラストラクチャ(PKI)を介して認証されたSSHクライアントと組み合わせてリモートクラスタでポート22を開く必要があるだけです．認証のための認証情報は，`sshflags`を使って，例えば```sshflags=`-i <keyfile>` ```のようにして提供することができます．
 
-    In an all-to-all topology (the default), all workers connect to each other via plain TCP sockets.
-    The security policy on the cluster nodes must thus ensure free connectivity between workers for
-    the ephemeral port range (varies by OS).
+    all-to-allなトポロジ（デフォルト）では，全てのワーカはプレーンなTCPソケットを介して互いに接続します．したがって，クラスタノードのセキュリティポリシは，(OSによって異なりますが）エフェメラルポート範囲のワーカ間の自由な接続を保証する必要があります．
 
-    Securing and encrypting all worker-worker traffic (via SSH) or encrypting individual messages
-    can be done via a custom `ClusterManager`.
+    全てのワーカ-ワーカ間のトラフィックをSSH経由でセキュアにして暗号化したり，個々のメッセージを暗号化したりすることは，カスタム`ClusterManager`を介して行うことができます．
 
-  * If you specify `multiplex=true` as an option to `addprocs`, SSH multiplexing is used to create
-    a tunnel between the master and workers. If you have configured SSH multiplexing on your own and
-    the connection has already been established, SSH multiplexing is used regardless of `multiplex`
-    option. If multiplexing is enabled, forwarding is set by using the existing connection
-    (`-O forward` option in ssh). This is beneficial if your servers require password authentication;
-    you can avoid authentication in Julia by logging in to the server ahead of `addprocs`. The control
-    socket will be located at `~/.ssh/julia-%r@%h:%p` during the session unless the existing multiplexing
-    connection is used. Note that bandwidth may be limited if you create multiple processes on a node
-    and enable multiplexing, because in that case processes share a single multiplexing TCP connection.
+  * `addprocs`のオプションとして`multiplex=true`を指定した場合，SSH多重化はマスタとワーカの間にトンネルを作成するために使用されます．独自にSSH多重化を設定しており，接続が既に確立されている場合は，`multiplex`オプションに関係なく，SSH多重化が使用されます．多重化が有効になっている場合は，既存の接続を使用して転送が設定されます（sshの`-O forward`オプション）．これは，サーバがパスワード認証を必要とするときに有効です．: `addprocs`の前にサーバにログインすることで，Juliaでの認証を回避することができます．既存の多重化接続が使用されていない限り，セッションの間制御ソケットは，`~/.ssh/julia-%r@%h:%p`に置かれます．ノード上に複数のプロセスを作成して多重化を有効にすると，帯域幅が制限される可能性があることに注意してください，なぜならこの場合，プロセスは単一の多重化TCP接続を共有するからです．
 
 ### [Cluster Cookie](@id man-cluster-cookie)
 
-All processes in a cluster share the same cookie which, by default, is a randomly generated string
-on the master process:
+クラスタ内の全てのプロセスは同じクッキーを共有しますが，これはデフォルトでは，マスタプロセス上でランダムに生成された文字列です:
 
-  * [`cluster_cookie()`](@ref) returns the cookie, while `cluster_cookie(cookie)()` sets
-    it and returns the new cookie.
-  * All connections are authenticated on both sides to ensure that only workers started by the master
-    are allowed to connect to each other.
-  * The cookie may be passed to the workers at startup via argument `--worker=<cookie>`. If argument
-    `--worker` is specified without the cookie, the worker tries to read the cookie from its
-    standard input ([`stdin`](@ref)). The `stdin` is closed immediately after the cookie is retrieved.
-  * `ClusterManager`s can retrieve the cookie on the master by calling [`cluster_cookie()`](@ref).
-    Cluster managers not using the default TCP/IP transport (and hence not specifying `--worker`)
-    must call `init_worker(cookie, manager)` with the same cookie as on the master.
+  * [`cluster_cookie()`](@ref)はクッキーを返し，`cluster_cookie(cookie)()`はクッキーを設定して新しいクッキーを返します．
+  * 全ての接続は双方で認証され，マスタによって起動されたワーカだけがお互いに接続を許可されることを確実にします．
+  * クッキーは引数`--worker=<cookie>`で起動時にワーカに渡すことができます．`--worker`がクッキーなしで指定された場合，ワーカは標準入力（[`stdin`](@ref)）からクッキーを読み込もうとします．`stdin`はクッキーが取得された直後に閉じられます．
+  * `ClusterManager`sは，[`cluster_cookie()`](@ref)を呼び出すことでマスタ上のクッキーを取得できます．デフォルトのTCP/IPトランスポートを使用していない（つまり，`--worker`を指定していない）クラスタマネージャは，マスタ上のものと同じクッキーで`init_worker(cookie, manager)`を呼び出さなければなりません．
 
-Note that environments requiring higher levels of security can implement this via a custom `ClusterManager`.
-For example, cookies can be pre-shared and hence not specified as a startup argument.
+より高いレベルのセキュリティを必要とする環境では，カスタムの`ClusterManager`を通してこれを実装できることに注意してください．
+例えば，クッキーは事前に共有することができ，それゆえに起動時の引数として指定されません．
 
-## Specifying Network Topology (Experimental)
+## ネットワークトポロジの指定 (Experimental)
 
 The keyword argument `topology` passed to `addprocs` is used to specify how the workers must be
 connected to each other:
+`addprocs`に渡されるキーワード引数`topology`は，ワーカがどのように相互に接続されなければならないかを指定するために使用されます:
 
-  * `:all_to_all`, the default: all workers are connected to each other.
-  * `:master_worker`: only the driver process, i.e. `pid` 1, has connections to the workers.
-  * `:custom`: the `launch` method of the cluster manager specifies the connection topology via the
-    fields `ident` and `connect_idents` in `WorkerConfig`. A worker with a cluster-manager-provided
-    identity `ident` will connect to all workers specified in `connect_idents`.
+  * `:all_to_all`，デフォルト: 全てのワーカが相互に接続されます．
+  * `:master_worker`: ドライバプロセス，すなわち`pid`1のもののみがワーカに対して接続します．
+  * `:custom`: クラスタマネージャの`launch`方法は`WorkerConfig`の`ident`フィールドと`connect_idents`フィールドで接続トポロジを指定します．クラスタマネージャが提供するアイデンティティ`ident`を持つワーカは，`connect_idents`で指定された全てのワーカに接続します．
 
-Keyword argument `lazy=true|false` only affects `topology` option `:all_to_all`. If `true`, the cluster
-starts off with the master connected to all workers. Specific worker-worker connections are established
-at the first remote invocation between two workers. This helps in reducing initial resources allocated for
-intra-cluster communication. Connections are setup depending on the runtime requirements of a parallel
-program. Default value for `lazy` is `true`.
+キーワード引数`lazy=true|false`は`topology`オプションの`:all_to_all`のみに影響します．`true`に設定されている場合，
+クラスタはマスタが全てのワーカに接続された状態で開始します．特定のワーカ-ワーカ間の接続は2つのワーカ間の最初の
+リモート呼び出し時に確立されます．これにより，クラスタ内通信に割り当てられる初期リソースを削減するのに役立ちます．
+接続は並列プログラムのランタイム要件に応じて設定されます．`lazy`のデフォルト値は`true`です．
 
-Currently, sending a message between unconnected workers results in an error. This behaviour,
-as with the functionality and interface, should be considered experimental in nature and may change
-in future releases.
+現在，接続されていないワーカ間でメッセージを送信するとエラーになります．この動作は，機能やインタフェースと
+同様に，実験的なものであり，将来のリリースで変更される可能性があります．
 
-## Noteworthy external packages
+## 注目すべき外部パッケージ
 
-Outside of Julia parallelism there are plenty of external packages that should be mentioned.
-For example [MPI.jl](https://github.com/JuliaParallel/MPI.jl) is a Julia wrapper for the `MPI` protocol, or
-[DistributedArrays.jl](https://github.com/JuliaParallel/Distributedarrays.jl), as presented in [Shared Arrays](@ref).
-A mention must be made of Julia's GPU programming ecosystem, which includes:
+Juliaの並列化以外にも，言及すべき外部パッケージはたくさんあります．例えば，[MPI.jl](https://github.com/JuliaParallel/MPI.jl)
+は`MPI`プロトコルのJuliaラッパであり，[DistributedArrays.jl](https://github.com/JuliaParallel/Distributedarrays.jl)は
+[Shared Arrays](@ref)で紹介した通りです．またJuliaのGPUプログラミングエコシステムについても言及しなければなりません:
 
-1. Low-level (C kernel) based operations [OpenCL.jl](https://github.com/JuliaGPU/OpenCL.jl) and [CUDAdrv.jl](https://github.com/JuliaGPU/CUDAdrv.jl) which are respectively an OpenCL interface and a CUDA wrapper.
+1. 低レベル（Cカーネル）ベースの操作[OpenCL.jl](https://github.com/JuliaGPU/OpenCL.jl)と[CUDAdrv.jl](https://github.com/JuliaGPU/CUDAdrv.jl)はそれぞれ，OpenCLインタフェースとCUDAラッパです．
 
-2. Low-level (Julia Kernel) interfaces like [CUDAnative.jl](https://github.com/JuliaGPU/CUDAnative.jl) which is a Julia native CUDA implementation.
+2. [CUDAnative.jl](https://github.com/JuliaGPU/CUDAnative.jl)のような低レベル（Juliaカーネル）インタフェースは，JuliaネイティブなCUDA実装です．
 
-3. High-level vendor-specific abstractions like [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl) and [CLArrays.jl](https://github.com/JuliaGPU/CLArrays.jl)
+3. [CuArrays.jl](https://github.com/JuliaGPU/CuArrays.jl)や[CLArrays.jl](https://github.com/JuliaGPU/CLArrays.jl)のような高レベルのベンダ固有の抽象化
 
-4. High-level libraries like [ArrayFire.jl](https://github.com/JuliaComputing/ArrayFire.jl) and [GPUArrays.jl](https://github.com/JuliaGPU/GPUArrays.jl)
+4. [ArrayFire.jl](https://github.com/JuliaComputing/ArrayFire.jl)や[GPUArrays.jl](https://github.com/JuliaGPU/GPUArrays.jl)のような高レベルのライブラリ
 
 
-In the following example we will use both `DistributedArrays.jl` and `CuArrays.jl` to distribute an array across multiple
-processes by first casting it through `distribute()` and `CuArray()`.
+以下の例では，`DistributedArrays.jl`と`CuArrays.jl`の両方を使用して，最初に`distribute()`と`CuArray()`を通して配列をキャスト
+することで，複数のプロセスに配列を分散させます．
 
-Remember when importing `DistributedArrays.jl` to import it across all processes using [`@everywhere`](@ref)
+`DistributedArrays.jl`を全てのプロセスにわたってインポートする時には，[`@everywhere`](@ref)を使用することを忘れないでください
 
 
 ```julia-repl
@@ -1252,10 +1207,9 @@ true
 julia> typeof(cuC)
 CuArray{Float64,1}
 ```
-Keep in mind that some Julia features are not currently supported by CUDAnative.jl[^2] , especially some functions like `sin` will need to be replaced with `CUDAnative.sin`(cc: @maleadt).
+いくつかのJuliaの昨日は現在CUDAnative.jl[^2]ではサポートされていないことに注意してください．特に`sin`のような関数は，`CUDAnative.sin`(cc: @maleadt)で置き換える必要があります．
 
-In the following example we will use both `DistributedArrays.jl` and `CuArrays.jl` to distribute an array across multiple
-processes and call a generic function on it.
+次の例では，`DistributedArrays.jl`と`CuArrays.jl`の両方を使って，複数のプロセスに配列を分散させ，その上で汎用関数を呼び出すようにします．
 
 ```julia
 function power_method(M, v)
@@ -1268,8 +1222,8 @@ function power_method(M, v)
 end
 ```
 
-`power_method` repeatedly creates a new vector and normalizes it. We have not specified any type signature in
-function declaration, let's see if it works with the aforementioned datatypes:
+`power_method`は新しいベクトルの生成と正規化を繰り返しています．関数宣言では型の指定をしていませんでしたが，
+前述のデータ型で動作するかを見てみましょう: 
 
 ```julia-repl
 julia> M = [2. 1; 1 1];
@@ -1301,12 +1255,12 @@ julia> typeof(dC)
 Tuple{DistributedArrays.DArray{Float64,1,Array{Float64,1}},Float64}
 ```
 
-To end this short exposure to external packages, we can consider `MPI.jl`, a Julia wrapper
-of the MPI protocol. As it would take too long to consider every inner function, it would be better
-to simply appreciate the approach used to implement the protocol.
+外部パッケージの簡単な紹介の最後として，MPIプロトコルのJuliaラッパである`MPI.jl`について考えてみましょう．
+全ての内部関数を考慮するには時間がかかりすぎるので，プロトコルを実装するために使用されているアプローチを
+単純に評価する方が良いでしょう．
 
-Consider this toy script which simply calls each subprocess, instantiate its rank and when the master
-process is reached, performs the ranks' sum
+単純に各サブプロセスを呼び出し，そのランクをインスタンス化し，マスタプロセスに到達したらランクの合計を計算する，
+このおもちゃのスクリプトを考えてみましょう
 
 ```julia
 import MPI
@@ -1332,11 +1286,7 @@ MPI.Finalize()
 mpirun -np 4 ./julia example.jl
 ```
 
-[^1]:
-    In this context, MPI refers to the MPI-1 standard. Beginning with MPI-2, the MPI standards committee
-    introduced a new set of communication mechanisms, collectively referred to as Remote Memory Access
-    (RMA). The motivation for adding rma to the MPI standard was to facilitate one-sided communication
-    patterns. For additional information on the latest MPI standard, see <https://mpi-forum.org/docs>.
+[^1]: MPIはこの文脈ではMPI-1標準を指しています．MPI-2以降，MPI標準化委員会は，リモートメモリアクセス(RMA)と総称される新しい通信メカニズムのセットを導入しました．MPI標準にrmaを追加した動機は，一方向的な通信パターンを容易にすることでした．最新のMPI企画についての詳細は，<https://mpi-forum.org/docs>を参照してください．
 
 [^2]:
     [Julia GPU man pages](http://juliagpu.github.io/CUDAnative.jl/stable/man/usage.html#Julia-support-1)

@@ -1,41 +1,37 @@
 # [Multi-Threading](@id man-multithreading)
 
-Visit this [blog post](https://julialang.org/blog/2019/07/multithreading/) for a presentation
-of Julia multi-threading features.
+Juliaのマルチスレッディング機能の説明はこちらの[blog post](https://julialang.org/blog/2019/07/multithreading/)をご覧ください．
 
 ## Starting Julia with multiple threads
 
-By default, Julia starts up with a single thread of execution. This can be verified by using the
-command [`Threads.nthreads()`](@ref):
+デフォルトでは，Juliaは単一の実行スレッドで起動します．これは[`Threads.nthreads()`](@ref)コマンドを
+使用して確認することができます．
 
 ```julia-repl
 julia> Threads.nthreads()
 1
 ```
 
-The number of execution threads is controlled either by using the
-`-t`/`--threads` command line argument or by using the
-[`JULIA_NUM_THREADS`](@ref JULIA_NUM_THREADS) environment variable. When both are
-specified, then `-t`/`--threads` takes precedence.
+実行スレッド数は，コマンドライン引数`-t`/`--threads`を用いるか，環境変数[`JULIA_NUM_THREADS`](@ref JULIA_NUM_THREADS)
+を用いるかのいずれかで制御します．両方が指定された場合は，`-t`/`--threads`が優先されます．
 
-!!! compat "Julia 1.5"
-    The `-t`/`--threads` command line argument requires at least Julia 1.5.
-    In older versions you must use the environment variable instead.
+!!! "Julia 1.5"互換性
+    コマンドライン引数`-t`/`--threads`はJulia 1.5以上のバージョンで利用できます．古いバージョンでは代わりに環境変数を用いる必要があります．
 
-Lets start Julia with 4 threads:
+4つのスレッドでJuliaを起動してみましょう:
 
 ```bash
 $ julia --threads 4
 ```
 
-Let's verify there are 4 threads at our disposal.
+4つのスレッドが立っていることを確認してみましょう．
 
 ```julia-repl
 julia> Threads.nthreads()
 4
 ```
 
-But we are currently on the master thread. To check, we use the function [`Threads.threadid`](@ref)
+しかし，現在はマスタスレッド上にいます．これを確認するには[`Threads.threadid`](@ref)を使います．
 
 ```julia-repl
 julia> Threads.threadid()
@@ -43,37 +39,31 @@ julia> Threads.threadid()
 ```
 
 !!! note
-    If you prefer to use the environment variable you can set it as follows in
-    Bash (Linux/macOS):
+    環境変数を用いたいときには，Bash (Linux/macOS)では以下のように設定できます:
     ```bash
     export JULIA_NUM_THREADS=4
     ```
-    C shell on Linux/macOS, CMD on Windows:
+    Linux/macOS上のC shellや，Windows上のCMDでは以下のようにします:
     ```bash
     set JULIA_NUM_THREADS=4
     ```
-    Powershell on Windows:
+    Windows上のPowershellでは以下のようにします:
     ```powershell
     $env:JULIA_NUM_THREADS=4
     ```
-    Note that this must be done *before* starting Julia.
+	これはJuliaを起動する*前*に行わねばならないことに注意してください．
 
 !!! note
-    The number of threads specified with `-t`/`--threads` is propagated to worker processes
-    that are spawned using the `-p`/`--procs` or `--machine-file` command line options.
-    For example, `julia -p2 -t2` spawns 1 main process with 2 worker processes, and all
-    three processes have 2 threads enabled. For more fine grained control over worker
-    threads use [`addprocs`](@ref) and pass `-t`/`--threads` as `exeflags`.
+    `-t`/`--threads`で指定されたスレッド数は，コマンドラインオプション`-p`/`--procs`または`--machine-file`を使用して生成されたワーカプロセスへ伝搬されます．例えば，`julia -p2 -t2`を実行すると，1つのメインプロセスと2つのワーカプロセスを生成し，これら3つのプロセスは全て2つのスレッドを有効にしています．ワーカスレッドをより細かく制御するには，[`addprocs`](@ref)を使用し，`-t`/`--threads`を`exeflags`として渡します．
 
-## Data-race freedom
+## データ競合の自由
 
-You are entirely responsible for ensuring that your program is data-race free,
-and nothing promised here can be assumed if you do not observe that
-requirement. The observed results may be highly unintuitive.
+あなたのプログラムがデータ競合フリーであることを保証するのはあなたの全責任であり，
+その要件を守らなければ，ここで約束されたことは何も想定できません．観察された結果は
+非常に直観的ではないかもしれません．
 
-The best way to ensure this is to acquire a lock around any access to data that
-can be observed from multiple threads. For example, in most cases you should
-use the following code pattern:
+これを確実にする最善の方法は，複数のスレッドから観測できるデータへのアクセスの周りのロックを取得することです．
+例えば，ほとんどの場合，次のようなコードパターンを使用する必要があります．
 
 ```julia-repl
 julia> lock(a) do
@@ -90,10 +80,10 @@ julia> begin
        end
 ```
 
-Additionally, Julia is not memory safe in the presence of a data race. Be very
-careful about reading a global variable (or closure variable) if another thread
-might write to it! Instead, always use the lock pattern above when changing any
-data (such as assigning to a global) visible to multiple threads.
+さらに，データ競合が発生した場合，Juliaはメモリセーフではありません．他のスレッドが
+グローバル変数（またはクロージャ変数）に書き込む可能性がある場合，その読み込みには十分に
+注意してください．代わりに，複数のスレッドから見えるデータ（グローバルへの代入など）を
+変更する場合は，常に上記のロックパターンを使用してください．
 
 ```julia
 Thread 1:
@@ -110,9 +100,9 @@ while !@isdefined(a); end
 use(a) # it is NOT safe to access `a` here
 ```
 
-## The `@threads` Macro
+## `@threads` マクロ
 
-Let's work a simple example using our native threads. Let us create an array of zeros:
+ネイティブスレッドを使って，簡単な例を作ってみましょう．ゼロの配列を作ってみましょう:
 
 ```jldoctest
 julia> a = zeros(10)
@@ -129,11 +119,10 @@ julia> a = zeros(10)
  0.0
 ```
 
-Let us operate on this array simultaneously using 4 threads. We'll have each thread write its
-thread ID into each location.
+この配列を4つのスレッドを使って同時に操作してみましょう．各スレッドにはそれぞれの場所にスレッドIDを書き込ませます．
 
-Julia supports parallel loops using the [`Threads.@threads`](@ref) macro. This macro is affixed
-in front of a `for` loop to indicate to Julia that the loop is a multi-threaded region:
+Juliaは[`Threads.@threads`](@ref)マクロを使って並列ループをサポートしています．このマクロは`for`ループの前につけて，
+そのループがマルチスレッド領域であることをJuliaに示すためのものです:
 
 ```julia-repl
 julia> Threads.@threads for i = 1:10
@@ -141,8 +130,7 @@ julia> Threads.@threads for i = 1:10
        end
 ```
 
-The iteration space is split among the threads, after which each thread writes its thread ID
-to its assigned locations:
+イテレーションスペースはスレッド間で分割され，各スレッドは割り当てられた場所にスレッドIDを書き込みます:
 
 ```julia-repl
 julia> a
@@ -159,14 +147,14 @@ julia> a
  4.0
 ```
 
-Note that [`Threads.@threads`](@ref) does not have an optional reduction parameter like [`@distributed`](@ref).
+[`Threads.@threads`](@ref)には[`@distributed`](@ref)のような，リダクションのオプションパラメータはないことに注意してください．
 
-## Atomic Operations
+## アトミックな操作
 
-Julia supports accessing and modifying values *atomically*, that is, in a thread-safe way to avoid
-[race conditions](https://en.wikipedia.org/wiki/Race_condition). A value (which must be of a primitive
-type) can be wrapped as [`Threads.Atomic`](@ref) to indicate it must be accessed in this way.
-Here we can see an example:
+Juliaでは，[race conditions](https://en.wikipedia.org/wiki/Race_condition)を避けるために，スレッドセーフな方法で，
+値へのアクセスや変更を*アドミックに行うこと*をサポートしています．ある値（プリミティブ型でなければならない）を
+[`Threads.Atomic`](@ref)としてラップすることで，この方法でアクセスしなければならないことを示すことができます．
+ここではその例を見てみましょう:
 
 ```julia-repl
 julia> i = Threads.Atomic{Int}(0);
@@ -195,9 +183,8 @@ julia> ids
  4.0
 ```
 
-Had we tried to do the addition without the atomic tag, we might have gotten the
-wrong answer due to a race condition. An example of what would happen if we didn't
-avoid the race:
+アトミックタグを使わずに足し算をしようとしていたら，競合条件のために，間違った答えが
+出ていたかもしれません．競合を回避しなかった場合の例は以下の通りです:
 
 ```julia-repl
 julia> using Base.Threads
@@ -227,93 +214,65 @@ julia> acc[]
 ```
 
 !!! note
-    Not *all* primitive types can be wrapped in an `Atomic` tag. Supported types
-    are `Int8`, `Int16`, `Int32`, `Int64`, `Int128`, `UInt8`, `UInt16`, `UInt32`,
-    `UInt64`, `UInt128`, `Float16`, `Float32`, and `Float64`. Additionally,
-    `Int128` and `UInt128` are not supported on AAarch32 and ppc64le.
+    全てのプリミティブ型が`Atomic`タグでサポートされているわけではありません．サポートしてされているのは，
+    `Int8`，`Int16`，`Int32`，`Int64`，`Int128`，`UInt8`，`UInt16`，`UInt32`,
+    `UInt64`，`UInt128`，`Float16`，`Float32`，および`Float64`です． 付け加えると，
+    `Int128`と`UInt128`はAAarch32やppc64le上ではサポートされていません.
 
-## Side effects and mutable function arguments
+## 副作用と変更可能な関数の引数
 
-When using multi-threading we have to be careful when using functions that are not
-[pure](https://en.wikipedia.org/wiki/Pure_function) as we might get a wrong answer.
-For instance functions that have a
-[name ending with `!`](@ref bang-convention)
-by convention modify their arguments and thus are not pure.
+マルチスレッディングを使用する際に，[pure](https://en.wikipedia.org/wiki/Pure_function)でない
+関数を使用する場合には，誤った答えを得る可能性があるため，注意が必要です．
+例えば，コンベンションで[name ending with `!`](@ref bang-convention)を持つ関数は，引数を変更してしまうので，pureではありません．
 
 ## @threadcall
 
-External libraries, such as those called via [`ccall`](@ref), pose a problem for
-Julia's task-based I/O mechanism.
-If a C library performs a blocking operation, that prevents the Julia scheduler
-from executing any other tasks until the call returns.
-(Exceptions are calls into custom C code that call back into Julia, which may then
-yield, or C code that calls `jl_yield()`, the C equivalent of [`yield`](@ref).)
+[`ccall`](@ref)経由で呼び出されるような外部ライブラリは，JuliaのタスクベースI/Oメカニズム
+に問題をもたらします．Cライブラリがブロッキング操作を行うと，その呼び出しが戻るまで，Julia
+スケジューラが他のタスクを実行できなくなります．（例外は，カスタムCコードへの呼び出しが
+Juliaにコールバックして，[`yield`](@ref)を返す場合，またはCコードへの呼び出しが，[`yield`](@ref)と等価な
+`jl_yield()`を呼び出す場合です．）
 
-The [`@threadcall`](@ref) macro provides a way to avoid stalling execution in such
-a scenario.
-It schedules a C function for execution in a separate thread. A threadpool with a
-default size of 4 is used for this. The size of the threadpool is controlled via environment variable
-`UV_THREADPOOL_SIZE`. While waiting for a free thread, and during function execution once a thread
-is available, the requesting task (on the main Julia event loop) yields to other tasks. Note that
-`@threadcall` does not return until the execution is complete. From a user point of view, it is
-therefore a blocking call like other Julia APIs.
+[`@threadcall`](@ref)マクロはこのようなシナリオでの実行の停止を回避する方法を提供します．
+これはC関数を別々のスレッドで実行するようにスケジュールします．これにはデフォルトのサイズが4の
+スレッドプールが使用されます．スレッドプールのサイズは環境変数`UV_THREADPOOL_SIZE`で制御されます．
+空いているスレッドを待っている間，およびスレッドが利用可能になった後の関数実行中，要求するタスクは
+（メインのJuliaイベントループ上で）他のタスクにyieldします．実行が完了するまで`@threadcall`は
+返らないことに注意してください．ユーザの視点から見ると，他のJulia APIのようなブロッキング呼び出しになります．
 
-It is very important that the called function does not call back into Julia, as it will segfault.
+呼び出された関数がセグメンテーションフォルトを起こすため，呼び出された関数がJuliaにコールバックしないことは非常に重要です．
 
-`@threadcall` may be removed/changed in future versions of Julia.
+`@threadcall`は将来のJuliaのバージョンで削除/変更される可能性があります．
 
-## Caveats
+## 警告事項
 
-At this time, most operations in the Julia runtime and standard libraries
-can be used in a thread-safe manner, if the user code is data-race free.
-However, in some areas work on stabilizing thread support is ongoing.
-Multi-threaded programming has many inherent difficulties, and if a program
-using threads exhibits unusual or undesirable behavior (e.g. crashes or
-mysterious results), thread interactions should typically be suspected first.
+現時点では，ユーザコードがデータ競合の無いものであれば，Juliaランタイムと標準
+ライブラリのほとんどの操作はスレッドセーフな方法で使用できます．しかし，いくつか
+の分野では，スレッドのサポートを安定化させるための作業が進行中です．マルチスレッド
+プログラミングには多くの固有の難しさがあり，スレッドを使用したプログラムが異常な
+動作や望ましくない動作（クラッシュや不可解な結果など）を示す場合には，一般的には
+スレッドの相互作用を最初に疑うべきです．
 
-There are a few specific limitations and warnings to be aware of when using
-threads in Julia:
+Juliaでスレッドを使用する際に注意すべき制限と警告がいくつかあります:
 
-  * Base collection types require manual locking if used simultaneously by
-    multiple threads where at least one thread modifies the collection
-    (common examples include `push!` on arrays, or inserting
-    items into a `Dict`).
-  * After a task starts running on a certain thread (e.g. via `@spawn`), it
-    will always be restarted on the same thread after blocking. In the future
-    this limitation will be removed, and tasks will migrate between threads.
-  * `@threads` currently uses a static schedule, using all threads and assigning
-    equal iteration counts to each. In the future the default schedule is likely
-    to change to be dynamic.
-  * The schedule used by `@spawn` is nondeterministic and should not be relied on.
-  * Compute-bound, non-memory-allocating tasks can prevent garbage collection from
-    running in other threads that are allocating memory. In these cases it may
-    be necessary to insert a manual call to `GC.safepoint()` to allow GC to run.
-    This limitation will be removed in the future.
-  * Avoid running top-level operations, e.g. `include`, or `eval` of type,
-    method, and module definitions in parallel.
-  * Be aware that finalizers registered by a library may break if threads are enabled.
-    This may require some transitional work across the ecosystem before threading
-    can be widely adopted with confidence. See the next section for further details.
+  * 基本的なコレクションの型は，少なくとも1つのスレッドがコレクションを変更する複数のスレッドで同時に使用された場合，手動でロックする必要があります（よくある例としては，配列への`push!`や`Dict`へのアイテムの挿入などがあります）．
+  * タスクが特定のスレッドで実行を開始した後（例えば`@spawn`経由など），ブロックしたあとは常に同じスレッドで再起動されます．将来的にはこの制限は取り除かれ，タスクはスレッド間で移行するようになるでしょう．
+  * `@threads`は現在，静的なスケジュールを使用しており，全てのスレッドを使用し，各スレッドに等しい反復回数を割り当てています．将来的には，デフォルトのスケジュールは動的なものに変更される可能性があります．
+  * `@spawn`によって使用されるスケジュールは非決定的なものであり，これに頼るべきではありません．
+  * 計算に縛られた，メモリを割り当てないタスクは，メモリを割り当てている他のスレッドでガベージコレクションが実行されるのを防ぐことができます．これらのケースでは，GCの実行を許可するために`GC.safepoint()`への手動呼び出しを挿入する必要があるかもしれません．この制限は将来的には削除される予定です．
+  * 型，メソッド，モジュール定義の`include`や`eval`などのトップレベルの操作を並行して実行しないようにしてください．
+  * スレッドが有効になっている場合，ライブラリによって登録されたファイナライザが壊れる可能性があることに注意してください．これはスレッド化が自信を持って広く採用されるようになるまでは，エコシステム全体での移行作業が必要になるかもしれません．詳細は次のセクションを参照してください．
 
-## Safe use of Finalizers
+## ファイナライザのセーフな利用方法
 
-Because finalizers can interrupt any code, they must be very careful in how
-they interact with any global state. Unfortunately, the main reason that
-finalizers are used is to update global state (a pure function is generally
-rather pointless as a finalizer). This leads us to a bit of a conundrum.
-There are a few approaches to dealing with this problem:
+ファイナライザはどのようなコードにも割り込むことができるので，どのようにグローバルな
+状態と相互作用するかについては非常に注意しなければなりません．残念ながら，ファイナライザが
+使われる主な理由はグローバル状態を更新するためです（pureな関数は一般的にファイナライザとしては
+無意味です）．これはちょっとした難問です．この問題に対処するためのアプローチはいくつかあります:
 
-1. When single-threaded, code could call the internal `jl_gc_enable_finalizers`
-   C function to prevent finalizers from being scheduled
-   inside a critical region. Internally, this is used inside some functions (such
-   as our C locks) to prevent recursion when doing certain operations (incremental
-   package loading, codegen, etc.). The combination of a lock and this flag
-   can be used to make finalizers safe.
+1. シングルスレッドの場合，コードは内部の`jl_gc_enable_finalizers` C関数を呼び出して，クリティカルな領域内でファイナライザがスケジュールされるのを防ぐことができます．内部的には，特定の操作（インクリメンタルパッケージの読み込みやcodegenなど）を行う際の再帰を防ぐために，いくつかの関数（C locksなど）の内部て使用されています．ロックとこのフラグを組み合わせることで，ファイナライザをセーフにすることができます．
 
-2. A second strategy, employed by Base in a couple places, is to explicitly
-   delay a finalizer until it may be able to acquire its lock non-recursively.
-   The following example demonstrates how this strategy could be applied to
-   `Distributed.finalize_ref`:
+2. Baseがいくつかの場所で採用している第二の戦略は，再帰的ではないロックを取得できるようになるまでファイナライザを明示的に遅延させることです．次の例は，この戦略がどのように`Distributed.finalize_ref`に適用されるかを示しています:
 
    ```
    function finalize_ref(r::AbstractRemoteRef)
@@ -336,15 +295,4 @@ There are a few approaches to dealing with this problem:
    end
    ```
 
-3. A related third strategy is to use a yield-free queue. We don't currently
-   have a lock-free queue implemented in Base, but
-   `Base.InvasiveLinkedListSynchronized{T}` is suitable. This can frequently be a
-   good strategy to use for code with event loops. For example, this strategy is
-   employed by `Gtk.jl` to manage lifetime ref-counting. In this approach, we
-   don't do any explicit work inside the `finalizer`, and instead add it to a queue
-   to run at a safer time. In fact, Julia's task scheduler already uses this, so
-   defining the finalizer as `x -> @spawn do_cleanup(x)` is one example of this
-   approach. Note however that this doesn't control which thread `do_cleanup`
-   runs on, so `do_cleanup` would still need to acquire a lock. That
-   doesn't need to be true if you implement your own queue, as you can explicitly
-   only drain that queue from your thread.
+3. 関連する第三の戦略は，yield-freeなキューを使うことです．現在のところBaseではロックフリーなキューは実装されていませんが，`Base.InvasiveLinkedListSynchronized{T}`が適しています．これはイベントループを持つコードに使うと良い戦略になることがあります．例えば，この戦略は`Gtk.jl`でライフタイムのref-countingを管理するために採用されています．このアプローチでは，`finalizer`の内部では明示的な作業は行わず，代わりにキューに追加して，セーフな時間に実行させています．実際，Juliaのタスクスケジューラは既にこれらを使用しているので，ファイナライザを`x -> @spawn do_cleanup(x)`と定義するのは，このアプローチの一例です．しかしこれは`do_cleanup`がどのスレッドで実行されるかを制御しないので，`do_cleanup`はロックを取得する必要があることに注意してください．自分自身のキューを実装している場合は，そのキューを明示的に自分のスレッドからのみ排出することができるので，これを満たしていなくてもかまいません．

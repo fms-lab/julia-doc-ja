@@ -51,33 +51,22 @@ Juliaはの特徴として，省略可能な型付け，多重ディスパッチ
 
 動的言語は「型がない」と言われることがありますがそんなことはありません．プリミティブであろうとユーザー定義であろうと，すべてのオブジェクトは型を持っています．しかしながら，ほとんどの動的言語では型宣言が存在せず，コンパイラに型を指示すること，明示的に型を定義することができません．一方，静的言語ではコンパイラのために型注釈をつけることができますが，型の情報はコンパイル時にしか存在せず，実行時に操作したり表現したりすることはできません．Juliaでは，型自体が実行時のオブジェクトであり，コンパイラに対して情報を伝えるために使用することもできます．
 
-While the casual programmer need not explicitly use types or multiple dispatch, they are the core
-unifying features of Julia: functions are defined on different combinations of argument types,
-and applied by dispatching to the most specific matching definition. This model is a good fit
-for mathematical programming, where it is unnatural for the first argument to "own" an operation
-as in traditional object-oriented dispatch. Operators are just functions with special notation
--- to extend addition to new user-defined data types, you define new methods for the `+` function.
-Existing code then seamlessly applies to the new data types.
+カジュアルなプログラマにとって型や多重ディスパッチを使用することはそれほどないかもしれませんが，これら機能はJuliaの中核を担っています．例えば，関数はさまざまな引数の組み合わせで定義されており，実行時にはそれら組み合わせの中で最も一致する定義が適用されます．この方式は数値計算に適していると言えます．というのも，従来のオブジェクト指向におけるディスパッチのように第一引数が操作を「所有」することは不自然です．Juliaでは演算子は特殊な表記法を持つ単なる関数にすぎません．ユーザー定義のデータ型に可算処理を拡張するには，`+` 関数に新しいメソッドを定義します．こうすることでJuliaでは，既存のコードを新たなデータ型にシームレスに適用させることができます．
 
-Partly because of run-time type inference (augmented by optional type annotations), and partly
-because of a strong focus on performance from the inception of the project, Julia's computational
-efficiency exceeds that of other dynamic languages, and even rivals that of statically-compiled
-languages. For large scale numerical problems, speed always has been, continues to be, and probably
-always will be crucial: the amount of data being processed has easily kept pace with Moore's Law
-over the past decades.
+実行時型推論の機能やjuliaプロジェクト開始当初から性能へ注力した結果として，Juliaの計算効率は他の動的言語を凌駕し静的にコンパイルされた言語にも匹敵しています．計算機で処理されるデータ量は，過去数十年にわたりムーアの法則に合わせて増え続けており，大規模数値計算における計算性能は，これまでも，これからも，そしておそらく未来においても重要な問題になるでしょう．
 
-Julia aims to create an unprecedented combination of ease-of-use, power, and efficiency in a single
-language. In addition to the above, some advantages of Julia over comparable systems include:
+Juliaはこれまでの言語では成し得ていない，使いやすさ，力強さ，効率性を1つの言語で実現することを目指しています．
+これに加えて，Juliaの利点としては以下のようなものがあります．
 
-  * Free and open source ([MIT licensed](https://github.com/JuliaLang/julia/blob/master/LICENSE.md))
-  * User-defined types are as fast and compact as built-ins
-  * No need to vectorize code for performance; devectorized code is fast
-  * Designed for parallelism and distributed computation
-  * Lightweight "green" threading ([coroutines](https://en.wikipedia.org/wiki/Coroutine))
-  * Unobtrusive yet powerful type system
-  * Elegant and extensible conversions and promotions for numeric and other types
-  * Efficient support for [Unicode](https://en.wikipedia.org/wiki/Unicode), including but not limited
-    to [UTF-8](https://en.wikipedia.org/wiki/UTF-8)
-  * Call C functions directly (no wrappers or special APIs needed)
-  * Powerful shell-like capabilities for managing other processes
-  * Lisp-like macros and other metaprogramming facilities
+  * フリーかつオープンソース ([MIT licensed](https://github.com/JuliaLang/julia/blob/master/LICENSE.md))
+  * コンパクトで組み込み型と同等の速度を持つユーザー定義型
+  * ベクトル化されていないコードも高速に動作し，コードのベクトル化が不要
+  * 並列コンピューティング・分散コンピューティングを意図した設計
+  * 軽量で,かつ”greenな”スレッドシステム ([coroutines](https://en.wikipedia.org/wiki/Coroutine))
+  * 控えめながらも強力なな型システム
+  * 数値およびその他の型に対するエレガントで拡張性のある変換やプロモーション
+  * [Unicode](https://en.wikipedia.org/wiki/Unicode)の効率的なサポート
+    * [UTF-8](https://en.wikipedia.org/wiki/UTF-8)も含むが，これに限定しません
+  * ラッパーや特別なAPIを必要としない，C言語の関数の直接呼び出し
+  * プロセスを管理する強力なシェルライクの機能
+  * Lispライクなマクロやその他のメタプログラミング機能

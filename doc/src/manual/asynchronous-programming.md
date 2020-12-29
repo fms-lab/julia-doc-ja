@@ -1,90 +1,82 @@
-# [Asynchronous Programming](@id man-asynchronous)
+# [非同期プログラミング](@id man-asynchronous)
 
-When a program needs to interact with the outside world, for example communicating
-with another machine over the internet, operations in the program may need to
-happen in an unpredictable order.
-Say your program needs to download a file. We would like to initiate the download
-operation, perform other operations while we wait for it to complete, and then
-resume the code that needs the downloaded file when it is available.
-This sort of scenario falls in the domain of asynchronous programming, sometimes
-also referred to as concurrent programming (since, conceptually, multiple things
-are happening at once).
+プログラムが外界と対話する必要がある場合，例えば，インターネットを介して他のマシンと
+通信するような場合，プログラム内の操作は予測できない順序で行われる必要がある場合があります．
+例えば，プログラムがファイルをダウンロードする必要があるとします．ダウンロード操作を開始し，
+それが完了するのを待つ間に他の操作を行い，ダウンロードしたファイルが利用可能になったら
+ダウロードしたファイルを必要とするコードを再開したいとします．この種のシナリオは非同期
+プログラミングの領域に該当しますが，（概念的には複数のことが同時に起こるので）並行プログラミングと呼ばれることもあります．
 
-To address these scenarios, Julia provides [`Task`](@ref)s (also known by several other
-names, such as symmetric coroutines, lightweight threads, cooperative multitasking,
-or one-shot continuations).
-When a piece of computing work (in practice, executing a particular function) is designated as
-a [`Task`](@ref), it becomes possible to interrupt it by switching to another [`Task`](@ref).
-The original [`Task`](@ref) can later be resumed, at which point it will pick up right where it
-left off. At first, this may seem similar to a function call. However there are two key differences.
-First, switching tasks does not use any space, so any number of task switches can occur without
-consuming the call stack. Second, switching among tasks can occur in any order, unlike function
-calls, where the called function must finish executing before control returns to the calling function.
+これらのシナリオに対応するために，Juliaは[`Task`](@ref)sを提供しています
+（対称的コルーチン，軽量スレッド，協調型マルチタスク，あるいはワンショット連続処理
+など，他にもいくつかの名前で知られています）．ある計算作業（実際には特定の関数の実行）
+が[`Task`](@ref)として指定された場合，別の[`Task`](@ref)に切り替えることで，その作業を中断
+することが可能になります．元の[`Task`](@ref)は後で再開することができ，中断したところから再開されます．最初はこれは関数呼び出しと似ているように見えるかもしれません．しかし2つの重要な
+違いがあります．第一に，タスクの切り替えはスペースを使わないので，コールスタックを消費せず
+に何度でもタスクを切り替えることができます．第二に，タスク間の切り替えは任意の順序で行う
+ことができます．関数呼び出しとは異なり，呼び出された関数は呼び出した関数に制御が戻る前に
+実行を終了しなければなりません．
 
-## Basic `Task` operations
+## 基本的な`Task`操作
 
-You can think of a `Task` as a handle to a unit of computational work to be performed.
-It has a create-start-run-finish lifecycle.
-Tasks are created by calling the `Task` constructor on a 0-argument function to run,
-or using the [`@task`](@ref) macro:
+`Task`は実行される計算作業の単位のハンドルと考えることができます．これは作成・開始・
+実行・終了のライフサイクルを持っています．タスクは，実行する0引数関数で，`Task`
+コンストラクタを呼び出すか，[`@task`](@ref)マクロを使用して作成されます．
 
 ```
 julia> t = @task begin; sleep(5); println("done"); end
 Task (runnable) @0x00007f13a40c0eb0
 ```
 
-`@task x` is equivalent to `Task(()->x)`.
+`@task x`は`Task(()->x)`と等価です．
 
-This task will wait for five seconds, and then print `done`. However, it has not
-started running yet. We can run it whenever we're ready by calling [`schedule`](@ref):
+このタスクは5秒間待ったのち，`done`を表示しますが，まだ実行を開始していません．
+準備ができたら[`schedule`](@ref)を呼び出すことでいつでも実行できます．
 
 ```
 julia> schedule(t);
 ```
 
-If you try this in the REPL, you will see that `schedule` returns immediately.
-That is because it simply adds `t` to an internal queue of tasks to run.
-Then, the REPL will print the next prompt and wait for more input.
-Waiting for keyboard input provides an opportunity for other tasks to run,
-so at that point `t` will start.
-`t` calls [`sleep`](@ref), which sets a timer and stops execution.
-If other tasks have been scheduled, they could run then.
-After five seconds, the timer fires and restarts `t`, and you will see `done`
-printed. `t` is then finished.
+これをREPLで試してみると，`schedule`がすぐに戻ってくるのがわかると思います．
+これは実行するタスクの内部キューに単純に`t`を追加するだけだからです．
+そして，REPLは次のプロンプトを表示して，さらなる入力を待ちます．
+キーボード入力を待つことで，他のタスクを実行する機会を提供するので，その時点で`t`
+が開始されます．`t`は[`sleep`](@ref)を呼び出し，タイマを設定して実行を停止します．
+他のタスクがスケジュールされている場合は，そのタスクを実行することができます．
+5秒後，タイマが作動して`t`が再起動されると，`done`が表示されているのを見ることができます．
+`t`はこれで終了されます．
 
-The [`wait`](@ref) function blocks the calling task until some other task finishes.
-So for example if you type
+[`wait`](@ref)関数は，他のタスクが終了するまで呼び出したタスクをブロックします．
+したがって，例えば，`schedule`だけを呼び出す代わりに，以下を入力すると，次の
+入力プロンプトが表示される前に5秒間の一時停止が表示されます．
 
 ```
 julia> schedule(t); wait(t)
 ```
 
-instead of only calling `schedule`, you will see a five second pause before
-the next input prompt appears. That is because the REPL is waiting for `t`
-to finish before proceeding.
+これはREPLが先に進む前に`t`が終わるのを待っているからです．
 
-It is common to want to create a task and schedule it right away, so the
-macro [`@async`](@ref) is provided for that purpose --- `@async x` is
-equivalent to `schedule(@task x)`.
+タスクを作成してすぐにスケジュールしたいというのはよくあることなので，
+そのために[`@async`](@ref)マクロが用意されています．`@async x`は`schedule(@task x)`
+と等価です．
 
-## Communicating with Channels
+## チャネルとの通信
 
-In some problems,
-the various pieces of required work are not naturally related by function calls; there is no obvious
-"caller" or "callee" among the jobs that need to be done. An example is the producer-consumer
-problem, where one complex procedure is generating values and another complex procedure is consuming
-them. The consumer cannot simply call a producer function to get a value, because the producer
-may have more values to generate and so might not yet be ready to return. With tasks, the producer
-and consumer can both run as long as they need to, passing values back and forth as necessary.
+いくつかの問題では，必要とされる作業の様々な部分は，当然のことながら関数の呼び出しによって関連
+づけられてはいません，すなわち必要なジョブの間には，明らかな「呼び出し元」や「呼び出し先」は
+存在しません．例えば，あるプロシージャが値を生成し，別のプロシージャが値が消費しているような，
+プロデューサ-コンシューマ問題があります．コンシューマは，単純にプロデューサ関数を呼び出して値を
+取得することはできません，なぜならプロデューサは生成すべき値を更に多く持っている可能性があり，
+まだ返す準備ができていない可能性があるためです．タスクでは，プロデューサとコンシューマは必要に
+応じて値を前後に渡しながら，必要なだけ実行することができます．
 
-Julia provides a [`Channel`](@ref) mechanism for solving this problem.
-A [`Channel`](@ref) is a waitable first-in first-out queue which can have
-multiple tasks reading from and writing to it.
+Juliaはこの問題を解決するために[`Channel`](@ref)メカニズムを提供します．[`Channel`](@ref)とは
+FIFOの待ち行列で，複数のタスクが読み書きできるようになっています．
 
-Let's define a producer task, which produces values via the [`put!`](@ref) call.
-To consume values, we need to schedule the producer to run in a new task. A special [`Channel`](@ref)
-constructor which accepts a 1-arg function as an argument can be used to run a task bound to a channel.
-We can then [`take!`](@ref) values repeatedly from the channel object:
+[`put!`](@ref)呼び出しで値を生成するプロデューサタスクを定義してみましょう．値をコンシューム
+するには，新しいタスクを実行するようにプロデューサをスケジュールする必要があります．
+1-引数関数を引数として受け付ける特殊な[`Channel`](@ref)コンストラクタを使用して，チャネルに
+バインドされたタスクを実行することができます．そして，チャネルオブジェクトから繰り返し[`take!`](@ref)することができます．
 
 ```jldoctest producer
 julia> function producer(c::Channel)
@@ -116,11 +108,11 @@ julia> take!(chnl)
 "stop"
 ```
 
-One way to think of this behavior is that `producer` was able to return multiple times. Between
-calls to [`put!`](@ref), the producer's execution is suspended and the consumer has control.
+この動作を考える一つの方法は，`producer`が複数回返すことができたということです．
+[`put!`](@ref)の呼び出しの間に，プロデューサの実行は中断され，コンシューマが制御を持ちます．
 
-The returned [`Channel`](@ref) can be used as an iterable object in a `for` loop, in which case the
-loop variable takes on all the produced values. The loop is terminated when the channel is closed.
+返された[`Channel`](@ref)は，`for`ループ内で反復可能なオブジェクトとして使用することができ，
+その場合，ループ変数は生成された全ての値を引き継ぎます．チャネルがクローズされると，ループが終了します．
 
 ```jldoctest producer
 julia> for x in Channel(producer)
@@ -134,17 +126,18 @@ start
 stop
 ```
 
-Note that we did not have to explicitly close the channel in the producer. This is because
-the act of binding a [`Channel`](@ref) to a [`Task`](@ref) associates the open lifetime of
-a channel with that of the bound task. The channel object is closed automatically when the task
-terminates. Multiple channels can be bound to a task, and vice-versa.
+プロデューサでチャネルを明示的に閉じる必要はありませんでした．これは[`Channel`](@ref)を
+[`Task`](@ref)にバインドするという行為が，チャネルのオープンライフタイムとタスクのオープンライフタイム
+を関連付けているからです．タスクが終了すると，チャネルオブジェクトは自動的に閉じられます．
+複数のチャネルをタスクにバインドすることもできますし，その逆も可能です．
 
-While the [`Task`](@ref) constructor expects a 0-argument function, the [`Channel`](@ref)
-method that creates a task-bound channel expects a function that accepts a single argument of
-type [`Channel`](@ref). A common pattern is for the producer to be parameterized, in which case a partial
-function application is needed to create a 0 or 1 argument [anonymous function](@ref man-anonymous-functions).
+[`Task`](@ref)のコンストラクタは，0-引数の関数を期待しますが，タスクにバインドされたチャネルを
+生成する[`Channel`](@ref)メソッドは，[`Channel`](@ref)型の1つの引数を受け入れる関数を期待します．
+一般的なパターンは，プロデューサがパラメータ化されている場合で，この場合0または1引数の
+[anonymous function](@ref man-anonymous-functions)を作成するために，部分的な関数アプリケーションが
+必要になります．
 
-For [`Task`](@ref) objects this can be done either directly or by use of a convenience macro:
+[`Task`](@ref)オブジェクトの場合，これは直接または便利なマクロを使用して行うことができます:
 
 ```julia
 function mytask(myarg)
@@ -156,18 +149,17 @@ taskHdl = Task(() -> mytask(7))
 taskHdl = @task mytask(7)
 ```
 
-To orchestrate more advanced work distribution patterns, [`bind`](@ref) and [`schedule`](@ref)
-can be used in conjunction with [`Task`](@ref) and [`Channel`](@ref)
-constructors to explicitly link a set of channels with a set of producer/consumer tasks.
+より高度な処理分配パターンを編成するために，[`bind`](@ref)と[`schedule`](@ref)は，
+[`Task`](@ref)と[`Channel`](@ref)のコンストラクタと組み合わせて使用し，チャネルのセットと
+プロデューサ/コンシューマのタスクのセットを明示的にリンクさせることができます．
 
-### More on Channels
+### チャネルの詳細
 
-A channel can be visualized as a pipe, i.e., it has a write end and a read end :
+チャネルはパイプとして可視化することができます．言い換えれば書き込み側と読み込み側があります:
 
-  * Multiple writers in different tasks can write to the same channel concurrently via [`put!`](@ref)
-    calls.
-  * Multiple readers in different tasks can read data concurrently via [`take!`](@ref) calls.
-  * As an example:
+  * 異なるタスクの複数のライタが同じチャネルに対して，[`put!`](@ref)を呼び出して，並行に書き込みを行うことができます
+  * 異なるタスクの複数のリーダが[`take!`](@ref)を呼び出して，並行にデータを読み込めます．
+  * 以下は例です:
 
     ```julia
     # Given Channels c1 and c2,
@@ -189,18 +181,11 @@ A channel can be visualized as a pipe, i.e., it has a write end and a read end :
         @async foo()
     end
     ```
-  * Channels are created via the `Channel{T}(sz)` constructor. The channel will only hold objects
-    of type `T`. If the type is not specified, the channel can hold objects of any type. `sz` refers
-    to the maximum number of elements that can be held in the channel at any time. For example, `Channel(32)`
-    creates a channel that can hold a maximum of 32 objects of any type. A `Channel{MyType}(64)` can
-    hold up to 64 objects of `MyType` at any time.
-  * If a [`Channel`](@ref) is empty, readers (on a [`take!`](@ref) call) will block until data is available.
-  * If a [`Channel`](@ref) is full, writers (on a [`put!`](@ref) call) will block until space becomes available.
-  * [`isready`](@ref) tests for the presence of any object in the channel, while [`wait`](@ref)
-    waits for an object to become available.
-  * A [`Channel`](@ref) is in an open state initially. This means that it can be read from and written to
-    freely via [`take!`](@ref) and [`put!`](@ref) calls. [`close`](@ref) closes a [`Channel`](@ref).
-    On a closed [`Channel`](@ref), [`put!`](@ref) will fail. For example:
+  * チャネルは`Channel{T}(sz)`コンストラクタで作成されます．チャネルは`T`型のオブジェクトのみを保持します．タイプが指定されていない場合は，任意のタイプのオブジェクトを保持することができます．`sz`はチャネルに保持できる要素の最大数を指定します．例えば，`Channel(32)`は任意の型のオブジェクトを最大32個保持できるチャネルを作成します．`Channel{MyType}(64)`は`MyType`型のオブジェクトをいつでも最大64個まで保持することができます．
+  * [`Channel`](@ref)が空であれば，データが利用可能になるまで，（[`take!`](@ref)呼び出し内の）リーダはブロックします．
+  * [`Channel`](@ref)がいっぱいのとき，利用可能なスペースができるまで，（[`put!`](@ref)呼び出し内の）ライタはブロックします．
+  * [`isready`](@ref)はチャネル内にオブジェクトが存在するかどうかをテストし，[`wait`](@ref)はオブジェクトが利用可能になるのを待ちます．
+  * [`Channel`](@ref)は初期状態ではオープン状態になっています．これは[`take!`](@ref)や[`put!`](@ref)の呼び出しで自由に読み書きできることを意味します．[`close`](@ref)で[`Channel`](@ref)をクローズします．クローズされた[`Channel`](@ref)では，[`put!`](@ref)は失敗します．例えば:
 
     ```julia-repl
     julia> c = Channel(2);
@@ -216,8 +201,7 @@ A channel can be visualized as a pipe, i.e., it has a write end and a read end :
     [...]
     ```
 
-  * [`take!`](@ref) and [`fetch`](@ref) (which retrieves but does not remove the value) on a closed
-    channel successfully return any existing values until it is emptied. Continuing the above example:
+  * クローズされたチャネル上の[`take!`](@ref)と（値を取得するが削除はしない）[`fetch`](@ref)は，それが空になるまで既存の値を返すことに成功しています．以下は上記の例の続きです:
 
     ```julia-repl
     julia> fetch(c) # Any number of `fetch` calls succeed.
@@ -235,11 +219,10 @@ A channel can be visualized as a pipe, i.e., it has a write end and a read end :
     [...]
     ```
 
-Consider a simple example using channels for inter-task communication. We start 4 tasks to process
-data from a single `jobs` channel. Jobs, identified by an id (`job_id`), are written to the channel.
-Each task in this simulation reads a `job_id`, waits for a random amount of time and writes back
-a tuple of `job_id` and the simulated time to the results channel. Finally all the `results` are
-printed out.
+タスク間通信にチャネルを使用した簡単な例を考えてみましょう．単一の`jobs`チャネルからデータを処理
+するために4つのタスクを開始します．id (`job_id`)で識別されたジョブがチャネルに書き込まれます．
+このシミュレーションでは，各タスクは`job_id`を読み込み，ランダムな時間だけ待機し，`job_id`と
+シミュレートされた時間のタプルを結果チャネルに書き戻します．最後に全ての`results`が出力されます．
 
 ```julia-repl
 julia> const jobs = Channel{Int}(32);
@@ -289,49 +272,47 @@ julia> @elapsed while n > 0 # print out results
 0.029772311
 ```
 
-## More task operations
+## より多くのタスク操作
 
-Task operations are built on a low-level primitive called [`yieldto`](@ref).
-`yieldto(task, value)` suspends the current task, switches to the specified `task`, and causes
-that task's last [`yieldto`](@ref) call to return the specified `value`. Notice that [`yieldto`](@ref)
-is the only operation required to use task-style control flow; instead of calling and returning
-we are always just switching to a different task. This is why this feature is also called "symmetric
-coroutines"; each task is switched to and from using the same mechanism.
+タスク操作は[`yieldto`](@ref)と呼ばれる低レベルのプリミティブで構築されています．
+`yieldto(task, value)`は現在のタスクを一時停止し，指定された`task`に切り替え，その最後の
+[`yieldto`](@ref)呼び出しで指定された`value`を返します．[`yieldto`](@ref)はタスクスタイルの
+制御フローをしようするために必要な唯一の操作であることに注意してください，すなわち呼び出して
+返すのではなく，常に別のタスクに切り替えているだけなのです．これが，この機能が「対称型コルーチン」
+と呼ばれる理由です．それぞれのタスクは同じメカニズムを使って別のタスクへ切り替えたり，別のタスクからきりかえられたりしているということです．
 
-[`yieldto`](@ref) is powerful, but most uses of tasks do not invoke it directly. Consider why
-this might be. If you switch away from the current task, you will probably want to switch back
-to it at some point, but knowing when to switch back, and knowing which task has the responsibility
-of switching back, can require considerable coordination. For example, [`put!`](@ref) and [`take!`](@ref)
-are blocking operations, which, when used in the context of channels maintain state to remember
-who the consumers are. Not needing to manually keep track of the consuming task is what makes [`put!`](@ref)
-easier to use than the low-level [`yieldto`](@ref).
+[`yieldto`](@ref)は強力ですが，タスクのほとんどの用途では直接呼び出されません．その理由を考えて
+みましょう．現在のタスクから離れて切り替えた場合，どこかの時点で元のタスクに戻りたいと思うでしょうが，
+いつ元のタスクに悖るのか，どのタスクが元のタスクに戻るのかを知るには，かなりの調整が必要になります．
+例えば，[`put!`](@ref)や[`take!`](@ref)はブロッキング操作で，チャネルのコンテキストで使用される場合，
+コンシューマが誰であるのかを記憶するために状態を維持します．[`put!`](@ref)が低レベルの[`yieldto`](@ref)
+よりも使いやすいのは，手動でコンシューマタスクを追跡する必要がないからです．
 
-In addition to [`yieldto`](@ref), a few other basic functions are needed to use tasks effectively.
+[`yieldto`](@ref)に加えて，タスクを効率的に使うためには，いくつかの基本的な機能が必要です．
 
-  * [`current_task`](@ref) gets a reference to the currently-running task.
-  * [`istaskdone`](@ref) queries whether a task has exited.
-  * [`istaskstarted`](@ref) queries whether a task has run yet.
-  * [`task_local_storage`](@ref) manipulates a key-value store specific to the current task.
+  * [`current_task`](@ref)は現在実行されているタスクの参照を取得します．
+  * [`istaskdone`](@ref)はタスクが終了したかどうかを検索します．
+  * [`istaskstarted`](@ref)はタスクがまだ実行されているかを検索します．
+  * [`task_local_storage`](@ref)は現在のタスクに固有のキーバリューストアを操作します．
 
-## Tasks and events
+## タスクとイベント
 
-Most task switches occur as a result of waiting for events such as I/O requests, and are performed
-by a scheduler included in Julia Base. The scheduler maintains a queue of runnable tasks,
-and executes an event loop that restarts tasks based on external events such as message arrival.
+ほとんどのタスクの切り替えはI/Oリクエストなどのイベントを待つ結果として発生し，Julia Baseに含まれる
+スケジューラによって実行されます．スケジューラは実行可能なタスクのキューを保持し，メッセージ到着など
+の外部イベントに基づいてタスクを再起動するイベントループを実行します．
 
-The basic function for waiting for an event is [`wait`](@ref). Several objects implement [`wait`](@ref);
-for example, given a `Process` object, [`wait`](@ref) will wait for it to exit. [`wait`](@ref)
-is often implicit; for example, a [`wait`](@ref) can happen inside a call to [`read`](@ref)
-to wait for data to be available.
+イベントを待つための基本的な関数は[`wait`](@ref)です．いくつかのオブジェクトが[`wait`](@ref)を
+実装しています．例えば，`Process`オブジェクトが与えらえた時，[`wait`](@ref)はそれが終了するのを
+待ちます．[`wait`](@ref)は暗黙の裡に実装されることが多く，例えばデータが利用可能になるのを待つ
+ための[`read`](@ref)呼び出しの中で，[`wait`](@ref)が発生することがあります．
 
-In all of these cases, [`wait`](@ref) ultimately operates on a [`Condition`](@ref) object, which
-is in charge of queueing and restarting tasks. When a task calls [`wait`](@ref) on a [`Condition`](@ref),
-the task is marked as non-runnable, added to the condition's queue, and switches to the scheduler.
-The scheduler will then pick another task to run, or block waiting for external events. If all
-goes well, eventually an event handler will call [`notify`](@ref) on the condition, which causes
-tasks waiting for that condition to become runnable again.
+これら全ての場合において，[`wait`](@ref)は最終的に，キューイングとタスクの再起動を担当している
+[`Condition`](@ref)オブジェクト上で動作します．タスクが[`Condition`](@ref)上で[`wait`](@ref)を
+呼び出すと，そのタスクは実行不可能とマークされ，コンディションのキューに追加され，スケジューラに
+切り替わります．スケジューラは実行する別のタスクを選択したり，外部イベントの待ち受けをブロックしたり
+します．全てがうまくいけば，最終的にはイベントハンドラがその条件の[`notify`](@ref)を呼び出し，
+その条件を待っているタスクが再び実行可能になります．
 
-A task created explicitly by calling [`Task`](@ref) is initially not known to the scheduler. This
-allows you to manage tasks manually using [`yieldto`](@ref) if you wish. However, when such
-a task waits for an event, it still gets restarted automatically when the event happens, as you
-would expect.
+[`Task`](@ref)を呼び出して明示的に作成されたタスクは，はじめはスケジューラに知られていません．
+これにより必要に応じて[`yieldto`](@ref)を使って手動でタスクを管理することができます．
+しかし，このようなタスクがイベントを待っていても，イベントが発生すると，想定通りに自動的に再起動されます．

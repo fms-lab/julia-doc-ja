@@ -18,7 +18,7 @@ end
 import Markdown
 Markdown.parse(String(take!(io)))
 ```
-前回のリリース以降の変更点については，[リリースノート](NEWS.md)をご覧ください．
+前回のリリース以降の変更内容については，[リリースノート](NEWS.md)をご覧ください．
 
 ```@eval
 release = isempty(VERSION.prerelease)
@@ -35,29 +35,21 @@ Markdown.parse("""
 
 ### [はじめに](@id man-introduction)
 
-　科学技術計算では常に高速に動作することが求められてる一方で，この分野の専門家の多くは静的型付け言語より低速に動作する動的型付け言語を使って仕事をしています．私達は動的型付け言語を用いることに多くの利点があることを理解していますし，動的型付け言語が使われないようにしたいわけでもありません．幸いなことに，最新の言語設計やコンパイラ技術の進歩により，性能と生産性のトレードオフの問題をほとんど解決することができ，「プロトタイピングに十分な生産性」と「性能を重視するアプリケーションのデプロイに十分な効率性」を単一の環境で両立することが可能になっています．Juliaは「柔軟な動的型付け言語」と「静的型付け言語と同等の性能」を両立する科学技術計算に適した言語です．
+科学技術計算の世界では常に最高の計算性能が要求されてきましたが，これら分野の専門家の多くは静的言語に速度で劣る動的言語を使って日々の仕事を進めています．私たちは動的言語を用いることに多くの利点があることを理解していますし，動的言語を使用する専門家が減ることも期待していません．幸いのことに，最新の言語設計やコンパイラ技術の進歩によって性能と生産性のトレードオフの問題はほとんど解消できており，プロトタイピングに十分な生産性と性能を重視するアプリケーションのデプロイに十分な演算効率を単一の環境で両立することが可能になっています．Juliaは柔軟な動的言語と静的言語に匹敵する性能を両立する科学技術計算に適した言語です．
 
-JuliaのコンパイラはPythonやRなどの言語に使われているインタプリタとは異なるので，最初はJuliaのパフォーマンスは直感に反するかもしれません．もし何か遅いと感じたら他のことを試す前にまずは[Performance Tips](@ref man-performance-tips)を読むことを強くお勧めします．一度Juliaの仕組みを理解すれば，C言語とほぼ同じ速さのコードを簡単に書くことができるでしょう．
+JuliaのコンパイラはPythonやRなどの言語に使われているインタプリタとは異なるので，最初はJuliaのパフォーマンスは直感に反するかもしれません．もしプログラムの動作が遅いと感じたら他のことを試す前にまずは[Performance Tips](@ref man-performance-tips)セクションを読むことを強くお勧めします．一度Juliaの仕組みを理解すれば，C言語と同等の速さのコードを簡単に書くことができるでしょう．
 
-Juliaは省略可能な型付け，多重ディスパッチ，高パフォーマンスを特徴としています．これらは[Low Level Virtual Machine(LLVM)](https://en.wikipedia.org/wiki/Low_Level_Virtual_Machine)を用いた型推論機能や[Just-In-Time(JIT)コンパイル](https://en.wikipedia.org/wiki/Just-in-time_compilation)を実装することにより実現されています．また，Juliaは命令型，関数型，オブジェクト指向プログラムの特徴を組み合わせたマルチパラダイム言語です．JuliaはRやMATLAB，Pythonなどの言語と同様に高度な数値計算を容易に表現することができます．さらに数値計算だけではなく汎用的なプログラミングもサポートしています．これはJuliaが数学的なプログラミング言語の系譜をベースにしているだけではなく，[Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language))，[Perl](https://en.wikipedia.org/wiki/Perl_(programming_language))，[Python](https://en.wikipedia.org/wiki/Python_(programming_language))，[Lua](https://en.wikipedia.org/wiki/Lua_(programming_language))，[Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language))などの人気な動的型付け言語の特徴も多く取り入れているからです．
+Juliaはの特徴として，省略可能な型付け，多重ディスパッチ，高パフォーマンスがあります．これらは[Low Level Virtual Machine(LLVM)](https://en.wikipedia.org/wiki/Low_Level_Virtual_Machine)を用いた型推論機能や[Just-In-Time(JIT)コンパイル](https://en.wikipedia.org/wiki/Just-in-time_compilation)により実現されています．また，Juliaは命令型，関数型，オブジェクト指向プログラムの特徴を併せ持つマルチパラダイム言語です．JuliaはRやMATLAB，Pythonなどの言語と同様に高度な数値計算を容易に表現することができます．さらに数値計算だけではなく汎用的なプログラミングもサポートしています．これはJuliaが数学的なプログラミング言語の系譜をベースにしているだけではなく，[Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language))，[Perl](https://en.wikipedia.org/wiki/Perl_(programming_language))，[Python](https://en.wikipedia.org/wiki/Python_(programming_language))，[Lua](https://en.wikipedia.org/wiki/Lua_(programming_language))，[Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language))などの人気の動的言語の特徴も多く取り入れているからです．
 
-The most significant departures of Julia from typical dynamic languages are:
+典型的な動的言語とJuliaの主な違いは以下となります．
 
-  * The core language imposes very little; Julia Base and the standard library are written in Julia itself, including
-    primitive operations like integer arithmetic
-  * A rich language of types for constructing and describing objects, that can also optionally be
-    used to make type declarations
-  * The ability to define function behavior across many combinations of argument types via [multiple dispatch](https://en.wikipedia.org/wiki/Multiple_dispatch)
-  * Automatic generation of efficient, specialized code for different argument types
-  * Good performance, approaching that of statically-compiled languages like C
+  * 言語のコア部分は最小限の機能しか提供しません．整数演算のような基本的な処理を含む標準ライブラリもはJulia自身により実装されています．
+  * オブジェクトの作成や説明に使用可能な型に関する豊富な機能を提供します．プログラマ自身で型を宣言することもできます．
+  * [多重ディスパッチ](https://en.wikipedia.org/wiki/Multiple_dispatch)により，引数の組み合わせごとに関数の振る舞いを定義できます．
+  * それぞれの引数の型ごとに効率的されたコードを自動生成します．
+  * C言語のような静的にコンパイルされる言語に近い性能を持ちます．
 
-Although one sometimes speaks of dynamic languages as being "typeless", they are definitely not:
-every object, whether primitive or user-defined, has a type. The lack of type declarations in
-most dynamic languages, however, means that one cannot instruct the compiler about the types of
-values, and often cannot explicitly talk about types at all. In static languages, on the other
-hand, while one can -- and usually must -- annotate types for the compiler, types exist only at
-compile time and cannot be manipulated or expressed at run time. In Julia, types are themselves
-run-time objects, and can also be used to convey information to the compiler.
+動的言語は「型がない」と言われることがありますがそんなことはありません．プリミティブであろうとユーザー定義であろうと，すべてのオブジェクトは型を持っています．しかしながら，ほとんどの動的言語では型宣言が存在せず，コンパイラに型を指示すること，明示的に型を定義することができません．一方，静的言語ではコンパイラのために型注釈をつけることができますが，型の情報はコンパイル時にしか存在せず，実行時に操作したり表現したりすることはできません．Juliaでは，型自体が実行時のオブジェクトであり，コンパイラに対して情報を伝えるために使用することもできます．
 
 While the casual programmer need not explicitly use types or multiple dispatch, they are the core
 unifying features of Julia: functions are defined on different combinations of argument types,

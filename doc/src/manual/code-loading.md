@@ -1,23 +1,23 @@
-# Code Loading
+# コードの読み込み
 
 !!! note
-    This chapter covers the technical details of package loading. To install packages, use [`Pkg`](@ref Pkg), Julia's built-in package manager, to add packages to your active environment. To use packages already in your active environment, write `import X` or `using X`, as described in the [Modules documentation](@ref modules).
+    このチャプタではパッケージの読み込みの技術的な詳細について説明します．パッケージをインストールするには，Juliaの組み込みパッケージマネージャである[`Pkg`](@ref Pkg)を使って，パッケージをアクティブな環境に追加します．既にアクティブな環境にあるパッケージを使うには，[Modulesdocumentation](@ref modules)で説明されているように，`import X`または`using X`を書いてください．
 
 ## Definitions
 
-Julia has two mechanisms for loading code:
+Juliaには2種類のコード読み込みのメカニズムがあります:
 
-1. **Code inclusion:** e.g. `include("source.jl")`. Inclusion allows you to split a single program across multiple source files. The expression `include("source.jl")` causes the contents of the file `source.jl` to be evaluated in the global scope of the module where the `include` call occurs. If `include("source.jl")` is called multiple times, `source.jl` is evaluated multiple times. The included path, `source.jl`, is interpreted relative to the file where the `include` call occurs. This makes it simple to relocate a subtree of source files. In the REPL, included paths are interpreted relative to the current working directory, [`pwd()`](@ref).
-2. **Package loading:** e.g. `import X` or `using X`. The import mechanism allows you to load a package—i.e. an independent, reusable collection of Julia code, wrapped in a module—and makes the resulting module available by the name `X` inside of the importing module. If the same `X` package is imported multiple times in the same Julia session, it is only loaded the first time—on subsequent imports, the importing module gets a reference to the same module. Note though, that `import X` can load different packages in different contexts: `X` can refer to one package named `X` in the main project but potentially to different packages also named `X` in each dependency. More on this below.
+1. **コードインクルージョン:**，例えば`include("source.jl")`．インクルードによって，単一のプログラムを複数のソースファイルに分割することが可能になります．`include("source.jl")`は，`include`呼び出しが発生したモジュールのグローバルスコープで，ファイル`source.jl`の内容を評価します．`include("source.jl")`が複数回呼び出された場合，`source.jl`は複数回評価されます．インクルードされたパスである`source.jl`は，`include`呼び出しが発生したファイルからの相対パスとして解釈されます．これにより，ソースファイルのサブツリーを簡単に再配置することができます．REPLでは，インクルードされたパスは，現在の作業ディレクトリ[`pwd()`](@ref)を基準に相対的に解釈されます．
+2. **パッケージ読み込み:**例えば，`import X`または`using X`．インポートの仕組みを使うと，パッケージ，すなわち独立で再利用可能なJuliaコードの集合体をモジュールにラップしたものを読み込んで，その結果のモジュールをインポートしているモジュールの中で`X`という名前で利用できるようにします．同じ`X`パッケージが同じJuliaセッションで複数回インポートされた場合，読み込まれるのは最初のものだけで，その後のインポートではインポートモジュールは同じモジュールへの参照を取得します．ただし，`import X`は異なるコンテキストでは異なるパッケージを読み込むことができることに注意してください: `x`はメインプロジェクトでは`X`という名前のパッケージを参照しますが，依存関係ごとに`X`という名前の異なるパッケージを参照する可能性があります．これについては後述します．
 
-Code inclusion is quite straightforward and simple: it evaluates the given source file in the context of the caller. Package loading is built on top of code inclusion and serves a [different purpose](@ref modules). The rest of this chapter focuses on the behavior and mechanics of package loading.
+コードインクルージョンは，非常に簡単でシンプルです: 呼び出し元のコンテキストで与えられたソースファイルを評価します．パッケージの読み込みはコードインクルージョンの上に構築され，[different purpose](@ref modules)を果たします．このチャプタの残りの部分はパッケージの読み込みの動作と仕組みに焦点を当てていきます．
 
-A *package* is a source tree with a standard layout providing functionality that can be reused by other Julia projects. A package is loaded by `import X` or  `using X` statements. These statements also make the module named `X`—which results from loading the package code—available within the module where the import statement occurs. The meaning of `X` in `import X` is context-dependent: which `X` package is loaded depends on what code the statement occurs in. Thus, handling of `import X` happens in two stages: first, it determines **what** package is defined to be `X` in this context; second, it determines **where** that particular `X` package is found.
+*パッケージ*とは，他のJuliaプロジェクトで再利用できる機能を提供する標準的なレイアウトのソースツリーです．パッケージは`import X`または`using X`で読み込まれます．これらのステートメントは，パッケージのコードを読み込んだ結果として得られた`X`という名前のモジュールを，インポートステートメントが呼び出されたモジュール内で利用できるようにもします．`import X`内の`X`の意味はコンテキスト依存です，すなわち，どの`X`パッケージが読み込まれるかは，そのステートメントがどのコードで発生したかに依存します．したがって，`import X`のハンドリングには二段階あります．第一に，**どの**パッケージがこのコンテキストで`X`と定義されているかを決定し，第二にその特定の`X`パッケージが**どこ**にあるかを決定します．
 
-These questions are answered by searching through the project environments listed in [`LOAD_PATH`](@ref) for project files (`Project.toml` or `JuliaProject.toml`), manifest files (`Manifest.toml` or `JuliaManifest.toml`), or folders of source files.
+これらの質問は[`LOAD_PATH`](@ref)に記載されているプロジェクト環境でプロジェクトファイル（`Project.toml`または`JuliaProject.toml`），マニフェストファイル（`Manifest.toml`または`JuliaManifest.toml`），またはソースファイルのフォルダを検索することで答えを得ることができます．
 
 
-## Federation of packages
+## パッケージのフェデレーション
 
 Most of the time, a package is uniquely identifiable simply from its name. However, sometimes a project might encounter a situation where it needs to use two different packages that share the same name. While you might be able fix this by renaming one of the packages, being forced to do so can be highly disruptive in a large, shared code base. Instead, Julia's code loading mechanism allows the same package name to refer to different packages in different components of an application.
 

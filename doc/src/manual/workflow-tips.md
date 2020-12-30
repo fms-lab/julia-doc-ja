@@ -1,17 +1,14 @@
-# [Workflow Tips](@id man-workflow-tips)
+# [ワークフローのTips](@id man-workflow-tips)
 
-Here are some tips for working with Julia efficiently.
+Juliaを効率的に動作させるためのTipsをご紹介します．
 
-## REPL-based workflow
+## REPL(Read-Eval-Print Loop)ベースのワークフロー
 
-As already elaborated in [The Julia REPL](@ref), Julia's REPL provides rich functionality
-that facilitates an efficient interactive workflow. Here are some tips that might further enhance
-your experience at the command line.
+[The Julia REPL](@ref)で詳しく説明されているように，JuliaのREPLは効率的な対話型ワークフローを促進する様々な機能を提供しています．ここではコマンドラインでの操作を便利にするいくつかのTipsをご紹介します．
 
-### A basic editor/REPL workflow
+### 基本的なエディタ/REPLワークフロー
 
-The most basic Julia workflows involve using a text editor in conjunction with the `julia` command
-line. A common pattern includes the following elements:
+最も基本的なJuliaのワークフローでは， `julia`コマンドラインと組み合わせてテキストエディタを使用します． ワークフローの一般的なパターンには以下の要素が含まれます．
 
   * **Put code under development in a temporary module.** Create a file, say `Tmp.jl`, and include
     within it
@@ -62,18 +59,13 @@ line. A common pattern includes the following elements:
 
   * **Lather. Rinse. Repeat.** Explore ideas at the `julia` command prompt. Save good ideas in `tst.jl`. To execute `tst.jl` after it has been changed, just `include` it again.
 
-## Browser-based workflow
+## ブラウザベースのワークフロー
 
-It is also possible to interact with a Julia REPL in the browser via [IJulia](https://github.com/JuliaLang/IJulia.jl).
-See the package home for details.
+[IJulia](https://github.com/JuliaLang/IJulia.jl)を介して，ブラウザ上からでJulia REPLと対話することも可能です．詳細についてはIJuliaのパッケージをご参照ください．
 
-## Revise-based workflows
+## リバイスベースのワークフロー
 
-Whether you're at the REPL or in IJulia, you can typically improve
-your development experience with
-[Revise](https://github.com/timholy/Revise.jl).
-It is common to configure Revise to start whenever julia is started,
-as per the instructions in the [Revise documentation](https://timholy.github.io/Revise.jl/stable/).
+REPLの場合でもIJuliaの場合でも[Revise](https://github.com/timholy/Revise.jl)を用いることで開発体験を向上させることができます．[Reviseのドキュメント](https://timholy.github.io/Revise.jl/stable/)の手順に従って，juliaを起動したときにReviseも起動するように設定するのが一般的です．
 Once configured, Revise will track changes to files in any loaded modules,
 and to any files loaded in to the REPL with `includet` (but not with plain `include`);
 you can then edit the files and the changes take effect without restarting your julia session.

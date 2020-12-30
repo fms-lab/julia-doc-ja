@@ -19,28 +19,71 @@ Juliaには2種類のコード読み込みのメカニズムがあります:
 
 ## パッケージのフェデレーション
 
-Most of the time, a package is uniquely identifiable simply from its name. However, sometimes a project might encounter a situation where it needs to use two different packages that share the same name. While you might be able fix this by renaming one of the packages, being forced to do so can be highly disruptive in a large, shared code base. Instead, Julia's code loading mechanism allows the same package name to refer to different packages in different components of an application.
+ほとんどの場合，パッケージは名前だけで一意に識別できます．しかし，プロジェクトが同じ名前を
+共有する二つの異なるパッケージを使用しなければならない場合もあります．どちらかのパッケージの
+名前を変更することで解決できるかもしれませんが，大規模な共有されているコードベースでは，それ
+を共有することはとても混乱を招きます．その代わりに，Juliaのコード読み込みのメカニズムでは，
+同じパッケージ名を用いて，アプリケーションの異なるコンポーネントにおいて異なるパッケージを
+参照することができます．
 
-Julia supports federated package management, which means that multiple independent parties can maintain both public and private packages and registries of packages, and that projects can depend on a mix of public and private packages from different registries. Packages from various registries are installed and managed using a common set of tools and workflows. The `Pkg` package manager that ships with Julia lets you install and manage your projects' dependencies. It assists in creating and manipulating project files (which describe what other projects that your project depends on), and manifest files (which snapshot exact versions of your project's complete dependency graph).
+Juliaはフェデレートされたパッケージ管理をサポートしており，これは，複数の独立したパーティが
+パブリックおよびプライベートなパッケージとパッケージのレジストリの両方を管理し，プロジェクト
+は異なるレジストリからパブリックおよびプライベートパッケージを混在させながら依存できることを
+意味します．様々なレジストリのパッケージは，共通のツールとワークフローのセットを使って
+インストールされ，管理されます．Juliaにビルトインな`Pkg`というパッケージマネージャを使用
+すると，プロジェクトに依存関係のあるものをインストールし，管理することができます．
+プロジェクトファイル（プロジェクトが依存している他のプロジェクトを記述したもの）や
+マニフェストファイル（プロジェクトの完全な依存関係グラフの正確なバージョンをスナップショット
+したもの）の作成と操作を支援します．
 
-One consequence of federation is that there cannot be a central authority for package naming. Different entities may use the same name to refer to unrelated packages. This possibility is unavoidable since these entities do not coordinate and may not even know about each other. Because of the lack of a central naming authority, a single project may end up depending on different packages that have the same name. Julia's package loading mechanism does not require package names to be globally unique, even within the dependency graph of a single project. Instead, packages are identified by [universally unique identifiers](https://en.wikipedia.org/wiki/Universally_unique_identifier) (UUIDs), which get assigned when each package is created. Usually you won't have to work directly with these somewhat cumbersome 128-bit identifiers since `Pkg` will take care of generating and tracking them for you. However, these UUIDs provide the definitive answer to the question of *"what package does `X` refer to?"*
+フェデレーションの一つの結果として，パッケージの命名のための中央管理者は存在しません．
+異なるエンティティが無関係なパッケージを参照するために同じ名前を使うことがあります．
+これらのエンティティは連携しておらず，お互いのことを知らない場合もあるので，この可能性は
+不可避です．中央の命名権限がないため，単一のプロジェクトが同じ名前の異なるパッケージに
+依存してしまう可能性があります．Juliaのパッケージ読み込みメカニズムでは，単一のプロジェクト
+の依存関係グラフ内であっても，パッケージ名がグローバルに一意である必要はありません．
+その代わりに，パッケージは[universally unique identifiers](https://en.wikipedia.org/wiki/Universally_unique_identifier) (UUIDs)で識別され，
+このUUIDは各パッケージが生成された時に割り当てられます．通常，`Pkg`が生成や追跡を担って
+くれるので，この128ビットの識別子を直接扱う必要はありません．しかし，これらのUUIDは
+*`X`はどのパッケージを参照しているか?*という質問に対する確実な答えを提供します．
 
-Since the decentralized naming problem is somewhat abstract, it may help to walk through a concrete scenario to understand the issue. Suppose you're developing an application called `App`, which uses two packages: `Pub` and  `Priv`. `Priv` is a private package that you created, whereas `Pub` is a public package that you use but don't control. When you created `Priv`, there was no public package by the name `Priv`. Subsequently, however, an unrelated package also named `Priv` has been published and become popular. In fact, the `Pub` package has started to use it. Therefore, when you next upgrade `Pub` to get the latest bug fixes and features, `App` will end up depending on two different packages named `Priv`—through no action of yours other than upgrading. `App` has a direct dependency on your private `Priv` package, and an indirect dependency, through `Pub`, on the new public `Priv` package. Since these two `Priv` packages are different but are both required for `App` to continue working correctly, the expression `import Priv` must refer to different `Priv` packages depending on whether it occurs in `App`'s code or in `Pub`'s code. To handle this, Julia's package loading mechanism distinguishes the two `Priv` packages by their UUID and picks the correct one based on its context (the module that called `import`). How this distinction works is determined by environments, as explained in the following sections.
+中央管理されていない名前の問題は抽象的なので，問題を理解するためには具体的なシナリオを
+見ていくことが役立つかもしれません．今，`App`というアプリケーションを開発しているとし，
+その際`Pub`と`Priv`という2つのパッケージを使っているとしましょう．`Priv`はあなたが作った
+プライベートパッケージであり，`Pub`はあなたが使用しているが管理はしていないパブリック
+パッケージです．あなたが`Priv`を作成した時，`Priv`という名前のパブリックパッケージは
+ありませんでした．しかしその後，`Priv`という名前の無関係なパッケージが公開され，人気が
+出てきました．実際，`Pub`パッケージはそれを使い始めました．そのため，次に`Pub`を
+アップグレードして最新のバグフィックスや機能を手に入れようとすると，アップグレード以外に
+何もしなくても，`App`は`Priv`という名前の異なる2つのパッケージに依存してしまうことに
+なります．`App`はあなたのプライベートな`Priv`パッケージに直接依存しており，`Pub`を通して
+新しいパブリックな`Priv`パッケージに間接的に依存しています．これら2つの`Priv`パッケージは
+異なるものですが，`App`が正しく動作し続けるためには双方が必要なので，`import Priv`が，
+`App`のコードの中にあるのか，`Pub`のコードにあるのかによって，異なる`Priv`パッケージを
+参照しなければなりません．これを処理するために，Juliaのパッケージ読み込みメカニズムは
+2つの`Priv`パッケージをUUIDで区別し，そのコンテキスト（すなわち`import`を呼んだモジュール）
+に基づいて，正しい方を選択します．以下のセクションで説明するように，これは環境によって
+決まります．
 
-## Environments
+## 環境
 
-An *environment* determines what `import X` and `using X` mean in various code contexts and what files these statements cause to be loaded. Julia understands two kinds of environments:
+*環境*とは，様々なコードコンテキストにおける`import X`および`using X`の意味と，これらの
+ステートメントによって読み込まれるファイルが何かを決定するものです．Juliaは2種類の環境を
+理解しています:
 
-1. **A project environment** is a directory with a project file and an optional manifest file, and forms an *explicit environment*. The project file determines what the names and identities of the direct dependencies of a project are. The manifest file, if present, gives a complete dependency graph, including all direct and indirect dependencies, exact versions of each dependency, and sufficient information to locate and load the correct version.
-2. **A package directory** is a directory containing the source trees of a set of packages as subdirectories, and forms an *implicit environment*. If `X` is a subdirectory of a package directory and `X/src/X.jl` exists, then the package `X` is available in the package directory environment and `X/src/X.jl` is the source file by which it is loaded.
+1. **プロジェクト環境**はプロジェクトファイルとオプションのマニフェストファイルを含むディレクトリで，明示的な環境を形成します．プロジェクトファイルはプロジェクトの直接の依存関係の名前と同一性を決定づけます．マニフェストファイルがあるのであれば，全ての直接および間接的な依存関係，各依存関係の正確なバージョン，正しいバージョンを探して読み込むための十分な情報を含む，完全な依存関係グラフを提供します．
+2. **パッケージディレクトリ**はパッケージの集合のソースツリーをサブディレクトリとして含むディレクトリであり，暗黙の環境を形成します．`X`がパッケージディレクトリのサブディレクトリであり，`X/src/X.jl`が存在する場合，パッケージ`X`はパッケージディレクトリ環境で利用可能であり，`X/src/X.jl`はそれがロードされるソースファイルです．
 
-These can be intermixed to create **a stacked environment**: an ordered set of project environments and package directories, overlaid to make a single composite environment. The precedence and visibility rules then combine to determine which packages are available and where they get loaded from. Julia's load path forms a stacked environment, for example.
+これらを混ぜ合わせて**スタック環境**を作成することができます，すなわち，プロジェクト環境と
+パッケージディレクトリを順番に重ね合わせて一つの複合環境を作るということです．優先度と
+可視性のルールを組み合わせて，どのパッケージが利用可能で，どこからロードされるのかを決定
+します．例えばJuliaの読み込みパスはスタック環境を形成します．
 
-These environment each serve a different purpose:
+これらの環境はそれぞれ異なる目的を持っています:
 
-* Project environments provide **reproducibility**. By checking a project environment into version control—e.g. a git repository—along with the rest of the project's source code, you can reproduce the exact state of the project and all of its dependencies. The manifest file, in particular, captures the exact version of every dependency, identified by a cryptographic hash of its source tree, which makes it possible for `Pkg` to retrieve the correct versions and be sure that you are running the exact code that was recorded for all dependencies.
-* Package directories provide **convenience** when a full carefully-tracked project environment is unnecessary. They are useful when you want to put a set of packages somewhere and be able to directly use them, without needing to create a project environment for them.
-* Stacked environments allow for **adding** tools to the primary environment. You can push an environment of development tools onto the end of the stack to make them available from the REPL and scripts, but not from inside packages.
+* プロジェクト環境は**再現性**を提供します．プロジェクト環境をバージョンコントロール（例えばgitリポジトリなど）でプロジェクトのの残りのソースコードと一緒にチェックすることで，プロジェクトとその依存関係の全てを正確に再現することができます．特にマニフェストファイルは，ソースツリーの暗号化ハッシュによって識別される全ての依存関係の正確なバージョンをキャプチャします．これにより，`Pkg`は正しいバージョンを取得し，全ての依存関係について記録された正確なコードを実行していることを確認することが可能になります．
+* パッケージディレクトリは，完全に注意深く追跡されたプロジェクト環境は必要ないような場合に便利です．パッケージディレクトリはパッケージのセットをどこかに置いておいて，そのパッケージ向けのプロジェクト環境を作らなくても直接使えるようにしたいときに便利です．
+* スタック環境では，プライマリ環境にツールを**追加**することができます．開発ツールの環境をスタックの端にプッシュしてREPLやスクリプトから利用できるようにすることはできますが，パッケージの内部からは利用できません．
 
 At a high-level, each environment conceptually defines three maps: roots, graph and paths. When resolving the meaning of `import X`, the roots and graph maps are used to determine the identity of `X`, while the paths map is used to locate the source code of `X`. The specific roles of the three maps are:
 

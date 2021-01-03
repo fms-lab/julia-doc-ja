@@ -85,32 +85,32 @@ Juliaはフェデレートされたパッケージ管理をサポートしてお
 * パッケージディレクトリは，完全に注意深く追跡されたプロジェクト環境は必要ないような場合に便利です．パッケージディレクトリはパッケージのセットをどこかに置いておいて，そのパッケージ向けのプロジェクト環境を作らなくても直接使えるようにしたいときに便利です．
 * スタック環境では，プライマリ環境にツールを**追加**することができます．開発ツールの環境をスタックの端にプッシュしてREPLやスクリプトから利用できるようにすることはできますが，パッケージの内部からは利用できません．
 
-At a high-level, each environment conceptually defines three maps: roots, graph and paths. When resolving the meaning of `import X`, the roots and graph maps are used to determine the identity of `X`, while the paths map is used to locate the source code of `X`. The specific roles of the three maps are:
+高いレベルでは，各環境は概念的に，roots, graph, pathsの3つのマップを定義しています．`import X`の意味を解決するとき，rootsマップとgraphマップは`X`の同一性を決定するために使用され，pathsマップは`X`のソースコードを見つけるために使用されます．3つのマップの具体的な役割は以下の通りです:
 
 - **roots:** `name::Symbol` ⟶ `uuid::UUID`
 
-   An environment's roots map assigns package names to UUIDs for all the top-level dependencies that the environment makes available to the main project (i.e. the ones that can be loaded in `Main`). When Julia encounters `import X` in the main project, it looks up the identity of `X` as `roots[:X]`.
+   環境のrootsマップは，その環境がメインプロジェクトで利用できるようにしているトップレベルの依存関係（すなわち，`Main`で読み込めるもの）の全てのUUIDにパッケージ名を割り当てます．Juliaのメインプロジェクト内で`import X`があると，Juliaは`X`のIDを`root[:X]`として調べます．
 
 - **graph:** `context::UUID` ⟶ `name::Symbol` ⟶ `uuid::UUID`
 
-   An environment's graph is a multilevel map which assigns, for each `context` UUID, a map from names to UUIDs, similar to the roots map but specific to that `context`. When Julia sees `import X` in the code of the package whose UUID is `context`, it looks up the identity of `X` as `graph[context][:X]`. In particular, this means that `import X` can refer to different packages depending on `context`.
+   環境のgraphは，各`context` UUIDに対して，名前からUUIDへのマップを割り当てる多階層マップで，rootsマップに似ていますが，`context`に固有のものです．UUIDが`context`であるパッケージのコードの中で`import X`を見ると，Juliaは`graph[context][:X]`として`X`の同一性を調べます．特に，これは`import X`が`context`によって，異なるパッケージを参照できることを意味します．
 
 - **paths:** `uuid::UUID` × `name::Symbol` ⟶ `path::String`
 
-   The paths map assigns to each package UUID-name pair, the location of that package's entry-point source file. After the identity of `X` in `import X` has been resolved to a UUID via roots or graph (depending on whether it is loaded from the main project or a dependency), Julia determines what file to load to acquire `X` by looking up `paths[uuid,:X]` in the environment. Including this file should define a module named `X`. Once this package is loaded, any subsequent import resolving to the same `uuid` will create a new binding to the already-loaded package module.
+   pathsマップは各パッケージのUUID-名前のペアに，そのパッケージのエントリポイントソースファイルの場所を割り当てます．`import X`の`X`がrootsまたはgraph（メインプロジェクトから読み込まれるか依存関係から読み込まれるかによって変化する）経由でUUIDに名前解決されたあと，Juliaは環境内の`paths[uuid,:X]`を検索することで，`X`を取得するために読み込むファイルを決定します．このファイルをインクルードすると，`X`という名前のモジュールが定義されるはずです．このパッケージが読み込まれると，同じ`uuid`に解決する後続のインポートは，すでにロードされているパッケージモジュールへの新しいバインディングを作成します．
 
-Each kind of environment defines these three maps differently, as detailed in the following sections.
+環境の種類ごとに，以下のセクションで詳しく説明するように，これらの3つのマップは異なる定義をしています．
 
 !!! note
-    For ease of understanding, the examples throughout this chapter show full data structures for roots, graph and paths. However, Julia's package loading code does not explicitly create these. Instead, it lazily computes only as much of each structure as it needs to load a given package.
+    理解を容易にするためにこの章の例では，roots, graph, pathsの完全なデータ構造を示していますが，Juliaのパッケージ読み込みコードはこれらを明示的には作成しません．その代わりに，与えられたパッケージを読み込むのに必要な分だけ，各構造の計算だけを行っています．
 
-### Project environments
+### プロジェクト環境
 
-A project environment is determined by a directory containing a project file called `Project.toml`, and optionally a manifest file called `Manifest.toml`. These files may also be called `JuliaProject.toml` and `JuliaManifest.toml`, in which case `Project.toml` and `Manifest.toml` are ignored. This allows for coexistence with other tools that might consider files called `Project.toml` and `Manifest.toml` significant. For pure Julia projects, however, the names `Project.toml` and `Manifest.toml` are preferred.
+プロジェクト環境は，`Project.toml`と呼ばれるプロジェクトファイルと，必要に応じて`Manifest.toml`と呼ばれるマニフェストファイルを含むディレクトリによって決定されます．これらのファイルは，`JuliaProject.toml`や`JuliaManifest.toml`と呼ばれることもあり，この場合は`Project.toml`や`Manifest.toml`は無視されます．これにより，`Project.toml`や`Manifest.toml`と呼ばれるファイルを重視する他のツールとの共存が可能になります．しかし純粋なJuliaプロジェクトでは，`Project.toml`や`Manifest.toml`という名前が好まれます．
 
-The roots, graph and paths maps of a project environment are defined as follows:
+プロジェクト環境のrootsマップ，graphマップ，pathsマップは以下のように定義されています:
 
-**The roots map** of the environment is determined by the contents of the project file, specifically, its top-level `name` and `uuid` entries and its `[deps]` section (all optional). Consider the following example project file for the hypothetical application, `App`, as described earlier:
+環境の**rootsマップ**は，プロジェクトファイルの内容，特にトップレベルの`name`と`uuid`エントリ，`[deps]`セクション（全てオプション）によって決まります．先に説明した仮想アプリケーション`App`のプロジェクトファイルの例を考えてみましょう:
 
 ```toml
 name = "App"
@@ -121,7 +121,7 @@ Priv = "ba13f791-ae1d-465a-978b-69c3ad90f72b"
 Pub  = "c07ecb7d-0dc9-4db7-8803-fadaaeaf08e1"
 ```
 
-This project file implies the following roots map, if it was represented by a Julia dictionary:
+このプロジェクトファイルは，Juliaの辞書型で表現されている場合，以下のようなrootsマップを意味しています:
 
 ```julia
 roots = Dict(
@@ -131,9 +131,9 @@ roots = Dict(
 )
 ```
 
-Given this roots map, in `App`'s code the statement `import Priv` will cause Julia to look up `roots[:Priv]`, which yields `ba13f791-ae1d-465a-978b-69c3ad90f72b`, the UUID of the `Priv` package that is to be loaded in that context. This UUID identifies which `Priv` package to load and use when the main application evaluates `import Priv`.
+このようなrootsマップが与えられると，`App`のコードでは，`import Priv`というステートメントがJuliaに`roots[:Priv]`を検索させ，そのコンテキストで読み込まれる`Priv`パッケージのUUIDである`ba13f791-ae1d-465a-978b-69c3ad90f72b`が生成されます．このUUIDは，メインアプリケーションが`import Priv`を評価する際に，どの`Priv`パッケージを読み込んで使用するかを識別します．
 
-**The dependency graph** of a project environment is determined by the contents of the manifest file, if present. If there is no manifest file, graph is empty. A manifest file contains a stanza for each of a project's direct or indirect dependencies. For each dependency, the file lists the package's UUID and a source tree hash or an explicit path to the source code. Consider the following example manifest file for `App`:
+プロジェクト環境の**依存関係graph**は，マニフェストファイルがあれば，その内容によって決定されます．マニフェストファイルがない場合は，graphは空です．マニフェストファイルには，直接または間接的な依存関係のそれぞれについての節が含まれています．各依存関係について，ファイルにはパッケージのUUIDとソースツリーハッシュ，またはソースコードへの明示的なパスがリストされています．次の例で，例として`App`のマニフェストファイルを見てみましょう:
 
 ```toml
 [[Priv]] # the private one
@@ -161,15 +161,15 @@ git-tree-sha1 = "e808e36a5d7173974b90a15a353b564f3494092f"
 version = "3.4.2"
 ```
 
-This manifest file describes a possible complete dependency graph for the `App` project:
+このマニフェストファイルには，`App`プロジェクトの完全な依存関係グラフが記述されています:
 
-- There are two different packages named `Priv` that the application uses. It uses a private package, which is a root dependency, and a public one, which is an indirect dependency through `Pub`. These are differentiated by their distinct UUIDs, and they have different deps:
-  * The private `Priv` depends on the `Pub` and `Zebra` packages.
-  * The public `Priv` has no dependencies.
-- The application also depends on the `Pub` package, which in turn depends on the public `Priv ` and the same `Zebra` package that the private `Priv` package depends on.
+- アプリケーションが使用する`Priv`という名前の，異なる2つのパッケージがあります．ルート依存関係にあるプライベートパッケージと，`Pub`を通じて間接的に依存関係にあるパブリックパッケージを使用しています．これらは異なるUUIDによって区別されており，異なるdepsを持っています:
+  * プライベートな`Priv`は`Pub`と`Zebra`パッケージに依存しています．
+  * パブリックな`Priv`には依存関係はありません．
+- アプリケーションは`Pub`パッケージにも依存しており，`Pub`パッケージはパブリックな`Priv`と，プライベートな`Priv`が依存しているのと同じ`Zebra`パッケージに依存しています．
 
 
-This dependency graph represented as a dictionary, looks like this:
+この依存関係graphを辞書で書くと，以下のようになります:
 
 ```julia
 graph = Dict(

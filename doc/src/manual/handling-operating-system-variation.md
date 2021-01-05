@@ -11,9 +11,6 @@ if Sys.iswindows()
 end
 ```
 
-Note that `islinux`, `isapple`, and `isfreebsd` are mutually exclusive subsets of `isunix`.
-Additionally, there is a macro `@static` which makes it possible to use these functions to
-conditionally hide invalid code, as demonstrated in the following examples.
 ここで，`islinux`，`isapple`，`isfreebsd`は互いに排他的な`isunix`のサブセットであることに
 注意してください．また`@static`というマクロがあり，これらの関数を使って正しくないコードを
 条件付きで隠すことができます．以下にその例を示します．

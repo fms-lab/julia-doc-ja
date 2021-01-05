@@ -1,10 +1,9 @@
-# Handling Operating System Variation
+# [OSの違いへの対応](@id Handling-Operating-System-Variation)
 
-When writing cross-platform applications or libraries, it is often necessary to allow for
-differences between operating systems. The variable `Sys.KERNEL` can be used to handle such
-cases. There are several functions in the `Sys` module intended to make this easier, such as
-`isunix`, `islinux`, `isapple`, `isbsd`, `isfreebsd`, and `iswindows`. These may be used
-as follows:
+クロスプラットフォームのアプリケーションやライブラリを書く場合，しばしばOSの違いを考慮する
+必要があります．このような場合には，変数`Sys.KERNEL`を使用して対応することができます．
+`Sys`モジュールには，`isunix`，`islinux`，`isapple`，`isbsd`，`isfreebsd`，`iswindows`
+といった，これを容易にするための関数がいくつか用意されています．これらは以下のように使用できます:
 
 ```julia
 if Sys.iswindows()
@@ -12,17 +11,17 @@ if Sys.iswindows()
 end
 ```
 
-Note that `islinux`, `isapple`, and `isfreebsd` are mutually exclusive subsets of `isunix`.
-Additionally, there is a macro `@static` which makes it possible to use these functions to
-conditionally hide invalid code, as demonstrated in the following examples.
+ここで，`islinux`，`isapple`，`isfreebsd`は互いに排他的な`isunix`のサブセットであることに
+注意してください．また`@static`というマクロがあり，これらの関数を使って正しくないコードを
+条件付きで隠すことができます．以下にその例を示します．
 
-Simple blocks:
+シンプルなブロック:
 
 ```
 ccall((@static Sys.iswindows() ? :_fopen : :fopen), ...)
 ```
 
-Complex blocks:
+複雑なブロック:
 
 ```julia
 @static if Sys.islinux()
@@ -32,8 +31,8 @@ else
 end
 ```
 
-When chaining conditionals (including `if`/`elseif`/`end`), the `@static` must be repeated for
-each level (parentheses optional, but recommended for readability):
+条件式を（`if`/`elseif`/`end`を含みながら）連鎖させる場合，`@static`は各レベルで繰り返し
+書かれる必要があります（括弧を付けるかどうかは任意ですが，読みやすさのために推奨されます）．
 
 ```julia
 @static Sys.iswindows() ? :a : (@static Sys.isapple() ? :b : :c)

@@ -1,35 +1,32 @@
-# Profiling
+# [プロファイリング](@id man-profiling)
 
-The `Profile` module provides tools to help developers improve the performance of their
-code. When used, it takes measurements on running code, and produces output that helps you understand
-how much time is spent on individual line(s). The most common usage is to identify "bottlenecks"
-as targets for optimization.
+`Profile`は開発者に，コードのパフォーマンスを向上させるためのツールを提供します．
+使用すると，実行中のコードを測定し，個々の行にどれだけの時間が費やされているかを理解するのに
+役立つ出力を生成します．最も一般的な使用法は，最適化の対象となる「ボトルネック」を特定することです．
 
-`Profile` implements what is known as a "sampling" or [statistical profiler](https://en.wikipedia.org/wiki/Profiling_(computer_programming)).
- It works by periodically taking a backtrace during the execution of any task. Each backtrace
-captures the currently-running function and line number, plus the complete chain of function calls
-that led to this line, and hence is a "snapshot" of the current state of execution.
+`Profile`は「サンプリング」や[statistical profiler](https://en.wiki\
+pedia.org/wiki/Profiling_(computer_programming))
+として知られているものを実装しています．これは任意のタスクの実行中に定期的にバックトレースを
+取ることで動作します．各バックトレースは現在実行中の関数と行番号に加えて，その行につながった
+関数呼び出しの完全な連鎖をキャプチャし，現在の実行状態の「スナップショット」となります．
 
-If much of your run time is spent executing a particular line of code, this line will show up
-frequently in the set of all backtraces. In other words, the "cost" of a given line--or really,
-the cost of the sequence of function calls up to and including this line--is proportional to how
-often it appears in the set of all backtraces.
+実行時間の多くが特定のコード行の実行に費やされている場合，この行は全てのバックトレースの
+セットに頻繁に表示されます．つまり，この行を含む一連の関数呼び出しのコストは，その行が
+全てのバックトレースのセットの中で表示される頻度に比例します．
 
-A sampling profiler does not provide complete line-by-line coverage, because the backtraces occur
-at intervals (by default, 1 ms on Unix systems and 10 ms on Windows, although the actual scheduling
-is subject to operating system load). Moreover, as discussed further below, because samples are
-collected at a sparse subset of all execution points, the data collected by a sampling profiler
-is subject to statistical noise.
+サンプリングプロファイラは，バックトレースが感覚をおいて発生するため，行ごとに完全にカバー
+することはできません（デフォルトでは，Unixでは1ms，Windowsでは10msとなっていますが，実際の
+スケジューリングはOSの負荷に左右されます）．さらに，後述するように，全ての実行ポイントの
+疎なサブセットで収集されるため，サンプリングプロファイラによって収集されたデータは統計的
+なノイズの影響を受けます．
 
-Despite these limitations, sampling profilers have substantial strengths:
+これらの制約にも拘わらず，サンプリングプロファイラには大きな強みがあります:
 
-  * You do not have to make any modifications to your code to take timing measurements.
-  * It can profile into Julia's core code and even (optionally) into C and Fortran libraries.
-  * By running "infrequently" there is very little performance overhead; while profiling, your code
-    can run at nearly native speed.
+  * タイミング測定のためにコードを変更する必要がありません．
+  * サンプリングプロファイラは，Juliaのコアコードや，（オプションで）CやFortranのライブラリをプロファイリングすることができます．
+  * 頻繁に実行しないことにより，パフォーマンスへのオーバーヘッドはほとんどなく，プロファイリングを行っている間，コードはほぼネイティブなスピードで実行できます．
 
-For these reasons, it's recommended that you try using the built-in sampling profiler before considering
-any alternatives.
+これらの理由から，他の方法を検討する前に，組み込みのサンプリングプロファイラを使用してみることをお勧めします．
 
 ## Basic usage
 

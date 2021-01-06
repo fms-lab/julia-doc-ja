@@ -14,14 +14,14 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build-deploy:
+  check-build-status:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout main branch
+      - name: Checkout branch to be merged
         uses: actions/checkout@v2
 
       - name: Setup Julia environment v1.5.3

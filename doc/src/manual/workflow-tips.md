@@ -8,7 +8,7 @@ Juliaを効率的に動作させるためのTipsをご紹介します．
 
 ### 基本的なエディタ/REPLワークフロー
 
-最も基本的なJuliaのワークフローでは， `julia`コマンドラインと組み合わせてテキストエディタを使用します． ワークフローの一般的なパターンには以下の要素が含まれます．
+最も基本的なJuliaのワークフローでは， `julia`のコマンドラインと組み合わせてテキストエディタを使用します． ワークフローの一般的なパターンには以下の要素が含まれます．
 
   * **Put code under development in a temporary module.** Create a file, say `Tmp.jl`, and include
     within it
@@ -63,17 +63,11 @@ Juliaを効率的に動作させるためのTipsをご紹介します．
 
 [IJulia](https://github.com/JuliaLang/IJulia.jl)を介して，ブラウザ上からでJulia REPLと対話することも可能です．詳細についてはIJuliaのパッケージをご参照ください．
 
-## リバイスベースのワークフロー
+## Reviseベースのワークフロー
 
-REPLの場合でもIJuliaの場合でも[Revise](https://github.com/timholy/Revise.jl)を用いることで開発体験を向上させることができます．[Reviseのドキュメント](https://timholy.github.io/Revise.jl/stable/)の手順に従って，juliaを起動したときにReviseも起動するように設定するのが一般的です．
-Once configured, Revise will track changes to files in any loaded modules,
-and to any files loaded in to the REPL with `includet` (but not with plain `include`);
-you can then edit the files and the changes take effect without restarting your julia session.
-A standard workflow is similar to the REPL-based workflow above, with
-the following modifications:
+REPLの場合でもIJuliaの場合でも[Revise](https://github.com/timholy/Revise.jl)を用いることで開発体験を向上させることができます．[Reviseのドキュメント](https://timholy.github.io/Revise.jl/stable/)の手順に従い，juliaを起動した際にReviseを起動するように設定するのが一般的です．一度Reviseを設定すると，Reviseは読み込まれたモジュール内のファイルや`includet`でREPLに読み込まれたファイルの変更を追跡します．(`includet`ではなく`include`の場合は追跡しません)．これら追跡されたファイルは編集可能で，変更した内容はjuliaセッションを再起動することなく有効になります．標準的なワークフローはREPLベースのワークフローに似ていますがReviseベースのワークフローでは以下の変更点があります．
 
-1. Put your code in a module somewhere on your load path. There are
-   several options for achieving this, of which two recommended choices are:
+1. ロードパスのどこかにあるモジュールにあなたのコードを配置してください．これを実現するためにはいくつかの選択肢がありますが，その中でも特におすすめなのが以下の2つの方法です．
 
    a. For long-term projects, use
       [PkgTemplates](https://github.com/invenia/PkgTemplates.jl):

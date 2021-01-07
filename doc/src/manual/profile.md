@@ -28,9 +28,9 @@ pedia.org/wiki/Profiling_(computer_programming))
 
 これらの理由から，他の方法を検討する前に，組み込みのサンプリングプロファイラを使用してみることをお勧めします．
 
-## Basic usage
+## 基本的な用法
 
-Let's work with a simple test case:
+簡単なテストケースを見てみましょう:
 
 ```julia-repl
 julia> function myfunc()
@@ -39,14 +39,14 @@ julia> function myfunc()
        end
 ```
 
-It's a good idea to first run the code you intend to profile at least once (unless you want to
-profile Julia's JIT-compiler):
+（JuliaのJITコンパイラをプロファイリングしたい場合を除いて）プロファイリングするコードを
+はじめに少なくとも一度は実行しておくことをお勧めします．
 
 ```julia-repl
 julia> myfunc() # run once to force compilation
 ```
 
-Now we're ready to profile this function:
+さて，この関数をプロファイリングする準備ができました:
 
 ```julia-repl
 julia> using Profile
@@ -54,17 +54,19 @@ julia> using Profile
 julia> @profile myfunc()
 ```
 
-To see the profiling results, there are several graphical browsers.
-One "family" of visualizers is based on [FlameGraphs.jl](https://github.com/timholy/FlameGraphs.jl), with each family member providing a different user interface:
-- [Juno](https://junolab.org/) is a full IDE with built-in support for profile visualization
-- [ProfileView.jl](https://github.com/timholy/ProfileView.jl) is a stand-alone visualizer based on GTK
-- [ProfileVega.jl](https://github.com/davidanthoff/ProfileVega.jl) uses VegaLight and integrates well with Jupyter notebooks
-- [StatProfilerHTML](https://github.com/tkluck/StatProfilerHTML.jl) produces HTML and presents some additional summaries, and also integrates well with Jupyter notebooks
-- [ProfileSVG](https://github.com/timholy/ProfileSVG.jl) renders SVG
+プロファイリング結果を見るために，いくつかのグラフィカルブラウザがあります．
+ビジュアライザの「ファミリ」の一つは，[FlameGraphs.jl](https://github.com/timholy/FlameGraphs.jl)に
+基づいており，各ファミリのメンバは異なるユーザインタフェースを提供しています:
+- [Juno](https://junolab.org/)はプロファイルの可視化をビルトインでサポートする完全なIDEです
+- [ProfileView.jl](https://github.com/timholy/ProfileView.jl)はGTKをベースにしたスタンドアロンのビジュアライザです
+- [ProfileVega.jl](https://github.com/davidanthoff/ProfileVega.jl)はVegaLightを使用しており，Jupyter notebookとうまく統合されています
+- [StatProfilerHTML](https://github.com/tkluck/StatProfilerHTML.jl)はHTMLを生成し，いくつかの追加サマリを表示し，Jupyter notebookとの統合も可能です
+- [ProfileSVG](https://github.com/timholy/ProfileSVG.jl)はSVGをレンダリングします
 
-An entirely independent approach to profile visualization is [PProf.jl](https://github.com/vchuravy/PProf.jl), which uses the external `pprof` tool.
+プロファイルの可視化のための完全に独立したアプローチとして，外部ツールである`pprof`を
+使用する[PProf.jl](https://github.com/vchuravy/PProf.jl)があります．
 
-Here, though, we'll use the text-based display that comes with the standard library:
+しかし，ここでは標準ライブラリに付属のテキストベースの表示を使用します:
 
 ```julia-repl
 julia> Profile.print()
@@ -87,51 +89,48 @@ julia> Profile.print()
         25 ./reduce.jl:428; mapreduce_impl(::Base.#identity, ::Base.#scalarmax, ::Array{F...
 ```
 
-Each line of this display represents a particular spot (line number) in the code. Indentation
-is used to indicate the nested sequence of function calls, with more-indented lines being deeper
-in the sequence of calls. In each line, the first "field" is the number of backtraces
-(samples) taken *at this line or in any functions executed by this line*.
-The second field is the file name and line number and the third field is the function name.
-Note that the specific line numbers may change as Julia's
-code changes; if you want to follow along, it's best to run this example yourself.
+この表示の各行は，コード内の特定の場所（行番号）を表しています．インデントは関数呼び出しの
+入れ子になったシーケンスを示すために使用され，インデントが大きい行は呼び出しのシーケンスの
+中でより深い位置にあることを示します．各行の最初の「フィールド」は，*この行またはその行で*
+実行された関数のバックトレース（サンプル）の数です．2番目のフィールドはファイル名と行番号，
+3番目のフィールドは関数名です．特定の行番号は，Juliaのコードの変更に伴って変更される可能性
+があることに注意してください．この例を自分で実行しながら試してみるのが良いでしょう．
 
-In this example, we can see that the top level function called is in the file `event.jl`. This is the
-function that runs the REPL when you launch Julia. If you examine line 97 of `REPL.jl`,
-you'll see this is where the function `eval_user_input()` is called. This is the function that evaluates
-what you type at the REPL, and since we're working interactively these functions were invoked
-when we entered `@profile myfunc()`. The next line reflects actions taken in the [`@profile`](@ref)
-macro.
+この例では，呼び出された最上位の関数が`event.jl`にあることがわかります．これはJuliaを起動
+する時にREPLを実行する関数です．`REPL.jl`の97行目を調べると，関数`eval_user_input()`が呼び
+出されていることがわかります．これはREPLで入力した内容を評価する関数で，対話的に作業している
+ため，[`@profile`](@ref)マクロで行われたアクションを反映しています．
 
-The first line shows that 80 backtraces were taken at line 73 of `event.jl`, but it's not that
-this line was "expensive" on its own: the third line reveals that all 80 of these backtraces
-were actually triggered inside its call to `eval_user_input`, and so on. To find out which operations
-are actually taking the time, we need to look deeper in the call chain.
+1行目は，`event.jl`の73行目で80個のバックトレースが取られたことを示していますが，この行
+自体が「高コスト」だったわけではありません．3行目を見ると，これら80個のバックトレースの
+全てが実際に`eval_user_input`への呼び出しの中でトリガされていることなどがわかります．
+実際にどの捜査に時間がかかっているのかを知るためには，コールチェインをもっと深く調べる
+必要があります．
 
-The first "important" line in this output is this one:
+この出力の最初の「重要な」行はこの行です:
 
 ```
 52 ./REPL[1]:2; myfunc()
 ```
 
-`REPL` refers to the fact that we defined `myfunc` in the REPL, rather than putting it in a file;
-if we had used a file, this would show the file name. The `[1]` shows that the function `myfunc`
-was the first expression evaluated in this REPL session. Line 2 of `myfunc()` contains the call to
-`rand`, and there were 52 (out of 80) backtraces that occurred at this line. Below that, you can
-see a call to `dsfmt_fill_array_close_open!` inside `dSFMT.jl`.
+`REPL`は`myfunc`をファイルに入れるのではなく，REPL内で`myfunc`を定義した事実を参照します．
+もしファイルを使っていたとしたら，これはファイル名を示すことになります．`[1]`は関数`myfunc`
+がこのREPLセッションで評価された最初の式であることを示しています．`myfunc()`の2行目には
+`rand`への呼び出しが含まれており，この行で発生したバックトレースは（80個中）52個ありました．
+その下には，`dSFMT.jl`内の`dsfmt_fill_array_close_open!`への呼び出しがあります．
 
-A little further down, you see:
+もう少し下に行くと，以下のようになっています:
 
 ```
 28 ./REPL[1]:3; myfunc()
 ```
 
-Line 3 of `myfunc` contains the call to `maximum`, and there were 28 (out of 80) backtraces taken
-here. Below that, you can see the specific places in `base/reduce.jl` that carry out the time-consuming
-operations in the `maximum` function for this type of input data.
+`myfunc`の3行目には，`maximum`の呼び出しが含まれており，ここで取られたバックトレースは，
+（80個中）28個でした．その下に，このタイプの入力データへの`maximum`関数で時間のかかる
+操作を実行している`base/reduce.jl`の特定の箇所を見ることができます．
 
-Overall, we can tentatively conclude that generating the random numbers is approximately twice as expensive
-as finding the maximum element. We could increase our confidence in this result by
-collecting more samples:
+全体的に，乱数の生成は，最大要素を見つけるのに比べて約2倍のコストがかかると仮に結論づける
+ことができます．より多くのサンプルを収集することで，この結果の信頼性を高めることができます:
 
 ```julia-repl
 julia> @profile (for i = 1:100; myfunc(); end)
@@ -148,14 +147,15 @@ julia> Profile.print()
    [....]
 ```
 
-In general, if you have `N` samples collected at a line, you can expect an uncertainty on the
-order of `sqrt(N)` (barring other sources of noise, like how busy the computer is with other tasks).
-The major exception to this rule is garbage collection, which runs infrequently but tends to be
-quite expensive. (Since Julia's garbage collector is written in C, such events can be detected
-using the `C=true` output mode described below, or by using [ProfileView.jl](https://github.com/timholy/ProfileView.jl).)
+一般的に，ある行で`N`個のサンプルを収集した場合，`sqrt(N)`オーダの不確かさが想定されます
+（コンピュータが他のタスクでどれくらいビジーかなど他のノイズ源を除く）．このルールの主要
+な例外はガベージコレクションで，実行頻度は低いものの，非常に高コストになる傾向があります
+（JuliaのガベージコレクタはCで書かれているので，このようなイベントは後述の`C=true`出力
+モードを使うか，[ProfileView.jl](https://github.com/timholy/ProfileView.jl)を使うことで
+検出することができます）．
 
-This illustrates the default "tree" dump; an alternative is the "flat" dump, which accumulates
-counts independent of their nesting:
+これはデフォルトの「ツリー」ダンプを示しています．別の方法として「フラット」ダンプがあり，
+ネスティングに依存せずにカウントを蓄積しています．
 
 ```julia-repl
 julia> Profile.print(format=:flat)
@@ -182,16 +182,16 @@ julia> Profile.print(format=:flat)
     43 ./reduce.jl    429 mapreduce_impl(::Base.#identity, ::Base.#scalarma...
 ```
 
-If your code has recursion, one potentially-confusing point is that a line in a "child" function
-can accumulate more counts than there are total backtraces. Consider the following function definitions:
+コードに再帰性がある場合，混乱を招く可能性があるのは，「子」関数のある行がバックトレースの
+総数よりも多くのカウントを蓄積する可能性があるということです．以下の関数定義を見てみましょう:
 
 ```julia
 dumbsum(n::Integer) = n == 1 ? 1 : 1 + dumbsum(n-1)
 dumbsum3() = dumbsum(3)
 ```
 
-If you were to profile `dumbsum3`, and a backtrace was taken while it was executing `dumbsum(1)`,
-the backtrace would look like this:
+`dumbsum3`をプロファイリングし，それが`dumbsum(1)`で実行している間にバックトレースを取得した
+とすると，バックトレースは次のようになります:
 
 ```julia
 dumbsum3
@@ -200,15 +200,16 @@ dumbsum3
             dumbsum(1)
 ```
 
-Consequently, this child function gets 3 counts, even though the parent only gets one. The "tree"
-representation makes this much clearer, and for this reason (among others) is probably the most
-useful way to view the results.
+結果的に，この子関数は3つのカウントを取得しますが，親関数は1カウントだけ取得します．
+「ツリー」表現はこれをより明確にしてくれますし，この理由から，（他のものと比べて）結果を
+表示するための最も便利な方法と言うことができるでしょう．
 
-## Accumulation and clearing
+## 蓄積とクリア
 
-Results from [`@profile`](@ref) accumulate in a buffer; if you run multiple pieces of code under
-[`@profile`](@ref), then [`Profile.print()`](@ref) will show you the combined results. This can
-be very useful, but sometimes you want to start fresh; you can do so with [`Profile.clear()`](@ref).
+[`@profile`](@ref)の結果はバッファに蓄積されます．複数のコードを[`@profile`](@ref)の下で実行
+すると，[`Profile.print()`](@ref)はその結果をまとめたものを表示します．これは非常に便利です
+が，時には新たにやり直したいこともあるでしょう．そのような時は，[`Profile.clear()`](@ref)を
+使うことができます．
 
 ## Options for controlling the display of profile results
 

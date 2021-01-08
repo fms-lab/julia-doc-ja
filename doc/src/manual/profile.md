@@ -211,21 +211,18 @@ dumbsum3
 が，時には新たにやり直したいこともあるでしょう．そのような時は，[`Profile.clear()`](@ref)を
 使うことができます．
 
-## Options for controlling the display of profile results
+## プロファイル結果表示の制御オプション
 
-[`Profile.print`](@ref) has more options than we've described so far. Let's see the full declaration:
+[`Profile.print`](@ref)には，これまで説明してきた他にもオプションがあります．宣言の全てを見てみましょう:
 
 ```julia
 function print(io::IO = stdout, data = fetch(); kwargs...)
 ```
 
-Let's first discuss the two positional arguments, and later the keyword arguments:
+まず初めに2つの位置指定引数を見て，その後キーワード引数を見てみましょう:
 
-  * `io` -- Allows you to save the results to a buffer, e.g. a file, but the default is to print to `stdout`
-    (the console).
-  * `data` -- Contains the data you want to analyze; by default that is obtained from [`Profile.fetch()`](@ref),
-    which pulls out the backtraces from a pre-allocated buffer. For example, if you want to profile
-    the profiler, you could say:
+  * `io` -- 結果をファイルなどのバッファに保存することができますが，デフォルトでは`stdout`（コンソール）に出力します．
+  * `data` -- 分析したいデータを含みます．デフォルトでは[`Profile.fetch()`](@ref)から取得されますが，これはあらかじめ割り当てられたバッファからバックトレースを取り出します．例えば，プロファイラのプロファイルを作成したい場合には以下のようになります:
 
     ```julia
     data = copy(Profile.fetch())
@@ -234,32 +231,21 @@ Let's first discuss the two positional arguments, and later the keyword argument
     Profile.print()                      # Prints results from Profile.print()
     ```
 
-The keyword arguments can be any combination of:
+キーワード引数には，以下の任意の組み合わせを指定することができます:
 
-  * `format` -- Introduced above, determines whether backtraces are printed
-     with (default, `:tree`) or without (`:flat`) indentation indicating tree
-     structure.
-  * `C` -- If `true`, backtraces from C and Fortran code are shown (normally they are excluded). Try running the introductory
-    example with `Profile.print(C = true)`. This can be extremely helpful in deciding whether it's
-    Julia code or C code that is causing a bottleneck; setting `C = true` also improves the interpretability
-    of the nesting, at the cost of longer profile dumps.
-  * `combine` -- Some lines of code contain multiple operations; for example, `s += A[i]` contains both an array
-    reference (`A[i]`) and a sum operation. These correspond to different lines in the generated
-    machine code, and hence there may be two or more different addresses captured during backtraces
-    on this line. `combine = true` lumps them together, and is probably what you typically want, but
-    you can generate an output separately for each unique instruction pointer with `combine = false`.
-  * `maxdepth` -- Limits frames at a depth higher than `maxdepth` in the `:tree` format.
-  * `sortedby` -- Controls the order in `:flat` format. `:filefuncline` (default) sorts by the source
-    line, whereas `:count` sorts in order of number of collected samples.
-  * `noisefloor` -- Limits frames that are below the heuristic noise floor of the sample (only applies to format `:tree`).
-    A suggested value to try for this is 2.0 (the default is 0). This parameter hides samples for which `n <= noisefloor * √N`,
-    where `n` is the number of samples on this line, and `N` is the number of samples for the callee.
+  * `format` -- 上で紹介したように，バックトレースを，木構造を示すインデントをつけて（デフォルト，`:tree`）表示するか，インデントなし（`:flat`）で表示するかを決定します．
+  * `C` -- `true`の場合，CとFortranコードからのバックトレースを表示します（通常は除外されるものです）．例を`Profile.print(C = true)`をつけて実行してみてください．これはボトルネックの原因がJuliaコードなのか，Cコードなのかを判断するのに非常に役立ちます．`C = true`を設定するとネスティングの解釈性が向上しますが，プロファイルダンプが長くかかるようになります．
+  * `combine` -- コードの一部の行には，複数の操作が含まれています．例えば，`s += A[i]`には，配列参照（`A[i]`）と，和演算の両方が含まれています．これらは生成されたマシンコードの別々の行に対応しているため，この行のバックトレース中に2つ以上の異なるアドレスがキャプチャされることがあります．`combine = true`はこれらをまとめて出力します．これはおそらく一般的に必要とされるものですが，`combine = false`とすることで，一意な命令ポインタごとに個別に出力を生成することができます．
+  * `maxdepth` -- `:tree`フォーマットで`maxdepth`以上の深さにフレームを制限します．
+  * `sortedby` -- `:flat`フォーマットの順序を制御します．`:filefuncline`（デフォルト）ではソース行でソートしますが，`:count`では収集したサンプル数の多い順にソートします．
+  * `noisefloor` -- サンプルのヒューリスティックノイズフロア以下にフレームを制御します（`:tree`フォーマットにのみ適用されます）．この値の推奨値は2.0です（デフォルトは0）．このパラメータは，`n <= noisefloor * √N`のサンプルを非表示にします（`n`はこの行のサンプル数，`N`は呼び出し先のサンプル数です．
   * `mincount` -- Limits frames with less than `mincount` occurrences.
+  * `mincount` -- 発生回数が`mincount`未満のフレームに制限します．
 
-File/function names are sometimes truncated (with `...`), and indentation is truncated with a
-`+n` at the beginning, where `n` is the number of extra spaces that would have been inserted,
-had there been room. If you want a complete profile of deeply-nested code, often a good idea is
-to save to a file using a wide `displaysize` in an [`IOContext`](@ref):
+ファイルや関数の名前は時々（`...`で）丸められ，インデントは先頭の`+n`で丸められます．
+ここで`n`は，余裕があれば挿入される余分なスペースの数です．深くネストされている
+コードの完全なプロファイルが必要な場合は，[`IOContext`](@ref)の広い`displaysize`を
+使ってファイルに保存するのが良いアイデアです．
 
 ```julia
 open("/tmp/prof.txt", "w") do s
@@ -267,7 +253,7 @@ open("/tmp/prof.txt", "w") do s
 end
 ```
 
-## Configuration
+## コンフィグ
 
 [`@profile`](@ref) just accumulates backtraces, and the analysis happens when you call [`Profile.print()`](@ref).
 For a long-running computation, it's entirely possible that the pre-allocated buffer for storing

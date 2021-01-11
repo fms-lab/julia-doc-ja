@@ -255,83 +255,85 @@ end
 
 ## コンフィグ
 
-[`@profile`](@ref) just accumulates backtraces, and the analysis happens when you call [`Profile.print()`](@ref).
-For a long-running computation, it's entirely possible that the pre-allocated buffer for storing
-backtraces will be filled. If that happens, the backtraces stop but your computation continues.
-As a consequence, you may miss some important profiling data (you will get a warning when that
-happens).
+[`@profile`](@ref)は単にバックトレースを蓄積するだけであり，分析は[`Profile.print()`](@ref)
+を呼び出すときに行われます．長時間実行される計算では，バックトレースを保存するために予め
+割り当てられたバッファがいっぱいになってしまう可能性が十分にあります．そうなると，
+バックトレースは停止しますが，計算は続行されます．結果，重要なプロファイリングデータを
+見逃してしまう場合があります（その場合は警告は表示されます）．
 
-You can obtain and configure the relevant parameters this way:
+以下のようにして，関連するパラメータを取得して，設定することができます:
 
 ```julia
 Profile.init() # returns the current settings
 Profile.init(n = 10^7, delay = 0.01)
 ```
 
-`n` is the total number of instruction pointers you can store, with a default value of `10^6`.
-If your typical backtrace is 20 instruction pointers, then you can collect 50000 backtraces, which
-suggests a statistical uncertainty of less than 1%. This may be good enough for most applications.
+`n`は格納できる命令ポインタの総数で，デフォルトの値は`10^6`です．一般的なバックトレースが
+20命令ポインタだとすると，バックトレースを50000個集めることができ，統計的な不確実性は1%未満
+となります．ほとんどのアプリケーションではこれで十分でしょう．
 
-Consequently, you are more likely to need to modify `delay`, expressed in seconds, which sets
-the amount of time that Julia gets between snapshots to perform the requested computations. A
-very long-running job might not need frequent backtraces. The default setting is `delay = 0.001`.
-Of course, you can decrease the delay as well as increase it; however, the overhead of profiling
-grows once the delay becomes similar to the amount of time needed to take a backtrace (~30 microseconds
-on the author's laptop).
+そのため，要求された計算を実行するために，Juliaがスナップショット間に取得する時間量を
+設定するための，秒単位で表現される`delay`を修正する必要がある可能性が高くなります．
+非常に長く実行されているジョブでは，頻繁にバックトレースを行う必要はないかもしれません．
+デフォルトの設定は`delay = 0.001`です．もちろん，遅延を増やすことも減らすこともできます．
+しかし遅延がバックトレースに必要な時間と同じくらい（筆者のラップトップでは30マイクロ秒程度）
+になると，プロファイリングのオーバーヘッドが大きくなります．
 
-# Memory allocation analysis
+# メモリ割り当ての解析
 
-One of the most common techniques to improve performance is to reduce memory allocation. The
-total amount of allocation can be measured with [`@time`](@ref) and [`@allocated`](@ref), and
-specific lines triggering allocation can often be inferred from profiling via the cost of garbage
-collection that these lines incur. However, sometimes it is more efficient to directly measure
-the amount of memory allocated by each line of code.
+性能を向上させるための最も一般的なテクニックの一つは，メモリ割り当てを減らすことです．
+総割り当て量は，[`@time`](@ref)と[`@allocated`](@ref)で測定でき，割り当てのトリガとなる
+特定の行は，これらの行が発生するガベージコレクションのコストを介してプロファイリングから
+推測することができます．しかし，コードの各行で割り当てられたメモリ量を直接測定した方が
+効率が良い場合もあります．
 
-To measure allocation line-by-line, start Julia with the `--track-allocation=<setting>` command-line
-option, for which you can choose `none` (the default, do not measure allocation), `user` (measure
-memory allocation everywhere except Julia's core code), or `all` (measure memory allocation at
-each line of Julia code). Allocation gets measured for each line of compiled code. When you quit
-Julia, the cumulative results are written to text files with `.mem` appended after the file name,
-residing in the same directory as the source file. Each line lists the total number of bytes
-allocated. The [`Coverage` package](https://github.com/JuliaCI/Coverage.jl) contains some elementary
-analysis tools, for example to sort the lines in order of number of bytes allocated.
+行ごとに割り当てを測定するには，コマンドラインオプション`--track-allocation=<setting>`を
+つけてJuliaを起動します．その際，`none`（デフォルト．割り当てを測定しない），`user`（
+Juliaのコアコード以外の全ての場所でメモリ割り当てを測定する），`all`（Juliaコードの各行
+でメモリ割り当てを測定する）を選択できます．割り当てはコンパイルされたコードの各行ごとに
+測定されます．Juliaを終了すると，累積結果はファイル名の後に`.mem`が付加されたテキスト
+ファイルに書き込まれ，ソースファイルと同じディレクトリに置かれます．各行には，割り当て
+られたバイト数の合計が表示されます．[`Coverage` package](https://github.com/JuliaCI/Coverage.jl)
+パッケージには，割り当てられたバイト数の順に行を並べ替えるなど，いくつかの基本的な解析
+ツールが含まれています．
 
-In interpreting the results, there are a few important details. Under the `user` setting, the
-first line of any function directly called from the REPL will exhibit allocation due to events
-that happen in the REPL code itself. More significantly, JIT-compilation also adds to allocation
-counts, because much of Julia's compiler is written in Julia (and compilation usually requires
-memory allocation). The recommended procedure is to force compilation by executing all the commands
-you want to analyze, then call [`Profile.clear_malloc_data()`](@ref) to reset all allocation counters.
- Finally, execute the desired commands and quit Julia to trigger the generation of the `.mem`
-files.
+結果を解釈する際には，いくつかの重要な詳細があります．`user`設定下では，REPLから直接呼び出さ
+れた関数の最初の行は，REPLコード自体で発生するイベントに起因する割り当てを示します．さらに
+重要なことは，Juliaのコンパイラの多くはJuliaで書かれているため（なおかつコンパイルには通常メ
+モリ割り当てを必要とするため），JITコンパイルも割り当てカウントに追加されます．推奨される
+手順は，解析したいコマンドを全て実行して強制的にコンパイルし，[`Profile.clear_malloc_data()`](@ref)
+を呼び出して全ての割り当てカウンタをリセットすることです．最後に，目的のコマンドを実行し，
+Juliaを終了して，`.mem`ファイルの生成をトリガします．
 
-# External Profiling
+# 外部のプロファイリングツール
 
-Currently Julia supports `Intel VTune`, `OProfile` and `perf` as external profiling tools.
+現在Juliaは外部プロファイリングツールとして，`Intel VTune`，`OProfile`，`perf`をサポートしています．
 
-Depending on the tool you choose, compile with `USE_INTEL_JITEVENTS`, `USE_OPROFILE_JITEVENTS` and
-`USE_PERF_JITEVENTS` set to 1 in `Make.user`. Multiple flags are supported.
+選択したツールに応じて，`Make.user`内で，`USE_INTEL_JITEVENTS`，`USE_OPROFILE_JITEVENTS`，
+`USE_PERF_JITEVENTS`を1に設定してコンパイルしてください．複数のフラグがサポートされています．
 
-Before running Julia set the environment variable `ENABLE_JITPROFILING` to 1.
+Juliaを実行する前に，環境変数`ENABLE_JITPROFILING`を1に設定してください．
 
-Now you have a multitude of ways to employ those tools!
-For example with `OProfile` you can try a simple recording :
+これで，これらのツールを使用するための多くの方法が利用できるようになりました．
+例えば`OProfile`を使って，単純な記録を試すことができます:
 
 ```
 >ENABLE_JITPROFILING=1 sudo operf -Vdebug ./julia test/fastmath.jl
 >opreport -l `which ./julia`
 ```
 
-Or similary with `perf` :
+または，`perf`でも同様に以下のようにできます:
 
 ```
 $ ENABLE_JITPROFILING=1 perf record -o /tmp/perf.data --call-graph dwarf ./julia /test/fastmath.jl
 $ perf report --call-graph -G
 ```
 
-There are many more interesting things that you can measure about your program, to get a comprehensive list
-please read the [Linux perf examples page](http://www.brendangregg.com/perf.html).
+プログラムについて測定できる興味深い項目は他にもたくさんあります．完全なリストを得るためには
+[Linuxのperfの例のページ](http://www.brendangregg.com/perf.html)を読んでください．
 
-Remember that perf saves for each execution a `perf.data` file that, even for small programs, can get
-quite large. Also the perf LLVM module saves temporarily debug objects in `~/.debug/jit`, remember
-to clean that folder frequently.
+perfは各実行ごとに`perf.data`ファイルを保存しますが，これは小さなプログラムであっても非常に
+大きくなることがあることも覚えておいてください．また，perf LLVMモジュールは`~/.debug/jit`に
+一時的にデバッグオブジェクトを保存しますので，こまめにこのフォルダを消去することを覚えて
+おいてください．
+

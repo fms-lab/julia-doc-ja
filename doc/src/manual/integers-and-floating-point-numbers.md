@@ -1,22 +1,20 @@
-# Integers and Floating-Point Numbers
+# [整数と浮動小数点数](@id Integers-and-Floating-Point-Numbers)
 
-Integers and floating-point values are the basic building blocks of arithmetic and computation.
-Built-in representations of such values are called numeric primitives, while representations of
-integers and floating-point numbers as immediate values in code are known as numeric literals.
-For example, `1` is an integer literal, while `1.0` is a floating-point literal; their binary
-in-memory representations as objects are numeric primitives.
+整数と浮動小数点数の値は，算術や計算の基本的な構成要素です．このような値の組み込み表現は
+数値プリミティブと呼ばれ，コード内の即時値としての整数や浮動小数点数の表現は，数値リテラル
+として知られています．例えば，`1`は整数リテラルであり，`1.0`は浮動小数点リテラルです．
+オブジェクトとしてのメモリ内のバイナリ表現が数値プリミティブです．
 
-Julia provides a broad range of primitive numeric types, and a full complement of arithmetic and
-bitwise operators as well as standard mathematical functions are defined over them. These map
-directly onto numeric types and operations that are natively supported on modern computers, thus
-allowing Julia to take full advantage of computational resources. Additionally, Julia provides
-software support for [Arbitrary Precision Arithmetic](@ref), which can handle operations on numeric
-values that cannot be represented effectively in native hardware representations, but at the cost
-of relatively slower performance.
+Juliaは広範囲のプリミティブな数値型を提供し，それらの上で標準的な数学関数，および
+算術演算子やビット演算子の完全な補完が定義されています．これらは最新のコンピュータで
+ネイティブにサポートされている数値型や演算に直接マッピングされているため，Juliaは計算
+リソースを最大限に活用することができます．さらに，Juliaは[Arbitrary Precision Arithmetic](@ref)
+をソフトウェアでサポートしており，ネイティブのハードウェア表現では効果的に表現できない
+数値の演算を扱うことができますが，その引き換えに比較的動作は遅くなってしまいます．
 
-The following are Julia's primitive numeric types:
+以下がJuliaのプリミティブな数値型です:
 
-  * **Integer types:**
+  * **整数型:**
 
 | Type              | Signed? | Number of bits | Smallest value | Largest value |
 |:----------------- |:------- |:-------------- |:-------------- |:------------- |
@@ -32,7 +30,7 @@ The following are Julia's primitive numeric types:
 | [`UInt128`](@ref) |         | 128            | 0              | 2^128 - 1     |
 | [`Bool`](@ref)    | N/A     | 8              | `false` (0)    | `true` (1)    |
 
-  * **Floating-point types:**
+  * **浮動小数点数型:**
 
 | Type              | Precision                                                                      | Number of bits |
 |:----------------- |:------------------------------------------------------------------------------ |:-------------- |
@@ -40,13 +38,14 @@ The following are Julia's primitive numeric types:
 | [`Float32`](@ref) | [single](https://en.wikipedia.org/wiki/Single_precision_floating-point_format) | 32             |
 | [`Float64`](@ref) | [double](https://en.wikipedia.org/wiki/Double_precision_floating-point_format) | 64             |
 
-Additionally, full support for [Complex and Rational Numbers](@ref) is built on top of these primitive
-numeric types. All numeric types interoperate naturally without explicit casting, thanks to a
-flexible, user-extensible [type promotion system](@ref conversion-and-promotion).
+さらに，これらのプリミティブな数値型の上に，[Complex and Rational Numbers](@ref)の完全なサポートが構築
+されています．全ての数値型は，柔軟でユーザが拡張可能な[type promotion system](@ref conversion-and-promotion)
+のおかげで，明示的なキャストを行わなくても自然に相互運用することができます．
 
-## Integers
 
-Literal integers are represented in the standard manner:
+## 整数型
+
+リテラルな整数は標準的な方法で表現されます:
 
 ```jldoctest
 julia> 1
@@ -56,8 +55,8 @@ julia> 1234
 1234
 ```
 
-The default type for an integer literal depends on whether the target system has a 32-bit architecture
-or a 64-bit architecture:
+整数リテラルのデフォルトの型は，ターゲットシステムが32ビットアーキテクチャか64ビットアーキ
+テクチャかによって異なります:
 
 ```julia-repl
 # 32-bit system:
@@ -69,8 +68,7 @@ julia> typeof(1)
 Int64
 ```
 
-The Julia internal variable [`Sys.WORD_SIZE`](@ref) indicates whether the target system is 32-bit
-or 64-bit:
+Juliaの内部変数[`Sys.WORD_SIZE`](@ref)は，ターゲットシステムが32ビットか64ビットかを示します:
 
 ```julia-repl
 # 32-bit system:
@@ -82,8 +80,8 @@ julia> Sys.WORD_SIZE
 64
 ```
 
-Julia also defines the types `Int` and `UInt`, which are aliases for the system's signed and unsigned
-native integer types respectively:
+Juliaでは`Int`と`UInt`という型も定義されますが，これはそれぞれ，システムの符号付整数型と
+符号なし整数型のエイリアスとなっています:
 
 ```julia-repl
 # 32-bit system:
@@ -99,8 +97,8 @@ julia> UInt
 UInt64
 ```
 
-Larger integer literals that cannot be represented using only 32 bits but can be represented in
-64 bits always create 64-bit integers, regardless of the system type:
+32ビットだけでは表現できないが64ビットあれば表現できるような大きな整数リテラルは，
+システムタイプに関係なく，常に64ビットの整数を作成します:
 
 ```jldoctest
 # 32-bit or 64-bit system:
@@ -108,9 +106,8 @@ julia> typeof(3000000000)
 Int64
 ```
 
-Unsigned integers are input and output using the `0x` prefix and hexadecimal (base 16) digits
-`0-9a-f` (the capitalized digits `A-F` also work for input). The size of the unsigned value is
-determined by the number of hex digits used:
+符号なし整数は，`0x`接頭辞と16進数の`0-9a-f`を使用して入出力されます（大文字の`A-F`も入力
+用に機能します）．符号なしの値のサイズは，使用される16進数によって決まります:
 
 ```jldoctest
 julia> 0x1
@@ -144,14 +141,13 @@ julia> typeof(ans)
 UInt128
 ```
 
-This behavior is based on the observation that when one uses unsigned hex literals for integer
-values, one typically is using them to represent a fixed numeric byte sequence, rather than just
-an integer value.
+この動作は整数値に符号なし16進数リテラルを使用する場合，整数値だけではなく固定された数値
+バイト列を表すために使用しているという観察に基づいています．
 
-Recall that the variable [`ans`](@ref) is set to the value of the last expression evaluated in
-an interactive session. This does not occur when Julia code is run in other ways.
+変数[`ans`](@ref)は対話的なセッションで評価された最後の式の値に設定されることを思い出して
+ください．これは，Juliaコードが他の方法で実行されている場合には発生しません．
 
-Binary and octal literals are also supported:
+2進リテラルと8進リテラルもサポートされています:
 
 ```jldoctest
 julia> 0b10
@@ -173,16 +169,14 @@ julia> typeof(ans)
 UInt128
 ```
 
-As for hexadecimal literals, binary and octal literals produce unsigned integer types. The size
-of the binary data item is the minimal needed size, if the leading digit of the literal is not
-`0`. In the case of leading zeros, the size is determined by the minimal needed size for a
-literal, which has the same length but leading digit `1`. That allows the user to control
-the size.
-Values which cannot be stored in `UInt128` cannot be written as such literals.
+16進リテラルと同様に，2進リテラルおよび8進リテラルは符号なし整数型を生成します．2進数データ
+アイテムのサイズは，リテラルの先頭の桁が`0`でない場合，必要最小限のサイズです．先頭に0が並ぶ
+場合は，サイズは，同じ長さだが先頭の桁に`1`が並んでいるようなリテラルの必要最小限のサイズ
+によって決定されます．これにより，ユーザはサイズを制御することができます．`UInt128`に格納
+できない値は，そのようなリテラルとして書き込むことはできません．
 
-Binary, octal, and hexadecimal literals may be signed by a `-` immediately preceding the
-unsigned literal. They produce an unsigned integer of the same size as the unsigned literal
-would do, with the two's complement of the value:
+2進，8進，16進リテラルは，符号なしリテラルの直前に`-`をつけることができます．これらの
+リテラルは，符号なしリテラルが，値の2の補数行うのと同じサイズの符号なし整数を生成します．
 
 ```jldoctest
 julia> -0x2
@@ -192,8 +186,8 @@ julia> -0x0002
 0xfffe
 ```
 
-The minimum and maximum representable values of primitive numeric types such as integers are given
-by the [`typemin`](@ref) and [`typemax`](@ref) functions:
+整数のようなプリミティブな数値型で表現可能な最小値と最大値は，[`typemin`](@ref)と
+[`typemax`](@ref)関数を使って調べることができます．
 
 ```jldoctest
 julia> (typemin(Int32), typemax(Int32))
@@ -214,14 +208,14 @@ julia> for T in [Int8,Int16,Int32,Int64,Int128,UInt8,UInt16,UInt32,UInt64,UInt12
 UInt128: [0,340282366920938463463374607431768211455]
 ```
 
-The values returned by [`typemin`](@ref) and [`typemax`](@ref) are always of the given argument
-type. (The above expression uses several features that have yet to be introduced, including [for loops](@ref man-loops),
-[Strings](@ref man-strings), and [Interpolation](@ref string-interpolation), but should be easy enough to understand for users
-with some existing programming experience.)
+[`typemin`](@ref)と[`typemax`](@ref)によって返される値は，常に与えられた引数の型の値に
+なります．（上記の式は[for loops](@ref man-loops)，[Strings](@ref man-strings)や
+[Interpolation](@ref string-interpolation)といった，まだ紹介していないいくつかの機能を
+使用していますが，プログラミング経験のあるユーザにとっては十分に理解しやすいはずです．）
 
-### Overflow behavior
+### オーバーフロー
 
-In Julia, exceeding the maximum representable value of a given type results in a wraparound behavior:
+Juliaでは，指定された型で表現可能な最大値を超えると，ラップアラウンド動作が発生します:
 
 ```jldoctest
 julia> x = typemax(Int64)
@@ -234,13 +228,13 @@ julia> x + 1 == typemin(Int64)
 true
 ```
 
-Thus, arithmetic with Julia integers is actually a form of [modular arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic).
-This reflects the characteristics of the underlying arithmetic of integers as implemented on modern
-computers. In applications where overflow is possible, explicit checking for wraparound produced
-by overflow is essential; otherwise, the [`BigInt`](@ref) type in [Arbitrary Precision Arithmetic](@ref)
-is recommended instead.
+このように，Juliaの整数を用いた算術は，実際には[modular arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic)の
+一形態です．これは，現代の計算機に実装されている基本的な整数演算の特性を反映しています．
+オーバーフローが起きうるアプリケーションでは，オーバーフローによって生じるラップアラウンド
+を明示的にチェックすることが不可欠です．そうでない場合は[Arbitrary Precision Arithmetic](@ref)
+の[`BigInt`](@ref)型を使用することを推奨します．
 
-An example of overflow behavior and how to potentially resolve it is as follows:
+オーバーフローの動作例と，それを解決する可能性のある方法を以下に示します:
 
 ```jldoctest
 julia> 10^19
@@ -250,12 +244,12 @@ julia> big(10)^19
 10000000000000000000
 ```
 
-### Division errors
+### 除算エラー
 
-Integer division (the `div` function) has two exceptional cases: dividing by zero, and dividing
-the lowest negative number ([`typemin`](@ref)) by -1. Both of these cases throw a [`DivideError`](@ref).
-The remainder and modulus functions (`rem` and `mod`) throw a [`DivideError`](@ref) when their
-second argument is zero.
+整数の除算（`div`関数）には，2つの例外的なケースがあります．0で除算する場合と，表現できる中
+で最も小さい負の数（[`typemin`](@ref)）を-1で除算する場合です．これらのケースはどちらでも，
+[`DivideError`](@ref)をスローします．剰余関数とモジュラス関数（`rem`と`mod`）は2番目の
+引数が0の場合に[`DivideError`](@ref)をスローします．
 
 ## Floating-Point Numbers
 

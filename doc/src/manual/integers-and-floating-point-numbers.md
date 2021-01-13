@@ -251,10 +251,10 @@ julia> big(10)^19
 [`DivideError`](@ref)をスローします．剰余関数とモジュラス関数（`rem`と`mod`）は2番目の
 引数が0の場合に[`DivideError`](@ref)をスローします．
 
-## Floating-Point Numbers
+## 浮動小数点数
 
-Literal floating-point numbers are represented in the standard formats, using
-[E-notation](https://en.wikipedia.org/wiki/Scientific_notation#E-notation) when necessary:
+リテラルな浮動小数点数は必要に応じて[E記法](https://en.wikipedia.org/wiki/Scientific_notation#E-notation)
+を使用して標準的なフォーマットで表現されます．
 
 ```jldoctest
 julia> 1.0
@@ -279,8 +279,8 @@ julia> 2.5e-4
 0.00025
 ```
 
-The above results are all [`Float64`](@ref) values. Literal [`Float32`](@ref) values can be
-entered by writing an `f` in place of `e`:
+上記の結果は全て[`Float64`](@ref)の値です．リテラルな[`Float32`](@ref)は，`e`の代わりに`f`
+を書くことで入力することができます．
 
 ```jldoctest
 julia> 0.5f0
@@ -293,7 +293,7 @@ julia> 2.5f-4
 0.00025f0
 ```
 
-Values can be converted to [`Float32`](@ref) easily:
+値は簡単に[`Float32`](@ref)に変換できます:
 
 ```jldoctest
 julia> Float32(-1.5)
@@ -303,8 +303,8 @@ julia> typeof(ans)
 Float32
 ```
 
-Hexadecimal floating-point literals are also valid, but only as [`Float64`](@ref) values,
-with `p` preceding the base-2 exponent:
+16進浮動小数点リテラルも有効ですが，基底2指数の前に`p`を持つ[`Float64`](@ref)の値として
+のみ有効です:
 
 ```jldoctest
 julia> 0x1p0
@@ -320,8 +320,8 @@ julia> typeof(ans)
 Float64
 ```
 
-Half-precision floating-point numbers are also supported ([`Float16`](@ref)), but they are
-implemented in software and use [`Float32`](@ref) for calculations.
+半精度浮動小数点数もサポートされていますが（[`Float16`](@ref)），ソフトウェアで実装
+されており，計算には[`Float32`](@ref)を使用します．
 
 ```jldoctest
 julia> sizeof(Float16(4.))
@@ -331,18 +331,18 @@ julia> 2*Float16(4.)
 Float16(8.0)
 ```
 
-The underscore `_` can be used as digit separator:
+アンダースコア`_`を桁区切り文字として使用することができます:
 
 ```jldoctest
 julia> 10_000, 0.000_000_005, 0xdead_beef, 0b1011_0010
 (10000, 5.0e-9, 0xdeadbeef, 0xb2)
 ```
 
-### Floating-point zero
+### 浮動小数点数のゼロ
 
-Floating-point numbers have [two zeros](https://en.wikipedia.org/wiki/Signed_zero), positive zero
-and negative zero. They are equal to each other but have different binary representations, as
-can be seen using the [`bitstring`](@ref) function:
+浮動小数点数には，正のゼロと負のゼロの[2つのゼロ](https://en.wikipedia.org/wiki/Signed_zero)
+があります．これらは互いに等しいですが，[`bitstring`](@ref)関数を使えばわかるように，
+異なる2進数表現がされています．
 
 ```jldoctest
 julia> 0.0 == -0.0
@@ -355,20 +355,19 @@ julia> bitstring(-0.0)
 "1000000000000000000000000000000000000000000000000000000000000000"
 ```
 
-### Special floating-point values
+### 特別な浮動小数点数の値
 
-There are three specified standard floating-point values that do not correspond to any point on
-the real number line:
+実数線上のどの点にも対応しない浮動小数点数の指定された3種類の標準値があります:
 
 | `Float16` | `Float32` | `Float64` | Name              | Description                                                     |
 |:--------- |:--------- |:--------- |:----------------- |:--------------------------------------------------------------- |
-| `Inf16`   | `Inf32`   | `Inf`     | positive infinity | a value greater than all finite floating-point values           |
-| `-Inf16`  | `-Inf32`  | `-Inf`    | negative infinity | a value less than all finite floating-point values              |
-| `NaN16`   | `NaN32`   | `NaN`     | not a number      | a value not `==` to any floating-point value (including itself) |
+| `Inf16`   | `Inf32`   | `Inf`     | positive infinity | 全ての有限な浮動小数点数の値よりも大きい値           |
+| `-Inf16`  | `-Inf32`  | `-Inf`    | negative infinity | 全ての有限な浮動小数点数の値よりも小さい値              |
+| `NaN16`   | `NaN32`   | `NaN`     | not a number      | （自分自身を含む）全ての浮動小数点数の値に対して`==`が成り立たない値 |
 
-For further discussion of how these non-finite floating-point values are ordered with respect
-to each other and other floats, see [Numeric Comparisons](@ref). By the [IEEE 754 standard](https://en.wikipedia.org/wiki/IEEE_754-2008),
-these floating-point values are the results of certain arithmetic operations:
+これらの非有限浮動小数点数の値が，お互いや他の浮動小数点数に対してどのように順序付けられてい
+るかについては，[Numeric Comparisons](@ref)を参照してください．[IEEE 754 standard](https://en.wikipedia.org/wiki/IEEE_754-2008)
+では，これらの浮動小数点数の値は特定の演算の結果です:
 
 ```jldoctest
 julia> 1/Inf
@@ -408,7 +407,7 @@ julia> 0 * Inf
 NaN
 ```
 
-The [`typemin`](@ref) and [`typemax`](@ref) functions also apply to floating-point types:
+[`typemin`](@ref)および[`typemax`](@ref)関数も浮動小数点型に適用されます:
 
 ```jldoctest
 julia> (typemin(Float16),typemax(Float16))
@@ -421,14 +420,12 @@ julia> (typemin(Float64),typemax(Float64))
 (-Inf, Inf)
 ```
 
-### Machine epsilon
+### マシンイプシロン
 
-Most real numbers cannot be represented exactly with floating-point numbers, and so for many purposes
-it is important to know the distance between two adjacent representable floating-point numbers,
-which is often known as [machine epsilon](https://en.wikipedia.org/wiki/Machine_epsilon).
+ほとんどの実数は浮動小数点数で正確に表現できないので，多くの場合，隣接する2つの浮動小数点数
+の間の距離を知ることが重要です．これは[マシンイプシロン](https://en.wikipedia.org/wiki/Machine_epsilon)として知られています．
 
-Julia provides [`eps`](@ref), which gives the distance between `1.0` and the next larger representable
-floating-point value:
+Juliaは`1.0`とその次に大きい浮動小数点数との間の距離を与える[`eps`](@ref)を提供しています:
 
 ```jldoctest
 julia> eps(Float32)
@@ -441,11 +438,10 @@ julia> eps() # same as eps(Float64)
 2.220446049250313e-16
 ```
 
-These values are `2.0^-23` and `2.0^-52` as [`Float32`](@ref) and [`Float64`](@ref) values,
-respectively. The [`eps`](@ref) function can also take a floating-point value as an
-argument, and gives the absolute difference between that value and the next representable
-floating point value. That is, `eps(x)` yields a value of the same type as `x` such that
-`x + eps(x)` is the next representable floating-point value larger than `x`:
+これらの値は[`Float32`](@ref)と[`Float64`](@ref)の値で各々，`2.0^-23`と`2.0^-52`と
+なっています．[`eps`](@ref)関数は引数として浮動小数点数の値を取ることもでき，その値と
+次の表現可能な浮動小数点数の値との差の絶対値を与えます．つまり，`eps(x)`は`x + eps(x)`
+が`x`よりも大きい次の表現可能な浮動小数点数となるような，`x`と同じ型の値を返します:
 
 ```jldoctest
 julia> eps(1.0)
@@ -461,14 +457,13 @@ julia> eps(0.0)
 5.0e-324
 ```
 
-The distance between two adjacent representable floating-point numbers is not constant, but is
-smaller for smaller values and larger for larger values. In other words, the representable floating-point
-numbers are densest in the real number line near zero, and grow sparser exponentially as one moves
-farther away from zero. By definition, `eps(1.0)` is the same as `eps(Float64)` since `1.0` is
-a 64-bit floating-point value.
+隣接する2つの表現可能な浮動小数点数の間の距離は一定ではありませんが，値が小さいほど小さく，
+値が大きいほど大きくなります．言い換えれば，表現可能な浮動小数点数はゼロ付近の実数線で最も
+密であり，ゼロから遠ざかるにつれて指数関数的に疎になります．定義により，`1.0`は64ビットの
+浮動小数点数の値なので，`eps(1.0)`は`eps(Float64)`と同じになります．
 
-Julia also provides the [`nextfloat`](@ref) and [`prevfloat`](@ref) functions which return
-the next largest or smallest representable floating-point number to the argument respectively:
+またJuliaは[`nextfloat`](@ref)と[`prevfloat`](@ref)関数を提供しています．これはそれぞれ，
+引数に与えられた数の次の最大または最小の表現可能な浮動小数点数を返します:
 
 ```jldoctest
 julia> x = 1.25f0
@@ -490,8 +485,8 @@ julia> bitstring(nextfloat(x))
 "00111111101000000000000000000001"
 ```
 
-This example highlights the general principle that the adjacent representable floating-point numbers
-also have adjacent binary integer representations.
+この例は，隣接する表現可能な浮動小数点数が，隣接する二進整数表現も持つという一般的な
+原理を示しています．
 
 ### Rounding modes
 

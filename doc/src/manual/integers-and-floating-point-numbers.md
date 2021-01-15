@@ -488,36 +488,27 @@ julia> bitstring(nextfloat(x))
 この例は，隣接する表現可能な浮動小数点数が，隣接する二進整数表現も持つという一般的な
 原理を示しています．
 
-### Rounding modes
+### 丸めモード
 
-If a number doesn't have an exact floating-point representation, it must be rounded to an
-appropriate representable value. However, the manner in which this rounding is done can be
-changed if required according to the rounding modes presented in the [IEEE 754
-standard](https://en.wikipedia.org/wiki/IEEE_754-2008).
+数値が正確な浮動小数点表現を持たない場合，表現可能な適切な値に丸めなければなりません．
+ただしこの丸めの方法は必要に応じて[IEEE 754standard](https://en.wikipedia.org/wiki/IEEE_754-2008)
+で提示されている丸めモードにしたがって変更することができます．
 
-The default mode used is always [`RoundNearest`](@ref), which rounds to the nearest representable
-value, with ties rounded towards the nearest value with an even least significant bit.
 
-### Background and References
+デフォルトモードとして使用されるのは常に[`RoundNearest`](@ref)で，最も近い表現可能な
+値に丸められ，タイは最も近い値に向かって偶数の最下位ビットで丸められます．
 
-Floating-point arithmetic entails many subtleties which can be surprising to users who are unfamiliar
-with the low-level implementation details. However, these subtleties are described in detail in
-most books on scientific computation, and also in the following references:
+### 背景と参考文献
 
-  * The definitive guide to floating point arithmetic is the [IEEE 754-2008 Standard](https://standards.ieee.org/standard/754-2008.html);
-    however, it is not available for free online.
-  * For a brief but lucid presentation of how floating-point numbers are represented, see John D.
-    Cook's [article](https://www.johndcook.com/blog/2009/04/06/anatomy-of-a-floating-point-number/)
-    on the subject as well as his [introduction](https://www.johndcook.com/blog/2009/04/06/numbers-are-a-leaky-abstraction/)
-    to some of the issues arising from how this representation differs in behavior from the idealized
-    abstraction of real numbers.
-  * Also recommended is Bruce Dawson's [series of blog posts on floating-point numbers](https://randomascii.wordpress.com/2012/05/20/thats-not-normalthe-performance-of-odd-floats/).
-  * For an excellent, in-depth discussion of floating-point numbers and issues of numerical accuracy
-    encountered when computing with them, see David Goldberg's paper [What Every Computer Scientist Should Know About Floating-Point Arithmetic](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.22.6768&rep=rep1&type=pdf).
-  * For even more extensive documentation of the history of, rationale for, and issues with floating-point
-    numbers, as well as discussion of many other topics in numerical computing, see the [collected writings](https://people.eecs.berkeley.edu/~wkahan/)
-    of [William Kahan](https://en.wikipedia.org/wiki/William_Kahan), commonly known as the "Father
-    of Floating-Point". Of particular interest may be [An Interview with the Old Man of Floating-Point](https://people.eecs.berkeley.edu/~wkahan/ieee754status/754story.html).
+浮動小数点演算には，低レベルの実装の詳細に慣れていないユーザにとっては驚くような多くの細かな
+特徴が含まれています．しかしこうした部分については科学的計算に関する帆とのどの書籍や，以下の
+参考文献で詳しく説明されています．
+
+  * 浮動小数点演算の決定的なガイドは[IEEE 754-2008 Standard](https://standards.ieee.org/standard/754-2008.html)ですが，オンラインで無料で手に入れることはできません．
+  * 浮動小数点がどのように表現されているのかの簡単ではあるが明確な情報については，John D. Cookの[article](https://www.johndcook.com/blog/2009/04/06/anatomy-of-a-floating-point-number/)や，この表現が実数の理想化された抽象化とどのように動作が異なるかといったところから生じる問題のいくつかを紹介した[introduction](https://www.johndcook.com/blog/2009/04/06/numbers-are-a-leaky-abstraction/)を参照してください．
+  * また浮動小数点数に関するBruce Dawsonの[series of blog posts on floating-point numbers](https://randomascii.wordpress.com/2012/05/20/thats-not-normalthe-performance-of-odd-floats/)もお勧めです．
+  * 浮動小数点数と浮動小数点数を使った演算を行う際に発生する数値制度の問題についての詳細な議論については，David Goldbergの論文[What Every Computer Scientist Should Know About Floating-Point Arithmetic](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.22.6768&rep=rep1&type=pdf)を参照してください．
+  * 浮動小数点数の歴史や根拠，浮動小数点数の問題点，数値計算の他の多くのトピックについては，「浮動小数点の父」として知られる[William Kahan](https://en.wikipedia.org/wiki/William_Kahan)の[collected writings](https://people.eecs.berkeley.edu/~wkahan/)を参照してください．特に興味深いのは，[An Interview with the Old Man of Floating-Point](https://people.eecs.berkeley.edu/~wkahan/ieee754status/754story.html)かもしれません．
 
 ## Arbitrary Precision Arithmetic
 

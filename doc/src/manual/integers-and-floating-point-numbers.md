@@ -355,7 +355,7 @@ julia> bitstring(-0.0)
 "1000000000000000000000000000000000000000000000000000000000000000"
 ```
 
-### 特別な浮動小数点数の値
+### [特別な浮動小数点数の値](@id Special-floating-point-values)
 
 実数線上のどの点にも対応しない浮動小数点数の指定された3種類の標準値があります:
 
@@ -510,16 +510,17 @@ julia> bitstring(nextfloat(x))
   * 浮動小数点数と浮動小数点数を使った演算を行う際に発生する数値制度の問題についての詳細な議論については，David Goldbergの論文[What Every Computer Scientist Should Know About Floating-Point Arithmetic](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.22.6768&rep=rep1&type=pdf)を参照してください．
   * 浮動小数点数の歴史や根拠，浮動小数点数の問題点，数値計算の他の多くのトピックについては，「浮動小数点の父」として知られる[William Kahan](https://en.wikipedia.org/wiki/William_Kahan)の[collected writings](https://people.eecs.berkeley.edu/~wkahan/)を参照してください．特に興味深いのは，[An Interview with the Old Man of Floating-Point](https://people.eecs.berkeley.edu/~wkahan/ieee754status/754story.html)かもしれません．
 
-## Arbitrary Precision Arithmetic
+## [任意の精度の演算](@id Arbitrary-Precision-Arithmetic)
 
-To allow computations with arbitrary-precision integers and floating point numbers, Julia wraps
-the [GNU Multiple Precision Arithmetic Library (GMP)](https://gmplib.org) and the [GNU MPFR Library](https://www.mpfr.org),
-respectively. The [`BigInt`](@ref) and [`BigFloat`](@ref) types are available in Julia for arbitrary
-precision integer and floating point numbers respectively.
+任意の精度の整数と浮動小数点数の計算を可能にするために，Juliaは[GNU Multiple Precision Arithmetic Library (GMP)](https://gmplib.org)
+と[GNU MPFRLibrary](https://www.mpfr.org)をそれぞれラップしています．Juliaでは，[`BigInt`](@ref)型
+と[`BigFloat`](@ref)型が，それぞれ任意精度の整数と浮動小数点数の表現に利用できます．
 
-Constructors exist to create these types from primitive numerical types, and the [string literal](@ref non-standard-string-literals) [`@big_str`](@ref) or [`parse`](@ref)
-can be used to construct them from `AbstractString`s.  Once created, they participate in arithmetic
-with all other numeric types thanks to Julia's [type promotion and conversion mechanism](@ref conversion-and-promotion):
+プリミティブな数値型からこれらの型を作成するためのコンストラクタが存在し，
+[string literal](@ref non-standard-string-literals)[`@big_str`](@ref)または[`parse`](@ref)
+を使用して，`AbstractString`型からこれらの型を作成することができます．一度作成された数値型
+は，Juliaの[type promotion and conversion mechanism](@ref conversion-and-promotion)により，
+他の全ての数値型と一緒に算術に参加します．
 
 ```jldoctest
 julia> BigInt(typemax(Int64)) + 1
@@ -544,8 +545,8 @@ julia> factorial(BigInt(40))
 815915283247897734345611269596115894272000000000
 ```
 
-However, type promotion between the primitive types above and [`BigInt`](@ref)/[`BigFloat`](@ref)
-is not automatic and must be explicitly stated.
+ただし，上記のプリミティブ型と[`BigInt`](@ref)/[`BigFloat`](@ref)との間のタイププロモーショ
+ンは自動ではなく，明示的に記述する必要があります．
 
 ```jldoctest
 julia> x = typemin(Int64)
@@ -567,11 +568,10 @@ julia> typeof(y)
 BigInt
 ```
 
-The default precision (in number of bits of the significand) and rounding mode of [`BigFloat`](@ref)
-operations can be changed globally by calling [`setprecision`](@ref) and [`setrounding`](@ref),
-and all further calculations will take these changes in account.  Alternatively, the precision
-or the rounding can be changed only within the execution of a particular block of code by using
-the same functions with a `do` block:
+[`BigFloat`](@ref)演算のデフォルトの精度（符号のビット数）と丸めモードは，[`setprecision`](@ref)
+と[`setrounding`](@ref)を呼び出すことでグローバルに変更することができ，それ以降の全ての計算
+はこれらの変更を考慮に入れて行われます．また，精度や丸めは，`do`ブロックで同じ関数を仕様する
+ことで，特定のコードブロックの実行内でのみ変更することができます:
 
 ```jldoctest
 julia> setrounding(BigFloat, RoundUp) do
@@ -590,11 +590,10 @@ julia> setprecision(40) do
 1.1000000000004
 ```
 
-## [Numeric Literal Coefficients](@id man-numeric-literal-coefficients)
+## [数値リテラル係数](@id man-numeric-literal-coefficients)
 
-To make common numeric formulae and expressions clearer, Julia allows variables to be immediately
-preceded by a numeric literal, implying multiplication. This makes writing polynomial expressions
-much cleaner:
+一般的な数値式や式をより明確にするために，Juliaでは変数の前に数値リテラルをつけることが
+でき，乗算を意味しています．これにより多項式の記述がより簡単になります:
 
 ```jldoctest numeric-coefficients
 julia> x = 3
@@ -607,42 +606,37 @@ julia> 1.5x^2 - .5x + 1
 13.0
 ```
 
-It also makes writing exponential functions more elegant:
+また，指数関数の書き方もよりエレガントになります:
 
 ```jldoctest numeric-coefficients
 julia> 2^2x
 64
 ```
 
-The precedence of numeric literal coefficients is slightly lower than that of
-unary operators such as negation.
-So `-2x` is parsed as `(-2) * x` and `√2x` is parsed as `(√2) * x`.
-However, numeric literal coefficients parse similarly to unary operators when
-combined with exponentiation.
-For example `2^3x` is parsed as `2^(3x)`, and `2x^3` is parsed as `2*(x^3)`.
+数値リテラルの係数の優先順位は，否定などの単項演算子よりもわずかに低くなります．
+したがって，`-2x`は`(-2) * x`として解析され，`√2x`は`(√2) * x`として解析されます．
+しかし，数値リテラル係数は，指数関数と組み合わせた場合，単項演算子と同様に解析されます．
+例えば，`2^3x`は`2^(3x)`として解析され，`2x^3`は`2*(x^3)`として解析されます．
 
-Numeric literals also work as coefficients to parenthesized expressions:
+数値リテラルは，括弧で囲まれた式の係数としても機能します:
 
 ```jldoctest numeric-coefficients
 julia> 2(x-1)^2 - 3(x-1) + 1
 3
 ```
 !!! note
-    The precedence of numeric literal coefficients used for implicit
-    multiplication is higher than other binary operators such as multiplication
-    (`*`), and division (`/`, `\`, and `//`).  This means, for example, that
-    `1 / 2im` equals `-0.5im` and `6 // 2(2 + 1)` equals `1 // 1`.
+    暗黙の乗算に使用される数値リテラル係数の優先順位は，乗算(`*`)や除算(`/`, `\`, and `//`)
+    などの他の2進演算子よりも高くなります．これは例えば，`1 / 2im`は`-0.5im`に等しく，
+    `6 // 2(2 + 1)`は`1 // 1`に等しくなることを意味します．
 
-Additionally, parenthesized expressions can be used as coefficients to variables, implying multiplication
-of the expression by the variable:
+さらに，括弧で囲まれた式は，変数の係数として使用することができ，変数による式の乗算を意味します:
 
 ```jldoctest numeric-coefficients
 julia> (x-1)x
 6
 ```
 
-Neither juxtaposition of two parenthesized expressions, nor placing a variable before a parenthesized
-expression, however, can be used to imply multiplication:
+ただし，2つの括弧付き式の並置や，括弧付き式の前に変数を置くことは，乗算を暗示するために使用できません:
 
 ```jldoctest numeric-coefficients
 julia> (x-1)(x+1)
@@ -652,53 +646,49 @@ julia> x(x+1)
 ERROR: MethodError: objects of type Int64 are not callable
 ```
 
-Both expressions are interpreted as function application: any expression that is not a numeric
-literal, when immediately followed by a parenthetical, is interpreted as a function applied to
-the values in parentheses (see [Functions](@ref) for more about functions). Thus, in both of these
-cases, an error occurs since the left-hand value is not a function.
+どちらの式も関数のアプリケーションとして解釈されます．つまり，数値リテラルではない任意の式は
+，その直後に括弧が続く場合には，括弧内の値に適用される関数として解釈されます（関数についての
+詳細は[Functions](@ref)を参照してください）．したがって，これらのケースでは，左側の値は関数
+ではないため，エラーが発生します．
 
-The above syntactic enhancements significantly reduce the visual noise incurred when writing common
-mathematical formulae. Note that no whitespace may come between a numeric literal coefficient
-and the identifier or parenthesized expression which it multiplies.
+上記の構文の強化により，一般的な数式を書くときに発生する視覚的なノイズが大幅に削減されまし
+た．数値リテラル係数と，それが乗算する識別子または括弧で囲まれた式の間には，空白を入れては
+いけないことに注意してください．
 
-### Syntax Conflicts
+### 構文の競合
 
-Juxtaposed literal coefficient syntax may conflict with two numeric literal syntaxes: hexadecimal
-integer literals and engineering notation for floating-point literals. Here are some situations
-where syntactic conflicts arise:
+並置リテラル係数構文は，2つの数値リテラル構文（16進整数リテラルと浮動小数点リテラルの工学的
+表記法）と競合することがあります．ここでは構文上の競合が発生する状況をいくつか紹介します:
 
-  * The hexadecimal integer literal expression `0xff` could be interpreted as the numeric literal
-    `0` multiplied by the variable `xff`.
-  * The floating-point literal expression `1e10` could be interpreted as the numeric literal `1` multiplied
-    by the variable `e10`, and similarly with the equivalent `E` form.
-  * The 32-bit floating-point literal expression `1.5f22` could be interpreted as the numeric literal
-    `1.5` multiplied by the variable `f22`.
+  * 16進整数リテラル式`0xff`は，数値リテラル`0`に変数`xff`を掛けたものとして解釈される可能性があります．
+  * 浮動小数点リテラル式`1e10`は，数値リテラル`1`に変数`e10`を掛けたものとして解釈され，等価な`E`形式と同様に解釈される可能性があります．
+  * 32ビット浮動小数点リテラル`1.5f22`は，変数`f22`に`1.5`を掛けた数値リテラルとして解釈できます．
 
-In all cases the ambiguity is resolved in favor of interpretation as numeric literals:
+全ての場合において，曖昧さは数値リテラルとして解釈することで解決されます:
 
-  * Expressions starting with `0x` are always hexadecimal literals.
-  * Expressions starting with a numeric literal followed by `e` or `E` are always floating-point literals.
-  * Expressions starting with a numeric literal followed by `f` are always 32-bit floating-point literals.
+  * `0x`で始まる式は常に16進リテラルです．
+  * ある数値リテラルの後に`e`または`E`が続くような式は，常に浮動小数点リテラルです．
+  * ある数値リテラルの後に`f`が続くような式は，常に32ビット浮動小数点リテラルになります．
 
-Unlike `E`, which is equivalent to `e` in numeric literals for historical reasons, `F` is just another
-letter and does not behave like `f` in numeric literals. Hence, expressions starting with a numeric literal
-followed by `F` are interpreted as the numerical literal multiplied by a variable, which means that, for
-example, `1.5F22` is equal to `1.5 * F22`.
+歴史的な理由から，数値リテラルでは，`e`と同等である`E`とは異なり，`F`は単なる別の文字で
+あり，数値リテラルでは`f`のように動作しません．したがって，数値リテラルの後に`F`が続く式
+始まる式は，数値リテラルに変数を掛けたものとして解釈され，例えば`1.5F22`は`1.5 * F22`と
+等しいということを意味しています．
 
-## Literal zero and one
+## リテラル0と1
 
-Julia provides functions which return literal 0 and 1 corresponding to a specified type or the
-type of a given variable.
+Juliaは，指定された型や，与えられた変数の型に対応するリテラル0と1を返す関数を提供しています．
 
 | Function          | Description                                      |
 |:----------------- |:------------------------------------------------ |
-| [`zero(x)`](@ref) | Literal zero of type `x` or type of variable `x` |
-| [`one(x)`](@ref)  | Literal one of type `x` or type of variable `x`  |
+| [`zero(x)`](@ref) | 型`x`または変数`x`の型のリテラルゼロ |
+| [`one(x)`](@ref)  | 型`x`または変数`x`の型のリテラル1  |
 
-These functions are useful in [Numeric Comparisons](@ref) to avoid overhead from unnecessary
-[type conversion](@ref conversion-and-promotion).
+これらの関数は，[Numeric Comparisons](@ref)の際に，不要な[type conversion](@ref conversion-and-promotion)
+によるオーバーヘッドを回避するのに便利です．
 
-Examples:
+
+以下に例を示します:
 
 ```jldoctest
 julia> zero(Float32)

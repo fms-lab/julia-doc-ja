@@ -1,23 +1,25 @@
-# Complex and Rational Numbers
+# [複素数と有理数](@id Complex-and-Rational-Numbers)
 
-Julia includes predefined types for both complex and rational numbers, and supports
-all the standard [Mathematical Operations and Elementary Functions](@ref) on them. [Conversion and Promotion](@ref conversion-and-promotion) are defined
-so that operations on any combination of predefined numeric types, whether primitive or composite,
-behave as expected.
+Juliaには複素数と有理数の両方の定義済みの型が含まれており，それらに対する全ての標準的な
+[Mathematical Operations and Elementary Functions](@ref)がサポートされています．
+[Conversion and Promotion](@ref conversion-and-promotion)が定義されているので，
+プリミティブなものでもコンポジットなものでも，定義済みの数値型の任意の組み合わせに対する
+操作が期待通りに動作するようになっています．
 
-## Complex Numbers
+## 複素数
 
-The global constant [`im`](@ref) is bound to the complex number *i*, representing the principal
-square root of -1. (Using mathematicians' `i` or engineers' `j` for this global constant were rejected since they are such popular index variable names.) Since Julia allows numeric literals to be [juxtaposed with identifiers as coefficients](@ref man-numeric-literal-coefficients),
-this binding suffices to provide convenient syntax for complex numbers, similar to the traditional
-mathematical notation:
+グローバルな定数[`im`](@ref)は複素数*i*に結びつけられ，-1の平方根を表します（このグローバル
+定数に数学者の`i`やエンジニアの`j`を使用することは，一般的なインデックス変数名であるため
+却下されました）．Juliaでは数値リテラルを[juxtaposed with identifiers as coefficients](@ref man-numeric-literal-coefficients)
+（係数として識別子と並置する）ことができるので，このバインディングは複素数に便利な構文を
+提供するのに十分であり，伝統的な数学的記法に似ている形になります:
 
 ```jldoctest
 julia> 1+2im
 1 + 2im
 ```
 
-You can perform all the standard arithmetic operations with complex numbers:
+複素数を使って全ての標準的な算術演算を行うことができます:
 
 ```jldoctest
 julia> (1 + 2im)*(2 - 3im)
@@ -51,7 +53,7 @@ julia> 3(2 - 5im)^-1.0
 0.20689655172413796 + 0.5172413793103449im
 ```
 
-The promotion mechanism ensures that combinations of operands of different types just work:
+プロモーションのメカニズムは，異なる方のオペランドの組み合わせが動作することを保証します:
 
 ```jldoctest
 julia> 2(1 - 1im)
@@ -82,10 +84,9 @@ julia> 1 + 3/4im
 1.0 - 0.75im
 ```
 
-Note that `3/4im == 3/(4*im) == -(3/4*im)`, since a literal coefficient binds more tightly than
-division.
+リテラル係数の方が除算よりも強く結びつくため，`3/4im == 3/(4*im) == -(3/4*im)`であることに注意してください．
 
-Standard functions to manipulate complex values are provided:
+複素数の値を操作するための標準関数が用意されています:
 
 ```jldoctest
 julia> z = 1 + 2im
@@ -110,11 +111,10 @@ julia> angle(1 + 2im) # phase angle in radians
 1.1071487177940904
 ```
 
-As usual, the absolute value ([`abs`](@ref)) of a complex number is its distance from zero.
-[`abs2`](@ref) gives the square of the absolute value, and is of particular use for complex
-numbers since it avoids taking a square root. [`angle`](@ref) returns the phase angle in radians
-(also known as the *argument* or *arg* function). The full gamut of other [Elementary Functions](@ref)
-is also defined for complex numbers:
+通常通り，複素数の絶対値([`abs`](@ref))はゼロからの距離です．[`abs2`](@ref)は絶対値の二乗
+を与え，平方根を取らずにすむので，複素数には特に有効です．[`angle`](@ref)はラジアン単位の
+位相角を返します（*argument*や*arg*関数としても知られています）．他の[Elementary Functions](@ref)
+の全ても複素数用に定義されています:
 
 ```jldoctest
 julia> sqrt(1im)
@@ -133,9 +133,9 @@ julia> sinh(1 + 2im)
 -0.4890562590412937 + 1.4031192506220405im
 ```
 
-Note that mathematical functions typically return real values when applied to real numbers and
-complex values when applied to complex numbers. For example, [`sqrt`](@ref) behaves differently
-when applied to `-1` versus `-1 + 0im` even though `-1 == -1 + 0im`:
+数学的な関数は通常，実数に適用した場合にはじっすを返し，複素数に適用した場合には複素数を
+返すことに注意してください．例えば，[`sqrt`](@ref)は，`-1 == -1 + 0im`ではありますが，
+`-1`に適用した場合と`-1 + 0im`に適用した場合とでは挙動が異なります:
 
 ```jldoctest
 julia> sqrt(-1)
@@ -148,26 +148,26 @@ julia> sqrt(-1 + 0im)
 0.0 + 1.0im
 ```
 
-The [literal numeric coefficient notation](@ref man-numeric-literal-coefficients) does not work when constructing a complex number
-from variables. Instead, the multiplication must be explicitly written out:
+変数から複素数を構築する場合，[literal numeric coefficient notation](@ref man-numeric-literal-coefficients)
+は機能しません．代わりに，乗算を明示的に書き出す必要あがあります:
 
 ```jldoctest
 julia> a = 1; b = 2; a + b*im
 1 + 2im
 ```
 
-However, this is *not* recommended. Instead, use the more efficient [`complex`](@ref) function to construct
-a complex value directly from its real and imaginary parts:
+しかしこれは*非推奨*です．代わりに，より効率的な[`complex`](@ref)関数を利用して，実部と
+虚部から直接複素数を構築してください:
 
 ```jldoctest
 julia> a = 1; b = 2; complex(a, b)
 1 + 2im
 ```
 
-This construction avoids the multiplication and addition operations.
+個の構築方法では乗算と加算の操作をしなくてすみます．
 
-[`Inf`](@ref) and [`NaN`](@ref) propagate through complex numbers in the real and imaginary parts
-of a complex number as described in the [Special floating-point values](@ref) section:
+[`Inf`](@ref)と[`NaN`](@ref)は，[Special floating-point values](@ref)セクションで
+説明されているように，複素数の実部と虚部で複素数を伝搬します．
 
 ```jldoctest
 julia> 1 + Inf*im
@@ -177,18 +177,17 @@ julia> 1 + NaN*im
 1.0 + NaN*im
 ```
 
-## Rational Numbers
+## [有理数](@id Rational-Numbers)
 
-Julia has a rational number type to represent exact ratios of integers. Rationals are constructed
-using the [`//`](@ref) operator:
+Juliaは整数の正確な比を表現するために，有理数型を持っています．有理数は[`//`](@ref)演算子
+を使って構築されます:
 
 ```jldoctest
 julia> 2//3
 2//3
 ```
 
-If the numerator and denominator of a rational have common factors, they are reduced to lowest
-terms such that the denominator is non-negative:
+有理数の分子と分母が共通の因子を持つ場合，分母が非負であるような最小の値まで約分されます:
 
 ```jldoctest
 julia> 6//9
@@ -204,10 +203,9 @@ julia> -4//-12
 1//3
 ```
 
-This normalized form for a ratio of integers is unique, so equality of rational values can be
-tested by checking for equality of the numerator and denominator. The standardized numerator and
-denominator of a rational value can be extracted using the [`numerator`](@ref) and [`denominator`](@ref)
-functions:
+整数の比のこの正規化された値は一意なので，分子と分母が等しいかどうかをチェックすることで，
+有理数の値が等しいかどうかをテストすることができます．有理数の正規化された分子と分母は，
+[`numerator`](@ref)関数と[`denominator`](@ref)関数を用いて抽出することができます:
 
 ```jldoctest
 julia> numerator(2//3)
@@ -217,8 +215,8 @@ julia> denominator(2//3)
 3
 ```
 
-Direct comparison of the numerator and denominator is generally not necessary, since the standard
-arithmetic and comparison operations are defined for rational values:
+有理数に対して標準的な算術や比較演算が定義されているため，分子と分母の直接的な比較は
+一般的には必要ありません:
 
 ```jldoctest
 julia> 2//3 == 6//9
@@ -246,15 +244,15 @@ julia> 6//5 / 10//7
 21//25
 ```
 
-Rationals can easily be converted to floating-point numbers:
+有理数は簡単に浮動小数点数に変換できます:
 
 ```jldoctest
 julia> float(3//4)
 0.75
 ```
 
-Conversion from rational to floating-point respects the following identity for any integral values
-of `a` and `b`, with the exception of the case `a == 0` and `b == 0`:
+有理数から浮動小数点数への変換は，`a == 0`かつ`b == 0`の場合を除いて，任意の整数値`a`，`b`
+に対して以下の等式を尊重します:
 
 ```jldoctest
 julia> a = 1; b = 2;
@@ -263,7 +261,7 @@ julia> isequal(float(a//b), a/b)
 true
 ```
 
-Constructing infinite rational values is acceptable:
+無限な有理数を構築することは可能です:
 
 ```jldoctest
 julia> 5//0
@@ -276,7 +274,7 @@ julia> typeof(ans)
 Rational{Int64}
 ```
 
-Trying to construct a [`NaN`](@ref) rational value, however, is invalid:
+一方，有理数で[`NaN`](@ref)を構築することはできません:
 
 ```jldoctest
 julia> 0//0
@@ -285,7 +283,7 @@ Stacktrace:
 [...]
 ```
 
-As usual, the promotion system makes interactions with other numeric types effortless:
+通常通り，プロモーションシステムは，他の数値型との相互作用を楽にします:
 
 ```jldoctest
 julia> 3//5 + 1

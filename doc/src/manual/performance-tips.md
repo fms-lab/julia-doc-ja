@@ -1,24 +1,24 @@
-# [Performance Tips](@id man-performance-tips)
+# [パフォーマンスのヒント](@id man-performance-tips)
 
-In the following sections, we briefly go through a few techniques that can help make your Julia
-code run as fast as possible.
+以下のセクションでは，Juliaのコードをできるだけ高速に動作させるためのいくつかのテクニックを
+簡単に説明します．
 
-## Avoid global variables
+## グローバル変数を避ける
 
-A global variable might have its value, and therefore its type, change at any point. This makes
-it difficult for the compiler to optimize code using global variables. Variables should be local,
-or passed as arguments to functions, whenever possible.
+グローバル変数の値と型はいつでも変更される可能性があります．これはグローバル変数を使用した
+コードをコンパイラが最適化するのを困難にします．変数は可能な限りローカルに定義するか，関数の
+引数として渡すようにしてください．
 
-Any code that is performance critical or being benchmarked should be inside a function.
+パフォーマンスが重要なコードやベンチマークを行うコードは関数の中に入れるべきです．
 
-We find that global names are frequently constants, and declaring them as such greatly improves
-performance:
+グローバルな名前を持つものは定数であることが多く，定数であることを宣言することで，
+パフォーマンスが大幅に向上することがわかりました:
 
 ```julia
 const DEFAULT_VAL = 0
 ```
 
-Uses of non-constant globals can be optimized by annotating their types at the point of use:
+定数ではないグローバル変数の使用は，使用時に型をアノテーションすることで最適化できます:
 
 ```julia
 global x = rand(1000)
@@ -32,31 +32,32 @@ function loop_over_global()
 end
 ```
 
-Passing arguments to functions is better style. It leads to more reusable code and clarifies what the inputs and outputs are.
+関数に引数を渡すのは，より良いスタイルです．関数に引数を渡すことは，コードの再利用性を高め，
+入出力が何であるかを明確にします．
 
 !!! note
-    All code in the REPL is evaluated in global scope, so a variable defined and assigned
-    at top level will be a **global** variable. Variables defined at top level scope inside
-    modules are also global.
+    REPL内の全てのコードはグローバルスコープで評価されるので，トップレベルで定義され，代入
+    された変数は**グローバル**変数になります．モジュール内部のトップレベルスコープで定義さ
+    れた変数もグローバルになります．
 
-In the following REPL session:
+以下のREPLセッションの例では一つ目の式:
 
 ```julia-repl
 julia> x = 1.0
 ```
 
-is equivalent to:
+と以下の2つ目の式は等価です:
 
 ```julia-repl
 julia> global x = 1.0
 ```
 
-so all the performance issues discussed previously apply.
+ゆえに，上で議論された全てのパフォーマンスの問題が適用されます．
 
-## Measure performance with [`@time`](@ref) and pay attention to memory allocation
+## [`@time`](@ref)によるパフォーマンスの計測とメモリ割り当てへの注意
 
-A useful tool for measuring performance is the [`@time`](@ref) macro. We here repeat the example
-with the global variable above, but this time with the type annotation removed:
+パフォーマンスの測定に便利なツールとして，[`@time`](@ref)マクロがあります．ここでは上記の
+グローバル変数を使用した例を繰り返しますが，今回は型アノテーションを削除しています:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234)), filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(1000);
@@ -78,21 +79,21 @@ julia> @time sum_global()
 496.84883432553846
 ```
 
-On the first call (`@time sum_global()`) the function gets compiled. (If you've not yet used [`@time`](@ref)
-in this session, it will also compile functions needed for timing.)  You should not take the results
-of this run seriously. For the second run, note that in addition to reporting the time, it also
-indicated that a significant amount of memory was allocated. We are here just computing a sum over all elements in
-a vector of 64-bit floats so there should be no need to allocate memory (at least not on the heap which is what `@time` reports).
+最初に`@time sum_global()`を呼び出したときに，関数がコンパイルされます．（このセクションで
+[`@time`](@ref)を使用していない場合は，計測に必要な関数もコンパイルされます．）この実行結果
+を深刻に受け止めるべきではありません．2回目の実行では，時間を報告するだけでなく，かなりの量
+のメモリが割り当てられていることに注意してください．ここでは64ビットの浮動小数点数のベクトル
+内の全ての要素の和を計算しているだけなので，メモリを割り当てる必要がありません（少なくとも
+`@time`が報告するヒープ上での割り当ては必要ありません）．
 
-Unexpected memory allocation is almost always a sign of some problem with your code, usually a
-problem with type-stability or creating many small temporary arrays.
-Consequently, in addition to the allocation itself, it's very likely
-that the code generated for your function is far from optimal. Take such indications seriously
-and follow the advice below.
+予期せぬメモリ割り当ては，ほとんどの場合において，コードに何らかの問題があることを示していま
+す．これは通常，型の安定性に問題があったり，小さな一時的な配列をたくさん生成したりするような
+問題です．その結果割り当て自体に加えて，関数のために生成されたコードが最適化されていない可能
+性が非常に高いです．このような兆候は真剣に受け止めて，以下のアドバイスに従ってください．
 
-If we instead pass `x` as an argument to the function it no longer allocates memory
-(the allocation reported below is due to running the `@time` macro in global scope)
-and is significantly faster after the first call:
+上述の例で，`x`を引数として渡すように変更すると，メモリが割り当てられなくなり（以下で
+報告されている割り当てはグローバルスコープで`@time`マクロを実行したことによるものです），
+最初の呼び出しの後には非常に高速に動作します:
 
 ```jldoctest sumarg; setup = :(using Random; Random.seed!(1234)), filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(1000);
@@ -114,8 +115,9 @@ julia> @time sum_arg(x)
 496.84883432553846
 ```
 
-The 5 allocations seen are from running the `@time` macro itself in global scope. If we instead run
-the timing in a function, we can see that indeed no allocations are performed:
+例の中で5つ割り当てられているのは，グローバルスコープで`@time`を実行したことによるものです．
+関数内で計測を行うように変更してから実行すると，確かにアロケーションが行われていないことが
+わかります:
 
 ```jldoctest sumarg; filter = r"[0-9\.]+ seconds"
 julia> time_sum(x) = @time sum_arg(x);
@@ -125,14 +127,14 @@ julia> time_sum(x)
 496.84883432553846
 ```
 
-In some situations, your function may need to allocate memory as part of its operation, and this
-can complicate the simple picture above. In such cases, consider using one of the [tools](@ref tools)
-below to diagnose problems, or write a version of your function that separates allocation from
-its algorithmic aspects (see [Pre-allocating outputs](@ref)).
+状況によっては，関数がその操作の一部としてメモリを割り当てる必要がある場合があり，上記の
+単純な状況を複雑にしてしまいます．そのような場合は，問題を診断するために以下の[tools](@ref tools)
+のいずれかを使用するか，アルゴリズム的な側面から割り当てを分離したバージョンの関数を書くこと
+を検討してください（[Pre-allocating outputs](@ref)を参照してください．
 
 !!! note
-    For more serious benchmarking, consider the [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
-    package which among other things evaluates the function multiple times in order to reduce noise.
+    より本格的なベンチマークを行うには，[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
+    パッケージの利用を検討してください．これはノイズを減らすために関数を複数回評価します．
 
 ## [Tools](@id tools)
 

@@ -136,29 +136,21 @@ julia> time_sum(x)
     より本格的なベンチマークを行うには，[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
     パッケージの利用を検討してください．これはノイズを減らすために関数を複数回評価します．
 
-## [Tools](@id tools)
+## [ツール](@id tools)
 
-Julia and its package ecosystem includes tools that may help you diagnose problems and improve
-the performance of your code:
+Juliaとそのパッケージエコシステムには，問題を診断してコードのパフォーマンスを向上させるのに
+役立つツールが含まれています:
 
-  * [Profiling](@ref) allows you to measure the performance of your running code and identify lines
-    that serve as bottlenecks. For complex projects, the [ProfileView](https://github.com/timholy/ProfileView.jl)
-    package can help you visualize your profiling results.
-  * The [Traceur](https://github.com/JunoLab/Traceur.jl) package can help you find common performance problems in your code.
-  * Unexpectedly-large memory allocations--as reported by [`@time`](@ref), [`@allocated`](@ref), or
-    the profiler (through calls to the garbage-collection routines)--hint that there might be issues
-    with your code. If you don't see another reason for the allocations, suspect a type problem.
-     You can also start Julia with the `--track-allocation=user` option and examine the resulting
-    `*.mem` files to see information about where those allocations occur. See [Memory allocation analysis](@ref).
-  * `@code_warntype` generates a representation of your code that can be helpful in finding expressions
-    that result in type uncertainty. See [`@code_warntype`](@ref) below.
+  * [Profiling](@ref)により，実行中のコードのパフォーマンスを測定し，ボトルネックとなる行を特定することができます．複雑なプロジェクトでは，[ProfileView](https://github.com/timholy/ProfileView.jl)パッケージを使用sるうと，プロファイリング結果を可視化することができます．
+  * [Traceur](https://github.com/JunoLab/Traceur.jl)パッケージは，コード内の一般的なパフォーマンスの問題を見つけるのに役立ちます．
+  * [`@time`](@ref)や[`@allocated`](@ref)，あるいは（ガベージコレクションルーチンへの呼び出しを通じた）プロファイラが報告するような予想外に大きなメモリ割り当ては，コードに問題があるかもしれないことを示唆しています．割り当てで他の問題が見つからない場合は，型の問題を疑ってください．また，Juliaを`--track-allocation=user`オプションをつけて起動し，結果として得られた`*.mem`ファイルを調べて，どこで割り当てが行われているかの情報を確認することもできます．[Memory allocation analysis](@ref)を参照してください．
+  * `@code_warntype`はコードの表現を生成し，型の不確実性をもたらす式を見つけるのに役立ちます．以下の[`@code_warntype`](@ref)を参照してください．
 
-## [Avoid containers with abstract type parameters](@id man-performance-abstract-container)
+## [抽象型のパラメータを持つコンテナを避ける](@id man-performance-abstract-container)
 
-When working with parameterized types, including arrays, it is best to avoid parameterizing with
-abstract types where possible.
+配列を含む，パラメータ化された型を扱う際には，可能な限り抽象型でのパラメータ化は避けた方が良いでしょう．
 
-Consider the following:
+以下を考えてみましょう:
 
 ```jldoctest
 julia> a = Real[]
@@ -171,11 +163,11 @@ julia> push!(a, 1); push!(a, 2.0); push!(a, π)
  π = 3.1415926535897...
 ```
 
-Because `a` is a an array of abstract type [`Real`](@ref), it must be able to hold any
-`Real` value. Since `Real` objects can be of arbitrary size and structure, `a` must be
-represented as an array of pointers to individually allocated `Real` objects. However, if we instead
-only allow numbers of the same type, e.g. [`Float64`](@ref), to be stored in `a` these can be stored more
-efficiently:
+`a`は抽象型[`Real`](@ref)の配列なので，任意の`Real`型の値を保持できなければなりません．
+`Real`オブジェクトは任意のサイズと構造を持つことができるので，`a`は個別に割り当てられた
+`Real`オブジェクトへのポインタの配列として表現されなければなりません．しかし，代わりに
+同じ型の数値，例えば[`Float64`](@ref)などの数値だけを`a`に格納できるようにすれば，これら
+の数値をより効率的に格納することができます:
 
 ```jldoctest
 julia> a = Float64[]
@@ -188,21 +180,20 @@ julia> push!(a, 1); push!(a, 2.0); push!(a,  π)
  3.141592653589793
 ```
 
-Assigning numbers into `a` will now convert them to `Float64` and `a` will be stored as
-a contiguous block of 64-bit floating-point values that can be manipulated efficiently.
+`a`に数値を代入すると`Float64`に変換され，`a`は64ビット浮動小数点数値の連続したブロックと
+して格納され，効率的に操作できるようになります．
 
-See also the discussion under [Parametric Types](@ref).
+以下の[Parametric Types](@ref)の説明も参照してください．
 
-## Type declarations
+## 型宣言
 
-In many languages with optional type declarations, adding declarations is the principal way to
-make code run faster. This is *not* the case in Julia. In Julia, the compiler generally knows
-the types of all function arguments, local variables, and expressions. However, there are a few
-specific instances where declarations are helpful.
+型宣言がオプションとしてある多くの言語では，宣言を追加することがコードを高速に実行するため
+の主要な方法です．しかし，Juliaでは*そうではありません*．Juliaではコンパイラは通常，全ての
+関数引数，ローカル変数，式の型を知っています．しかし，宣言な有用な例はいくつか存在します．
 
-### Avoid fields with abstract type
+### 抽象型のフィールドを避ける
 
-Types can be declared without specifying the types of their fields:
+型は，フィールドの型を指定せずに宣言することができます:
 
 ```jldoctest myambig
 julia> struct MyAmbiguousType
@@ -210,10 +201,10 @@ julia> struct MyAmbiguousType
        end
 ```
 
-This allows `a` to be of any type. This can often be useful, but it does have a downside: for
-objects of type `MyAmbiguousType`, the compiler will not be able to generate high-performance
-code. The reason is that the compiler uses the types of objects, not their values, to determine
-how to build code. Unfortunately, very little can be inferred about an object of type `MyAmbiguousType`:
+これにより`a`に任意の型を指定することができます．これは便利ですが欠点もあります`MyAmbiguousType`
+型のオブジェクトの場合，コンパイラは高性能なコードを生成できません．その理由は，コンパイラが
+コードのビルド方法を決定するために，値ではなくオブジェクトの型を使用するからです．残念ながら
+`MyAmbiguousType`型のオブジェクトについてはほとんど推論できません:
 
 ```jldoctest myambig
 julia> b = MyAmbiguousType("Hello")
@@ -229,14 +220,15 @@ julia> typeof(c)
 MyAmbiguousType
 ```
 
-The values of `b` and `c` have the same type, yet their underlying representation of data in memory is very
-different. Even if you stored just numeric values in field `a`, the fact that the memory representation
-of a [`UInt8`](@ref) differs from a [`Float64`](@ref) also means that the CPU needs to handle
-them using two different kinds of instructions. Since the required information is not available
-in the type, such decisions have to be made at run-time. This slows performance.
+`b`と`c`は同じ型を持っていますが，メモリ上のデータの基本的な表現は全く異なっています．
+フィールド`a`に数値だけを格納したとしても，[`UInt8`](@ref)のメモリ表現は[`Float64`](@ref)
+とは異なるという事実は，CPUが2種類の異なる命令を使用してそれらを処理する必要があることを
+意味します．この型では必要な情報が得られないため，このような判断は実行時に行わなければ
+なりません．これがパフォーマンスを低下させます．
 
-You can do better by declaring the type of `a`. Here, we are focused on the case where `a` might
-be any one of several types, in which case the natural solution is to use parameters. For example:
+`a`の型を宣言することによるより良い方法があります．ここでは`a`がいくつかの型のうちいずれか
+であるような場合に焦点を当てていますが，この場合の自然な解決策はパラメータを使うことです．
+例えば:
 
 ```jldoctest myambig2
 julia> mutable struct MyType{T<:AbstractFloat}
@@ -244,7 +236,7 @@ julia> mutable struct MyType{T<:AbstractFloat}
        end
 ```
 
-This is a better choice than
+これは以下よりも優れています:
 
 ```jldoctest myambig2
 julia> mutable struct MyStillAmbiguousType
@@ -252,8 +244,7 @@ julia> mutable struct MyStillAmbiguousType
        end
 ```
 
-because the first version specifies the type of `a` from the type of the wrapper object. For
-example:
+これは，最初のバージョンではラッパーオブジェクトの型から`a`の型を指定しているからです．例えば:
 
 ```jldoctest myambig2
 julia> m = MyType(3.2)
@@ -269,8 +260,8 @@ julia> typeof(t)
 MyStillAmbiguousType
 ```
 
-The type of field `a` can be readily determined from the type of `m`, but not from the type of
-`t`. Indeed, in `t` it's possible to change the type of the field `a`:
+フィールド`a`の型は，`m`の型から容易に決定できますが，`t`の型からは決定できません．
+実際，`t`では，フィールド`a`の型を変更することができます:
 
 ```jldoctest myambig2
 julia> typeof(t.a)
@@ -283,7 +274,7 @@ julia> typeof(t.a)
 Float32
 ```
 
-In contrast, once `m` is constructed, the type of `m.a` cannot change:
+これに対して，一度`m`が構成されると，`m.a`の型を変えることはできません:
 
 ```jldoctest myambig2
 julia> m.a = 4.5f0
@@ -293,12 +284,12 @@ julia> typeof(m.a)
 Float64
 ```
 
-The fact that the type of `m.a` is known from `m`'s type—coupled with the fact that its type
-cannot change mid-function—allows the compiler to generate highly-optimized code for objects
-like `m` but not for objects like `t`.
+`m.a`の型が`m`の型からわかっているという事実と，関数の途中で型が変更できないという事実が
+組み合わさって，コンパイラは`m`のようなオブジェクトに対しては最適化されたコードを生成でき
+ますが，`t`のようばオブジェクトに対しては最適化されていません．
 
-Of course, all of this is true only if we construct `m` with a concrete type. We can break this
-by explicitly constructing it with an abstract type:
+もちろん，これらは`m`を具体的な型で構築した場合にのみ有効です．明示的に抽象的な型で構成する
+ことでこれを破ることができます:
 
 ```jldoctest myambig2
 julia> m = MyType{AbstractFloat}(3.2)
@@ -314,24 +305,24 @@ julia> typeof(m.a)
 Float32
 ```
 
-For all practical purposes, such objects behave identically to those of `MyStillAmbiguousType`.
+現実的には，このようなオブジェクトは`MyStillAmbiguousType`のものと同じように動作します．
 
-It's quite instructive to compare the sheer amount code generated for a simple function
+単純な関数
 
 ```julia
 func(m::MyType) = m.a+1
 ```
 
-using
+のために生成されるコードの量を，以下を用いて比較するのは非常に有益です:
 
 ```julia
 code_llvm(func, Tuple{MyType{Float64}})
 code_llvm(func, Tuple{MyType{AbstractFloat}})
 ```
 
-For reasons of length the results are not shown here, but you may wish to try this yourself. Because
-the type is fully-specified in the first case, the compiler doesn't need to generate any code
-to resolve the type at run-time. This results in shorter and faster code.
+長くなるのでここでは結果を示しませんが，ご自身で試してみたくなるかもしれません．
+最初のケースでは型が完全に指定されているため，コンパイラは実行時に型を解決するコードを
+生成する必要がありません．その結果，短く高速なコードが生成されます．
 
 ### Avoid fields with abstract containers
 

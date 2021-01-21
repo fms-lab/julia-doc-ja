@@ -324,9 +324,9 @@ code_llvm(func, Tuple{MyType{AbstractFloat}})
 最初のケースでは型が完全に指定されているため，コンパイラは実行時に型を解決するコードを
 生成する必要がありません．その結果，短く高速なコードが生成されます．
 
-### Avoid fields with abstract containers
+### [抽象的なコンテナを持つフィールドを避ける](@id Avoid-fields-with-abstract-containers)
 
-The same best practices also work for container types:
+同じベストプラクティスはコンテナ型でも機能します:
 
 ```jldoctest containers
 julia> struct MySimpleContainer{A<:AbstractVector}
@@ -338,7 +338,7 @@ julia> struct MyAmbiguousContainer{T}
        end
 ```
 
-For example:
+例えば:
 
 ```jldoctest containers
 julia> c = MySimpleContainer(1:3);
@@ -362,12 +362,13 @@ julia> typeof(b)
 MyAmbiguousContainer{Int64}
 ```
 
-For `MySimpleContainer`, the object is fully-specified by its type and parameters, so the compiler
-can generate optimized functions. In most instances, this will probably suffice.
+`MySimpleContainer`の場合，オブジェクトは型とパラメータで完全に指定されているので，コンパイ
+ラは最適化された関数を生成することができます．ほとんどの場合はこれで十分でしょう．
 
-While the compiler can now do its job perfectly well, there are cases where *you* might wish that
-your code could do different things depending on the *element type* of `a`. Usually the best
-way to achieve this is to wrap your specific operation (here, `foo`) in a separate function:
+コンパイラはこれで完璧に仕事をこなせるようになりましたが，`a`の*要素の型*に応じてコードを
+変えたい場合もあるかもしれません．通常これを実現する最良の方法は，特定の操作（ここでは`foo`
+）を別の関数でラップすることです:
+
 
 ```jldoctest containers
 julia> function sumfoo(c::MySimpleContainer)
@@ -386,11 +387,10 @@ julia> foo(x::AbstractFloat) = round(x)
 foo (generic function with 2 methods)
 ```
 
-This keeps things simple, while allowing the compiler to generate optimized code in all cases.
+これにより，シンプルさを保ちながら，全てのケースでコンパイラが最適化されたコードを生成できるようになります．
 
-However, there are cases where you may need to declare different versions of the outer function
-for different element types or types of the `AbstractVector` of the field `a` in `MySimpleContainer`.
-You could do it like this:
+しかし，異なる要素の型や，`MySimpleContainer`のフィールド`a`の`AbstractVector`の型ごとに
+異なるバージョンの外部関数を宣言する必要が場合もあるでしょう．それは以下のようにできます:
 
 ```jldoctest containers
 julia> function myfunc(c::MySimpleContainer{<:AbstractArray{<:Integer}})
@@ -420,11 +420,10 @@ julia> myfunc(MySimpleContainer([1:3;]))
 4
 ```
 
-### Annotate values taken from untyped locations
+### 型付けされていない場所から取得した値をアノテーションするAnnotate values taken from untyped locations
 
-It is often convenient to work with data structures that may contain values of any type (arrays
-of type `Array{Any}`). But, if you're using one of these structures and happen to know the type
-of an element, it helps to share this knowledge with the compiler:
+任意の型の値を含むデータ構造体（`Array{Any}`型の配列）を扱うのは便利です．しかし，これらの
+構造体を使用していて，たまたま要素の型を知っている場合は，その知識をコンパイラと共有するのに役立ちます:
 
 ```julia
 function foo(a::Array{Any,1})
@@ -434,21 +433,23 @@ function foo(a::Array{Any,1})
 end
 ```
 
-Here, we happened to know that the first element of `a` would be an [`Int32`](@ref). Making
-an annotation like this has the added benefit that it will raise a run-time error if the
-value is not of the expected type, potentially catching certain bugs earlier.
+ここでは，`a`の最初の要素が[`Int32`](@ref)であることを知っているものとします．このような
+アノテーションを作成することで，値が期待される型でない場合にランタイムエラーを発生させ，
+特定のバグを早期に発見できる可能性があるという利点があります．
 
-In the case that the type of `a[1]` is not known precisely, `x` can be declared via
-`x = convert(Int32, a[1])::Int32`. The use of the [`convert`](@ref) function allows `a[1]`
-to be any object convertible to an `Int32` (such as `UInt8`), thus increasing the genericity
-of the code by loosening the type requirement. Notice that `convert` itself needs a type
-annotation in this context in order to achieve type stability. This is because the compiler
-cannot deduce the type of the return value of a function, even `convert`, unless the types of
-all the function's arguments are known.
+`a[1]`の型が正確にわからない場合は，`x = convert(Int32, a[1])::Int32`で`x`を宣言することが
+できます．[`convert`](@ref)関数を使用することで，`a[1]`は`Int32`に変換可能な任意のオブジェ
+クト（`UInt8`など）になり，型の要件を緩くすることでコードの汎用性が高まります．型の安定性
+を実現するために，この文脈では`convert`自体に型アノテーションが必要であることに注意してくだ
+さい．これはある関数の全ての引数の型が既知でなければ，たとえ`convert`関数であっても，コンパ
+イラが関数の戻り値の型を推測することができないためです．
 
 Type annotation will not enhance (and can actually hinder) performance if the type is constructed
 at run-time. This is because the compiler cannot use the annotation to specialize the subsequent
 code, and the type-check itself takes time. For example, in the code:
+型のアノテーションは実行時に型が構築されている場合，パフォーマンスを向上させることはできませ
+ん（実際には妨げになることもあります）．これは，コンパイラがアノテーションを使用して後続の
+コードを特殊化することができず，型チェック自体に時間がかかるからです．例えばコードの中では:
 
 ```julia
 function nr(a, prec)
@@ -459,32 +460,31 @@ function nr(a, prec)
 end
 ```
 
-the annotation of `c` harms performance. To write performant code involving types constructed at
-run-time, use the [function-barrier technique](@ref kernel-functions) discussed below, and ensure
-that the constructed type appears among the argument types of the kernel function so that the kernel
-operations are properly specialized by the compiler. For example, in the above snippet, as soon as
-`b` is constructed, it can be passed to another function `k`, the kernel. If, for example, function
-`k` declares `b` as an argument of type `Complex{T}`, where `T` is a type parameter, then a type annotation
-appearing in an assignment statement within `k` of the form:
+`c`のアノテーションはパフォーマンスに悪影響を与えます．実行時に構築された型を含むパフォーマ
+ンスの高いコードを書くには，後述する[function-barrier technique](@ref kernel-functions)を
+使用し，カーネル関数の引数型の中に構築された型が現れるようにして，コンパイラがカーネル操作を
+適切に特殊化できるようにします．例えば，上のスニペットでは，`b`が構築されるとすぐに，それを
+カーネルである別の関数`k`に渡すことができます．例えば，関数`k`が`b`を`Complex{T}`型の引数と
+して宣言し，`T`が型パラメータである場合，`k`内の代入文に現れる型アノテーションは次のような
+形になります:
 
 ```julia
 c = (b + 1.0f0)::Complex{T}
 ```
 
-does not hinder performance (but does not help either) since the compiler can determine the type of `c`
-at the time `k` is compiled.
+これは`k`がコンパイルされた時点でコンパイラが`c`の型を決定することができるため，性能に
+支障をきたすことはありません（が，助けにもなりません）．
 
-### Be aware of when Julia avoids specializing
+### Juliaが特殊化を避ける場合に注意する
 
-As a heuristic, Julia avoids automatically specializing on argument type parameters in three
-specific cases: `Type`, `Function`, and `Vararg`. Julia will always specialize when the argument is
-used within the method, but not if the argument is just passed through to another function. This
-usually has no performance impact at runtime and
-[improves compiler performance](@ref compiler-efficiency-issues). If you find it does have a
-performance impact at runtime in your case, you can trigger specialization by adding a type
-parameter to the method declaration. Here are some examples:
+ヒューリスティックな方法として，Juliaは3つの特定のケースで引数の型パラメータを自動的に特殊化
+することを避けます．`Type`，`Function`と`Vararg`です．引数がメソッド内で使用される場合，
+Juliaは常に特殊化しますが，引数が他の関数に渡されただけの場合は特殊化しません．これは通常，
+実行時のパフォーマンスへの影響はなく，[コンパイラのパフォーマンスを向上させます](@ref compiler-efficiency-issues)．
+実行時にパフォーマンスに影響があることがわかった場合は，メソッド宣言に型パラメータを追加する
+ことで，特殊化をトリガすることができます．以下にいくつかの例を示します:
 
-This will not specialize:
+これは特殊化しません:
 
 ```julia
 function f_type(t)  # or t::Type
@@ -493,7 +493,7 @@ function f_type(t)  # or t::Type
 end
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 function g_type(t::Type{T}) where T
@@ -502,48 +502,49 @@ function g_type(t::Type{T}) where T
 end
 ```
 
-These will not specialize:
+これは特殊化しません:
 
 ```julia
 f_func(f, num) = ntuple(f, div(num, 2))
 g_func(g::Function, num) = ntuple(g, div(num, 2))
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 h_func(h::H, num) where {H} = ntuple(h, div(num, 2))
 ```
 
-This will not specialize:
+これは特殊化しません:
 
 ```julia
 f_vararg(x::Int...) = tuple(x...)
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 g_vararg(x::Vararg{Int, N}) where {N} = tuple(x...)
 ```
 
-One only needs to introduce a single type parameter to force specialization, even if the other types are unconstrained. For example, this will also specialize, and is useful when the arguments are not all of the same type:
+他の型が制約されていない場合でも強制的に特殊化を行うためには，1つの型のパラメータを導入する
+だけでよいです．例えば，これも特殊化され，引数が全て同じ型ではない場合にも便利です．
 ```julia
 h_vararg(x::Vararg{Any, N}) where {N} = tuple(x...)
 ```
 
-Note that [`@code_typed`](@ref) and friends will always show you specialized code, even if Julia
-would not normally specialize that method call. You need to check the
-[method internals](@ref ast-lowered-method) if you want to see whether specializations are generated
-when argument types are changed, i.e., if `(@which f(...)).specializations` contains specializations
-for the argument in question.
+Juliaが通常そのメソッド呼び出しを特殊化しない場合でも，[`@code_typed`](@ref)とフレンドは
+常に特殊化されたコードを表示することに注意してください．引数の型が変更された時に特殊化が
+生成されるかどうか，つまり`(@which f(...)).specializations`に問題の引数の特殊化が含まれて
+いるかどうかを確認したい場合は，[メソッド内部](@ref ast-lowered-method)をチェックする必要
+があります．
 
-## Break functions into multiple definitions
+## 関数を複数の定義に分ける
 
-Writing a function as many small definitions allows the compiler to directly call the most applicable
-code, or even inline it.
+関数を多くの小さな定義として書くことで，コンパイラが直接最も適用可能なコードを呼び出すことが
+できますし，インライン化することもできます．
 
-Here is an example of a "compound function" that should really be written as multiple definitions:
+ここでは実際には複数の定義として記述されるべき「複合関数」の例を示します:
 
 ```julia
 using LinearAlgebra
@@ -559,40 +560,39 @@ function mynorm(A)
 end
 ```
 
-This can be written more concisely and efficiently as:
+これは以下のように書くと，より簡潔かつ効率的に書くことができます:
 
 ```julia
 norm(x::Vector) = sqrt(real(dot(x, x)))
 norm(A::Matrix) = maximum(svdvals(A))
 ```
 
-It should however be noted that the compiler is quite efficient at optimizing away the dead branches in code
-written as the `mynorm` example.
+ただし，コンパイラは`mynorm`の例のように記述されたコードのデッドブランチを最適化するのに
+非常に効率的であることに注意してください．
 
-## Write "type-stable" functions
+## 「型が安定している」関数を書く
 
-When possible, it helps to ensure that a function always returns a value of the same type. Consider
-the following definition:
+可能な場合，関数が常に同じ型の値を返すようにするのが役立ちます．次の定義を考えてみましょう:
 
 ```julia
 pos(x) = x < 0 ? 0 : x
 ```
 
-Although this seems innocent enough, the problem is that `0` is an integer (of type `Int`) and
-`x` might be of any type. Thus, depending on the value of `x`, this function might return a value
-of either of two types. This behavior is allowed, and may be desirable in some cases. But it can
-easily be fixed as follows:
+これは十分に悪くないように見えますが，問題は`0`が整数型（`Int`型）であり，`x`が任意型である
+可能性があるということです．したがって`x`の値によっては，この関数は2つの型のどちらかの値を
+返すことになります．この動作は許容されており，いくつかのケースでは望ましいかもしれません．
+しかし，以下のように簡単に修正することができます:
 
 ```julia
 pos(x) = x < 0 ? zero(x) : x
 ```
 
-There is also a [`oneunit`](@ref) function, and a more general [`oftype(x, y)`](@ref) function, which
-returns `y` converted to the type of `x`.
+また[`oneunit`](@ref)関数や，より一般的な[`oftype(x, y)`](@ref)関数もあり，これは`x`の型に
+変換された`y`を返します．
 
-## Avoid changing the type of a variable
+## 変数の型を変更することを避ける
 
-An analogous "type-stability" problem exists for variables used repeatedly within a function:
+関数内で繰り返し使用される変数には，類似の「型安定性」の問題が存在します:
 
 ```julia
 function foo()
@@ -604,21 +604,20 @@ function foo()
 end
 ```
 
-Local variable `x` starts as an integer, and after one loop iteration becomes a floating-point
-number (the result of [`/`](@ref) operator). This makes it more difficult for the compiler to
-optimize the body of the loop. There are several possible fixes:
+ローカル変数`x`は整数で始まり，1回ループした後には浮動小数点数（[`/`](@ref)演算子の結果）に
+なります．これによりコンパイラがループの本体を最適化するのが難しくなります．いくつかの修正
+方法が考えられます:
 
-  * Initialize `x` with `x = 1.0`
-  * Declare the type of `x` explicitly as `x::Float64 = 1`
-  * Use an explicit conversion by `x = oneunit(Float64)`
-  * Initialize with the first loop iteration, to `x = 1 / rand()`, then loop `for i = 2:10`
+  * `x`を`x = 1.0`で初期化する
+  * `x`の型を明示的に`x::Float64 = 1`として宣言する
+  * `x = oneunit(Float64)`による明示的な変換を使用する
+  * 最初のループの際に`x = 1 / rand()`で初期化してから，`for i = 2:10`をループします
 
-## [Separate kernel functions (aka, function barriers)](@id kernel-functions)
+## [カーネル関数を分離する（別名，関数バリア）](@id kernel-functions)
 
-Many functions follow a pattern of performing some set-up work, and then running many iterations
-to perform a core computation. Where possible, it is a good idea to put these core computations
-in separate functions. For example, the following contrived function returns an array of a randomly-chosen
-type:
+多くの関数は，いくつかの設定を実行した後，コア計算を実行するために何度も繰り返しを実行する
+というパターンに従っています．可能であれば，これらのコア計算は別の関数で行うことをお勧め
+します．例えば次のように不自然な関数は，ランダムに選ばれた型の配列を返します:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234))
 julia> function strange_twos(n)
@@ -636,7 +635,7 @@ julia> strange_twos(3)
  2.0
 ```
 
-This should be written as:
+これは次のように書くべきです:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234))
 julia> function fill_twos!(a)
@@ -658,19 +657,19 @@ julia> strange_twos(3)
  2.0
 ```
 
-Julia's compiler specializes code for argument types at function boundaries, so in the original
-implementation it does not know the type of `a` during the loop (since it is chosen randomly).
-Therefore the second version is generally faster since the inner loop can be recompiled as part
-of `fill_twos!` for different types of `a`.
+Juliaのコンパイラは関数の境界で引数の型のコードを特殊化しているので，オリジナルの実装では
+ループの間の`a`の型を知りません（ランダムに選ばれているので）．そのため，異なる型の`a`に
+対して，内側のループを`fill_twos!`の一部として再コンパイルできるため，2番目のバージョンは
+一般的に高速になります．
 
-The second form is also often better style and can lead to more code reuse.
+また，2番目の形式の方がスタイルがよく，コードの再利用性が高まります．
 
-This pattern is used in several places in Julia Base. For example, see `vcat` and `hcat`
-in [`abstractarray.jl`](https://github.com/JuliaLang/julia/blob/40fe264f4ffaa29b749bcf42239a89abdcbba846/base/abstractarray.jl#L1205-L1206),
-or the [`fill!`](@ref) function, which we could have used instead of writing our own `fill_twos!`.
+このパターンはJulia Baseのいくつかの場所で使われています．例えば，[`abstractarray.jl`](https://github.com/JuliaLang/julia/blob/40fe264f4ffaa29b749bcf42239a89abdcbba846/base/abstractarray.jl#L1205-L1206)の
+`vcat`や`hcat`，あるいは[`fill!`](@ref)関数を見てください．[`fill!`](@ref)関数は，上で独自に
+書いた`fill_twos!`の代わりに使うことができます．
 
-Functions like `strange_twos` occur when dealing with data of uncertain type, for example data
-loaded from an input file that might contain either integers, floats, strings, or something else.
+`strange_twos`のような関数は，例えば入力ファイルから読み込まれたデータが整数，浮動小数点数，
+文字列，その他の何らかの型のものを含んでいるような，型が不確かなデータを扱うときに発生します．
 
 ## [Types with values-as-parameters](@id man-performance-value-type)
 

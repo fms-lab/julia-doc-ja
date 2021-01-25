@@ -673,8 +673,7 @@ Juliaのコンパイラは関数の境界で引数の型のコードを特殊化
 
 ## [Types with values-as-parameters](@id man-performance-value-type)
 
-Let's say you want to create an `N`-dimensional array that has size 3 along each axis. Such arrays
-can be created like this:
+各軸に沿ったサイズが3の`N`次元配列を作成したいとしましょう．このような配列は以下のように作成できます:
 
 ```jldoctest
 julia> A = fill(5.0, (3, 3))
@@ -684,13 +683,13 @@ julia> A = fill(5.0, (3, 3))
  5.0  5.0  5.0
 ```
 
-This approach works very well: the compiler can figure out that `A` is an `Array{Float64,2}` because
-it knows the type of the fill value (`5.0::Float64`) and the dimensionality (`(3, 3)::NTuple{2,Int}`).
-This implies that the compiler can generate very efficient code for any future usage of `A` in
-the same function.
+このアプローチは非常にうまく機能します．コンパイラはfill値（`5.0::Float64`）と次元数（
+`(3, 3)::NTuple{2,Int}`）を知っているので，`A`が`Array{Float64,2}`であることがわかります．
+このことは，コンパイラが将来同じ関数で`A`を使用する際に，非常に効率的なコードを生成できる
+ことを意味しています．
 
-But now let's say you want to write a function that creates a 3×3×... array in arbitrary dimensions;
-you might be tempted to write a function
+しかしここで，任意の次元の3×3×...配列を作成する関数を書きたいとしましょう．次のような
+関数を書きたくなるかもしれません:
 
 ```jldoctest
 julia> function array3(fillval, N)
@@ -705,16 +704,16 @@ julia> array3(5.0, 2)
  5.0  5.0  5.0
 ```
 
-This works, but (as you can verify for yourself using `@code_warntype array3(5.0, 2)`) the problem
-is that the output type cannot be inferred: the argument `N` is a *value* of type `Int`, and type-inference
-does not (and cannot) predict its value in advance. This means that code using the output of this
-function has to be conservative, checking the type on each access of `A`; such code will be very
-slow.
+これは動作しますが，（`@code_warntype array3(5.0, 2)`を使って確認できるように，）問題は出力
+の型を推測できないことです．引数`N`は`Int`型の*値*であり，型推論ではその値を事前に予測する
+ことはしませんし，できません．これは，この関数の出力を使用するコードは`A`へアクセスするたび
+に型をチェックするような保守的なものでなければならないことを意味します．このようなコードは
+非常に遅くなります．
 
-Now, one very good way to solve such problems is by using the [function-barrier technique](@ref kernel-functions).
-However, in some cases you might want to eliminate the type-instability altogether. In such cases,
-one approach is to pass the dimensionality as a parameter, for example through `Val{T}()` (see
 ["Value types"](@ref)):
+さて，このような問題を解決するための非常に良い方法の一つが[関数バリアテクニック](@ref kernel-functions)です．
+しかし場合によっては，型の不安定性を完全に排除したいとい思うかもしれません．そのような場合，
+1つの方法として，例えば`Val{T}()`を通して次元性をパラメータを渡すものがあります（["Value types"](@ref)を参照してください）．
 
 ```jldoctest
 julia> function array3(fillval, ::Val{N}) where N
@@ -729,12 +728,13 @@ julia> array3(5.0, Val(2))
  5.0  5.0  5.0
 ```
 
-Julia has a specialized version of `ntuple` that accepts a `Val{::Int}` instance as the second
-parameter; by passing `N` as a type-parameter, you make its "value" known to the compiler.
-Consequently, this version of `array3` allows the compiler to predict the return type.
+Juliaには，2番目のパラメータとして`Val{::Int}`インスタンスを受け付ける特殊なバージョンの
+`ntuple`があります．`N`を型パラメータとして渡すことで，その「値」をコンパイラに知らせること
+ができます．その結果，このバージョンの`array3`では，コンパイラが戻り値の型を予測することが
+できます．
 
-However, making use of such techniques can be surprisingly subtle. For example, it would be of
-no help if you called `array3` from a function like this:
+しかし，このようなテクニックを利用することは，驚くほど微妙なことです．例えば，次のような関数
+から`array3`を呼び出しても何の役にも立ちません:
 
 ```julia
 function call_array3(fillval, n)
@@ -742,13 +742,12 @@ function call_array3(fillval, n)
 end
 ```
 
-Here, you've created the same problem all over again: the compiler can't guess what `n` is,
-so it doesn't know the *type* of `Val(n)`. Attempting to use `Val`, but doing so incorrectly, can
-easily make performance *worse* in many situations. (Only in situations where you're effectively
-combining `Val` with the function-barrier trick, to make the kernel function more efficient, should
-code like the above be used.)
+この場合，同じ問題を繰り返してしまいます．コンパイラは`n`が何であるかを推測できないので，
+`Val(n)`の*型*を知りません．`Val`を使おうとしても，それを誤って行うと，多くの状況でパフォーマンス
+が悪化します．（カーネル関数をより効率にするために，`Val`と関数バリアのトリックを効果的に
+組み合わせている状況でのみ，上記のようなコードを使うべきです．）
 
-An example of correct usage of `Val` would be:
+`Val`の正しい使い方の例は次のようになります:
 
 ```julia
 function filter3(A::AbstractArray{T,N}) where {T,N}
@@ -757,9 +756,9 @@ function filter3(A::AbstractArray{T,N}) where {T,N}
 end
 ```
 
-In this example, `N` is passed as a parameter, so its "value" is known to the compiler. Essentially,
-`Val(T)` works only when `T` is either hard-coded/literal (`Val(3)`) or already specified in the
-type-domain.
+この例では，`N`はパラメータとして渡されるので，その「値」はコンパイラに知られます．基本的に
+`Val(T)`は，`T`がハードコーディングされているか，リテラル（`Val(3)`）であるか，あるいは既に
+タイプドメインで指定されている場合にのみ動作します．
 
 ## The dangers of abusing multiple dispatch (aka, more on types with values-as-parameters)
 

@@ -760,11 +760,12 @@ end
 `Val(T)`は，`T`がハードコーディングされているか，リテラル（`Val(3)`）であるか，あるいは既に
 タイプドメインで指定されている場合にのみ動作します．
 
-## The dangers of abusing multiple dispatch (aka, more on types with values-as-parameters)
+## 複数のディスパッチを悪用する危険性（別名，パラメータとしての値を持つ型についての詳細）
 
-Once one learns to appreciate multiple dispatch, there's an understandable tendency to go overboard
-and try to use it for everything. For example, you might imagine using it to store information,
-e.g.
+一度複数のディスパッチのありがたみを知ると，行き過ぎて全てのことに使おうとする傾向があるのは
+理解できます．例えば，以下の例のような情報を格納するためにこれを使い，
+`Car{:Honda,:Accord}(year, args...)`のようなオブジェクトにディスパッチすることを想像してみて
+ください:
 
 ```
 struct Car{Make, Model}
@@ -773,45 +774,41 @@ struct Car{Make, Model}
 end
 ```
 
-and then dispatch on objects like `Car{:Honda,:Accord}(year, args...)`.
+以下のいずれかに当てはまる場合には，この方法は価値があるかもしれません:
 
-This might be worthwhile when either of the following are true:
+  * `Car`ごとにCPU負荷の高い処理を必要とし，コンパイル時に`Make`と`Model`がわかっていて，使用される`Make`と`Model`の総数が多すぎない場合は，はるかに効率的になります．
+  * 同じ種類の`Car`を処理するための均質なリストを持っているので，それらを全て`Array{Car{:Honda,:Accord},N}`に格納することができます．
 
-  * You require CPU-intensive processing on each `Car`, and it becomes vastly more efficient if you
-    know the `Make` and `Model` at compile time and the total number of different `Make` or `Model`
-    that will be used is not too large.
-  * You have homogenous lists of the same type of `Car` to process, so that you can store them all
-    in an `Array{Car{:Honda,:Accord},N}`.
+後者の場合，このような均質な配列を処理する関数は生産的に特殊化することができます．Juliaは各
+要素の型を事前に知っているので（コンテナ内のオブジェクトは全て同じ具体的な型を持つ），
+関数のコンパイル時に正しいメソッド呼び出しを「検索」することができ（実行時のチェックが不要に
+なる），リスト全体を処理するための効率的なコードを出すことができます．
 
-When the latter holds, a function processing such a homogenous array can be productively specialized:
-Julia knows the type of each element in advance (all objects in the container have the same concrete
-type), so Julia can "look up" the correct method calls when the function is being compiled (obviating
-the need to check at run-time) and thereby emit efficient code for processing the whole list.
+これらが保持されない場合には，何の利益も得られない可能性が高いです．さらに悪いことに，
+結果として生じる「型の組み合わせ爆発」は逆効果となります．`items[i+1]`が`items[i]`と異なる
+型を持っている場合，Juliaは実行時にそれらの型を調べ，メソッドテーブルから適切なメソッドを
+検索し，（型の共通部分を介して）どれがマッチするかを判断し，それが既にJITコンパイルされて
+いるかどうかを判断し（されていない場合はそうします），そして呼び出しをしなければなりません．
+要するに，完全な型システムとJITコンパイル機構に，基本的にはスイッチ文や辞書検索に相当する
+ものを，自分のコードで実行するように頼んでいることになります．
 
-When these do not hold, then it's likely that you'll get no benefit; worse, the resulting "combinatorial
-explosion of types" will be counterproductive. If `items[i+1]` has a different type than `item[i]`,
-Julia has to look up the type at run-time, search for the appropriate method in method tables,
-decide (via type intersection) which one matches, determine whether it has been JIT-compiled yet
-(and do so if not), and then make the call. In essence, you're asking the full type- system and
-JIT-compilation machinery to basically execute the equivalent of a switch statement or dictionary
-lookup in your own code.
+(1)型のディスパッチ，(2)辞書検索，(3)「スイッチ」文を比較したランタイムベンチマークが
+[メーリングリスト](https://groups.google.com/forum/#!msg/julia-users/jUMu9A3QKQQ/qjgVWr7vAwAJ)
+で公開されています．
 
-Some run-time benchmarks comparing (1) type dispatch, (2) dictionary lookup, and (3) a "switch"
-statement can be found [on the mailing list](https://groups.google.com/forum/#!msg/julia-users/jUMu9A3QKQQ/qjgVWr7vAwAJ).
+おそらく実行時の影響よりもさらに悪いのはコンパイル時の影響です．Juliaは`Car{Make, Model}`
+ごとに専用の関数をコンパイルします．もしそのような型を何百，何千も持っている場合，そのような
+オブジェクトをパラメータとして受け取る全ての関数（自分で書いたカスタムの`get_year`関数から
+Julia Baseの一般的な`push!`関数まで）は，何百，何千ものバリエーションをコンパイルしなければ
+なりません．これらはそれぞれ，コンパイルされたコードのキャッシュサイズやメソッドの内部リスト
+の長さなどを増加させます．パラメータとしての値に過度に熱中すると，膨大なリソースを簡単に浪費
+してしまいます．
 
-Perhaps even worse than the run-time impact is the compile-time impact: Julia will compile specialized
-functions for each different `Car{Make, Model}`; if you have hundreds or thousands of such types,
-then every function that accepts such an object as a parameter (from a custom `get_year` function
-you might write yourself, to the generic `push!` function in Julia Base) will have hundreds
-or thousands of variants compiled for it. Each of these increases the size of the cache of compiled
-code, the length of internal lists of methods, etc. Excess enthusiasm for values-as-parameters
-can easily waste enormous resources.
+## [列に沿ってメモリ順に配列にアクセスする](@id man-performance-column-major)
 
-## [Access arrays in memory order, along columns](@id man-performance-column-major)
-
-Multidimensional arrays in Julia are stored in column-major order. This means that arrays are
-stacked one column at a time. This can be verified using the `vec` function or the syntax `[:]`
-as shown below (notice that the array is ordered `[1 3 2 4]`, not `[1 2 3 4]`):
+Juliaの多次元配列は，列メジャーな順序で格納されます．これは配列が一度に一列ずつ積み重ね
+られることを意味します．これは次のように`vec`関数や`[:]`構文を使って確認できます（配列の
+順番は`[1 2 3 4]`ではなく，`[1 3 2 4]`であることに注意してください）:
 
 ```jldoctest
 julia> x = [1 2; 3 4]
@@ -827,19 +824,20 @@ julia> x[:]
  4
 ```
 
-This convention for ordering arrays is common in many languages like Fortran, Matlab, and R (to
-name a few). The alternative to column-major ordering is row-major ordering, which is the convention
-adopted by C and Python (`numpy`) among other languages. Remembering the ordering of arrays can
-have significant performance effects when looping over arrays. A rule of thumb to keep in mind
-is that with column-major arrays, the first index changes most rapidly. Essentially this means
-that looping will be faster if the inner-most loop index is the first to appear in a slice expression.
-Keep in mind that indexing an array with `:` is an implicit loop that iteratively accesses all elements within a particular dimension; it can be faster to extract columns than rows, for example.
+この配列の順序付けの規則は，Fortran，Matlab，Rなど多くの言語で共通しています．列メジャー
+順序の代替として，行メジャー順序があります．これは，他の言語の中でもC言語やPython(`numpy`）
+で採用されている規則です．配列の順序を覚えておくと，配列をループする際にパフォーマンスに
+大きな影響を与えることがあります．覚えておくべき経験則としては，列メジャー配列の場合，最初
+のインデックスが最も速く変化するということです．これは基本的に，ループインデックスの一番内側
+がスライス式の最初のインデックスである場合，ループ処理が速くなることを意味します．配列に`:`
+でインデックスをつけることは，特定の次元内の全ての要素に反復的にアクセスする暗黙のループで
+あることを覚えておいてください．例えば，行よりも列を抽出する方が速くなることがあります．
 
-Consider the following contrived example. Imagine we wanted to write a function that accepts a
-[`Vector`](@ref) and returns a square [`Matrix`](@ref) with either the rows or the columns filled with copies
-of the input vector. Assume that it is not important whether rows or columns are filled with these
-copies (perhaps the rest of the code can be easily adapted accordingly). We could conceivably
-do this in at least four ways (in addition to the recommended call to the built-in [`repeat`](@ref)):
+次の例を考えてみましょう．[`Vector`](@ref)を受け取り，入力ベクトルのコピーで行または列を
+埋めた正方[`Matrix`](@ref)を返す関数を書きたいとします．行または列がコピーで埋められているか
+どうかは，重要ではないと仮定します（おそらく，コードの残りの部分はそれに応じて簡単に適応
+させることができます）．少なくとも4つの方法でこれを行うことができます（推奨されている
+組み込みの[`repeat`](@ref)の呼び出しに加えて）:
 
 ```julia
 function copy_cols(x::Vector{T}) where T
@@ -879,7 +877,7 @@ function copy_row_col(x::Vector{T}) where T
 end
 ```
 
-Now we will time each of these functions using the same random `10000` by `1` input vector:
+今，我々は同じランダム`10000 x 1`の入力ベクトルを使用して，これらの関数のそれぞれの時間を計測します:
 
 ```julia-repl
 julia> x = randn(10000);
@@ -893,10 +891,10 @@ copy_col_row: 0.415630047
 copy_row_col: 1.721531501
 ```
 
-Notice that `copy_cols` is much faster than `copy_rows`. This is expected because `copy_cols`
-respects the column-based memory layout of the `Matrix` and fills it one column at a time. Additionally,
-`copy_col_row` is much faster than `copy_row_col` because it follows our rule of thumb that the
-first element to appear in a slice expression should be coupled with the inner-most loop.
+`copy_cols`は`copy_rows`よりもとても高速であることに注目してください．これは，`copy_cols`が
+行列の列ベースのメモリレイアウトを尊重し，一度に一列ずつ埋めていくからです．さらに，`copy_col_row`は
+`copy_row_col`よりもはるかに高速です．これはスライス式に最初に現れる要素は最も内側のループに
+結合されるべきであるという経験則にしたがっているからです．
 
 ## Pre-allocating outputs
 

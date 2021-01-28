@@ -130,7 +130,7 @@ julia> time_sum(x)
 状況によっては，関数がその操作の一部としてメモリを割り当てる必要がある場合があり，上記の
 単純な状況を複雑にしてしまいます．そのような場合は，問題を診断するために以下の[tools](@ref tools)
 のいずれかを使用するか，アルゴリズム的な側面から割り当てを分離したバージョンの関数を書くこと
-を検討してください（[Pre-allocating outputs](@ref)を参照してください．
+を検討してください（[出力の事前割り当て](@ref)を参照してください．
 
 !!! note
     より本格的なベンチマークを行うには，[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
@@ -444,9 +444,6 @@ end
 さい．これはある関数の全ての引数の型が既知でなければ，たとえ`convert`関数であっても，コンパ
 イラが関数の戻り値の型を推測することができないためです．
 
-Type annotation will not enhance (and can actually hinder) performance if the type is constructed
-at run-time. This is because the compiler cannot use the annotation to specialize the subsequent
-code, and the type-check itself takes time. For example, in the code:
 型のアノテーションは実行時に型が構築されている場合，パフォーマンスを向上させることはできませ
 ん（実際には妨げになることもあります）．これは，コンパイラがアノテーションを使用して後続の
 コードを特殊化することができず，型チェック自体に時間がかかるからです．例えばコードの中では:
@@ -671,7 +668,7 @@ Juliaのコンパイラは関数の境界で引数の型のコードを特殊化
 `strange_twos`のような関数は，例えば入力ファイルから読み込まれたデータが整数，浮動小数点数，
 文字列，その他の何らかの型のものを含んでいるような，型が不確かなデータを扱うときに発生します．
 
-## [Types with values-as-parameters](@id man-performance-value-type)
+## [パラメータとしての値を持つ型](@id man-performance-value-type)
 
 各軸に沿ったサイズが3の`N`次元配列を作成したいとしましょう．このような配列は以下のように作成できます:
 
@@ -896,13 +893,16 @@ copy_row_col: 1.721531501
 `copy_row_col`よりもはるかに高速です．これはスライス式に最初に現れる要素は最も内側のループに
 結合されるべきであるという経験則にしたがっているからです．
 
-## Pre-allocating outputs
+## [出力の事前割り当て](@id Pre-allocating-outputs)
 
-If your function returns an `Array` or some other complex type, it may have to allocate memory.
-Unfortunately, oftentimes allocation and its converse, garbage collection, are substantial bottlenecks.
+関数が`Array`やその他の複雑な型を返す場合，メモリを確保する必要があるかもしれません．
+残念なことに，メモリの割り当てとその逆であるガベージコレクションがボトルネックになることが
+よくあります．
 
 Sometimes you can circumvent the need to allocate memory on each function call by preallocating
 the output. As a trivial example, compare
+場合によっては出力を事前に確保することで，関数の呼び出しごとにメモリを確保する必要性を
+回避できることもあります．簡単な例として，次の2つの例を比較してみましょう:
 
 ```jldoctest prealloc
 julia> function xinc(x)
@@ -919,7 +919,7 @@ julia> function loopinc()
        end;
 ```
 
-with
+と
 
 ```jldoctest prealloc
 julia> function xinc!(ret::AbstractVector{T}, x::T) where T
@@ -940,7 +940,7 @@ julia> function loopinc_prealloc()
        end;
 ```
 
-Timing results:
+です．計測の結果は以下のようになります:
 
 ```jldoctest prealloc; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> @time loopinc()
@@ -952,30 +952,28 @@ julia> @time loopinc_prealloc()
 50000015000000
 ```
 
-Preallocation has other advantages, for example by allowing the caller to control the "output"
-type from an algorithm. In the example above, we could have passed a `SubArray` rather than an
-[`Array`](@ref), had we so desired.
+例えば，呼び出し元がアルゴリズムからの「出力」の型を制御できるようになるなど，他にも事前
+割り当ての利点があります．上の例では，必要に応じて，[`Array`](@ref)ではなく，`SubArray`を
+渡すことができました．
 
-Taken to its extreme, pre-allocation can make your code uglier, so performance measurements and
-some judgment may be required. However, for "vectorized" (element-wise) functions, the convenient
-syntax `x .= f.(y)` can be used for in-place operations with fused loops and no temporary arrays
-(see the [dot syntax for vectorizing functions](@ref man-vectorized)).
+極端に言えば，事前割り当てはコードを醜くする可能性があるので，パフォーマンスの測定やある程度
+の判断が必要になるかもしれません．しかし，「ベクトル化された」（要素ごとの）関数の場合，
+便利な構文`x .= f.(y)`は融合ループと一時的な配列を使わないインプレース操作に使用できます
+（[関数をベクトル化するためのドット構文](@ref man-vectorized)を参照してください）．
 
-## More dots: Fuse vectorized operations
+## さらなるドット: ベクトル化された操作の融合
 
-Julia has a special [dot syntax](@ref man-vectorized) that converts
-any scalar function into a "vectorized" function call, and any operator
-into a "vectorized" operator, with the special property that nested
-"dot calls" are *fusing*: they are combined at the syntax level into
-a single loop, without allocating temporary arrays. If you use `.=` and
-similar assignment operators, the result can also be stored in-place
-in a pre-allocated array (see above).
+Juliaには特別な[ドット構文](@ref man-vectorized)があり，これはスカラ関数を
+「ベクトル化された」関数呼び出しに変換し，演算子を「ベクトル化された」演算子に
+変換するもので，入れ子になった「ドット呼び出し」が*融合*するという特別な性質
+を持っています．これらは一般的な配列を確保することなく，構文レベルで単一の
+ループに結合されます．`.=`や同様の代入演算子を使用した場合，結果は事前に割り当て
+られた配列にその場で保存することもできます（上述）．
 
-In a linear-algebra context, this means that even though operations like
-`vector + vector` and `vector * scalar` are defined, it can be advantageous
-to instead use `vector .+ vector` and `vector .* scalar` because the
-resulting loops can be fused with surrounding computations. For example,
-consider the two functions:
+線形代数の文脈では，`vector + vector`や`vector * scalar`のような演算が定義されて
+いても，結果のループを周りの計算と融合させることができるため，代わりに`vector .+ vector`
+や`vector .* scalar`を使用することが有利になることを意味しています．例えば，
+以下の2つの関数を考えてみましょう:
 
 ```jldoctest dotfuse
 julia> f(x) = 3x.^2 + 4x + 7x.^3;
@@ -983,9 +981,9 @@ julia> f(x) = 3x.^2 + 4x + 7x.^3;
 julia> fdot(x) = @. 3x^2 + 4x + 7x^3 # equivalent to 3 .* x.^2 .+ 4 .* x .+ 7 .* x.^3;
 ```
 
-Both `f` and `fdot` compute the same thing. However, `fdot`
-(defined with the help of the [`@.`](@ref @__dot__) macro) is
-significantly faster when applied to an array:
+`f`と`fdot`はいずれも同じことを計算します．しかし，配列を使用した場合，
+`fdot`（[`@.`](@ref @__dot__)マクロの助けを借りて定義されたもの）の方が
+はるかに高速に動作します:
 
 ```jldoctest dotfuse; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(10^6);
@@ -1000,13 +998,11 @@ julia> @time f.(x);
   0.002626 seconds (8 allocations: 7.630 MiB)
 ```
 
-That is, `fdot(x)` is ten times faster and allocates 1/6 the
-memory of `f(x)`, because each `*` and `+` operation in `f(x)` allocates
-a new temporary array and executes in a separate loop. (Of course,
-if you just do `f.(x)` then it is as fast as `fdot(x)` in this
-example, but in many contexts it is more convenient to just sprinkle
-some dots in your expressions rather than defining a separate function
-for each vectorized operation.)
+つまり，`fdot(x)`は10倍速く，`f(x)`の1/6のメモリしか確保しません．これは，
+`f(x)`の`*`と`+`の各操作が新しい一時的な配列を確保し，別のループで実行される
+からです．（もちろん，単に`f.(x)`を実行するだけならば，この例の`fdot(x)`と同じ
+くらい高速ですが，多くの文脈では，ベクトル化された各演算のために個別の関数を
+定義するよりも，式の中にドットをちりばめるだけの方が便利です）．
 
 ## [Consider using views for slices](@id man-performance-views)
 

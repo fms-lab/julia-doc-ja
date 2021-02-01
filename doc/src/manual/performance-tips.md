@@ -130,7 +130,7 @@ julia> time_sum(x)
 状況によっては，関数がその操作の一部としてメモリを割り当てる必要がある場合があり，上記の
 単純な状況を複雑にしてしまいます．そのような場合は，問題を診断するために以下の[tools](@ref tools)
 のいずれかを使用するか，アルゴリズム的な側面から割り当てを分離したバージョンの関数を書くこと
-を検討してください（[出力の事前割り当て](@ref)を参照してください．
+を検討してください（[出力の事前割り当て](@ref Pre-allocating-outputs)を参照してください．
 
 !!! note
     より本格的なベンチマークを行うには，[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
@@ -1004,25 +1004,23 @@ julia> @time f.(x);
 くらい高速ですが，多くの文脈では，ベクトル化された各演算のために個別の関数を
 定義するよりも，式の中にドットをちりばめるだけの方が便利です）．
 
-## [Consider using views for slices](@id man-performance-views)
+## [スライスのビューを使用することを検討する](@id man-performance-views)
 
-In Julia, an array "slice" expression like `array[1:5, :]` creates
-a copy of that data (except on the left-hand side of an assignment,
-where `array[1:5, :] = ...` assigns in-place to that portion of `array`).
-If you are doing many operations on the slice, this can be good for
-performance because it is more efficient to work with a smaller
-contiguous copy than it would be to index into the original array.
-On the other hand, if you are just doing a few simple operations on
-the slice, the cost of the allocation and copy operations can be
-substantial.
+Juliaでは，`array[1:5, :]`のような配列の「スライス」式は，そのデータのコピー
+を作成します（代入の左側に書かれるような場合，すなわち`array[1:5, :] = ...`が
+`array`のその部分にインプレースで代入されるような場合を除く）．スライスに対して
+多くの操作を行っている場合，元の配列にインデックスを作成するよりも，より小さい
+連続コピーを使用した方が効率的に作業ができるため，これはパフォーマンスの面で
+良いことがあります．一方で，スライスに対していくつかの単純な作業を行うだけの
+場合は，割り当てとコピー操作のコストが大きくなってしまう可能性もあります．
 
-An alternative is to create a "view" of the array, which is
-an array object (a `SubArray`) that actually references the data
-of the original array in-place, without making a copy. (If you
-write to a view, it modifies the original array's data as well.)
-This can be done for individual slices by calling [`view`](@ref),
-or more simply for a whole expression or block of code by putting
-[`@views`](@ref) in front of that expression. For example:
+別の方法として，配列の「ビュー」を作成する方法があります．これは
+配列オブジェクト（`SubArray`）で，コピーを行わずに元の配列のデータ
+をその場で実際に参照します．（ビューに書き込むと，元の配列のデータ
+も変更されます．）これは個々のスライスに対しては[`view`](@ref)を呼び
+出すことによって行うことができますし，より単純に式全体やコードブロックに
+対しては，式の前に[`@views`](@ref)を置くことで行うことができます．
+例えば以下のようになります:
 
 ```jldoctest; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> fcopy(x) = sum(x[2:end-1]);
@@ -1038,20 +1036,20 @@ julia> @time fview(x);
   0.001020 seconds (6 allocations: 224 bytes)
 ```
 
-Notice both the 3× speedup and the decreased memory allocation
-of the `fview` version of the function.
+この関数の`fview`バージョンが，3倍の高速化と，メモリ割り当て量の
+減少の双方を達成していることに注目してください．
 
-## Copying data is not always bad
+## データをコピーすることは必ずしも悪いことではない
 
-Arrays are stored contiguously in memory, lending themselves to CPU vectorization
-and fewer memory accesses due to caching. These are the same reasons that it is recommended
-to access arrays in column-major order (see above). Irregular access patterns and non-contiguous views
-can drastically slow down computations on arrays because of non-sequential memory access.
+配列はメモリ内に連続して格納されているため，CPUのベクトル化やキャッシュによるメモリアクセス
+が少なくなります．これらの理由は，配列に列メジャー順でアクセスすることが推奨されているのと
+同じです（上記参照）．不規則なアクセスパターンと非連続ビューは，非連続メモリアクセスのため，
+配列上の計算を大幅に遅くする可能性があります．
 
-Copying irregularly-accessed data into a contiguous array before operating on it can result
-in a large speedup, such as in the example below. Here, a matrix and a vector are being accessed at
-800,000 of their randomly-shuffled indices before being multiplied. Copying the views into
-plain arrays speeds up the multiplication even with the cost of the copying operation.
+不規則にアクセスされたデータを連続する配列にコピーしてから操作すると，以下の例のように，
+大幅な高速化が得られます．ここでは行列とベクトルが乗算される前に，ランダムにシャッフル
+された800,000個のインデックスでアクセスされています．ビューをプレーンな配列にコピーする
+ことで，コピー操作のコストを払ってでも乗算を高速化することができます．
 
 ```julia-repl
 julia> using Random
@@ -1079,41 +1077,43 @@ julia> @time begin
 -4256.759568345134
 ```
 
-Provided there is enough memory for the copies, the cost of copying the view to an array is
-far outweighed by the speed boost from doing the matrix multiplication on a contiguous array.
+コピーするのに十分なメモリがあれば，ビューを配列にコピーするコストよりも，連続する配列上で
+行列の乗算を行うことによる速度の向上の方が勝ります．
 
-## Avoid string interpolation for I/O
+## I/Oのための文字列補間を避ける
 
 When writing data to a file (or other I/O device), forming extra intermediate strings is a source
 of overhead. Instead of:
+ファイル（または他のI/Oデバイス）にデータを書き込む際，余分な中間文字列を形成することは
+オーバーヘッドの原因となります．以下の式:
 
 ```julia
 println(file, "$a $b")
 ```
 
-use:
+の代わりに，以下の式を使用してください:
 
 ```julia
 println(file, a, " ", b)
 ```
 
-The first version of the code forms a string, then writes it to the file, while the second version
-writes values directly to the file. Also notice that in some cases string interpolation can be
-harder to read. Consider:
+最初のバージョンのコードは文字列を形成してからファイルに書き込み，2番目のバージョンは値を
+直接ファイルに書き込みます．また場合によっては文字列の補間が読みにくくなることにも注意
+してください．以下の2つを比べてみましょう:
 
 ```julia
 println(file, "$(f(a))$(f(b))")
 ```
 
-versus:
+と:
 
 ```julia
 println(file, f(a), f(b))
 ```
 
-## Optimize network I/O during parallel execution
+## 並列実行時のネットワークI/Oの最適化
 
-When executing a remote function in parallel:
+リモート関数を並列に実行する場合，初めの例:
 
 ```julia
 using Distributed
@@ -1126,7 +1126,7 @@ responses = Vector{Any}(undef, nworkers())
 end
 ```
 
-is faster than:
+の方が次の例よりも高速です:
 
 ```julia
 using Distributed
@@ -1138,26 +1138,24 @@ end
 responses = [fetch(r) for r in refs]
 ```
 
-The former results in a single network round-trip to every worker, while the latter results in
-two network calls - first by the [`@spawnat`](@ref) and the second due to the [`fetch`](@ref)
-(or even a [`wait`](@ref)).
-The [`fetch`](@ref)/[`wait`](@ref) is also being executed serially resulting in an overall poorer performance.
+前者は全てのワーカへのネットワークランドトリップが1回になるのに対し，後者は2回のネットワーク
+コールが発生します．この2回のうち最初は[`@spawnat`](@ref)によるもの，2回目は[`fetch`](@ref)
+（あるいは[`wait`](@ref)）によるものです．[`fetch`](@ref)/[`wait`](@ref)もシリアルに実行
+されているため，全体的にパフォーマンスが低下してしまいます．
 
-## Fix deprecation warnings
+## 非推奨の警告を修正する
 
-A deprecated function internally performs a lookup in order to print a relevant warning only once.
-This extra lookup can cause a significant slowdown, so all uses of deprecated functions should
-be modified as suggested by the warnings.
+非推奨の関数は，関連する警告を一度だけ表示するために内部的にルックアップを実行します．
+この余分なルックアップは大幅な速度低下を引き起こす可能性があるため，非推奨関数の使用は
+全て，警告で示唆されているように修正しなければなりません．
 
-## Tweaks
+## 調整
 
-These are some minor points that might help in tight inner loops.
+これらはタイトなインナループに役立つかもしれない細かなポイントです．
 
-  * Avoid unnecessary arrays. For example, instead of [`sum([x,y,z])`](@ref) use `x+y+z`.
-  * Use [`abs2(z)`](@ref) instead of [`abs(z)^2`](@ref) for complex `z`. In general, try to rewrite
-    code to use [`abs2`](@ref) instead of [`abs`](@ref) for complex arguments.
-  * Use [`div(x,y)`](@ref) for truncating division of integers instead of [`trunc(x/y)`](@ref), [`fld(x,y)`](@ref)
-    instead of [`floor(x/y)`](@ref), and [`cld(x,y)`](@ref) instead of [`ceil(x/y)`](@ref).
+  * 不要な配列を避ける．例えば[`sum([x,y,z])`](@ref)の代わりに`x+y+z`を使う．
+  * 複素数`z`の場合は，[`abs(z)^2`](@ref)ではなく[`abs2(z)`](@ref)を使う．一般的には，複素数引数に[`abs`](@ref)の代わりに[`abs2`](@ref)を使うようにコードを書き換える．
+  * 整数の切り捨て除算には[`trunc(x/y)`](@ref)の代わりに[`div(x,y)`](@ref)を，[`floor(x/y)`](@ref)の代わりに[`fld(x,y)`](@ref)を，[`ceil(x/y)`](@ref)の代わりに[`cld(x,y)`](@ref)を使うようにする．
 
 ## [Performance Annotations](@id man-performance-annotations)
 

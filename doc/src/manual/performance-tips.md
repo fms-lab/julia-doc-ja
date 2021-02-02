@@ -1157,35 +1157,24 @@ responses = [fetch(r) for r in refs]
   * 複素数`z`の場合は，[`abs(z)^2`](@ref)ではなく[`abs2(z)`](@ref)を使う．一般的には，複素数引数に[`abs`](@ref)の代わりに[`abs2`](@ref)を使うようにコードを書き換える．
   * 整数の切り捨て除算には[`trunc(x/y)`](@ref)の代わりに[`div(x,y)`](@ref)を，[`floor(x/y)`](@ref)の代わりに[`fld(x,y)`](@ref)を，[`ceil(x/y)`](@ref)の代わりに[`cld(x,y)`](@ref)を使うようにする．
 
-## [Performance Annotations](@id man-performance-annotations)
+## [パフォーマンスアノテーション](@id man-performance-annotations)
 
-Sometimes you can enable better optimization by promising certain program properties.
+特定のプログラムのプロパティを約束することで，より良い最適化が可能になることがあります．
 
-  * Use [`@inbounds`](@ref) to eliminate array bounds checking within expressions. Be certain before doing
-    this. If the subscripts are ever out of bounds, you may suffer crashes or silent corruption.
-  * Use [`@fastmath`](@ref) to allow floating point optimizations that are correct for real numbers, but lead
-    to differences for IEEE numbers. Be careful when doing this, as this may change numerical results.
-    This corresponds to the `-ffast-math` option of clang.
-  * Write [`@simd`](@ref) in front of `for` loops to promise that the iterations are independent and may be
-    reordered.  Note that in many cases, Julia can automatically vectorize code without the `@simd` macro;
-    it is only beneficial in cases where such a transformation would otherwise be illegal, including cases
-    like allowing floating-point re-associativity and ignoring dependent memory accesses (`@simd ivdep`).
-    Again, be very careful when asserting `@simd` as erroneously annotating a loop with dependent iterations
-    may result in unexpected results. In particular, note that `setindex!` on some `AbstractArray` subtypes is
-    inherently dependent upon iteration order. **This feature is experimental**
-    and could change or disappear in future versions of Julia.
+  * [`@inbounds`](@ref)を使用して，式内の配列の境界チェックを排除することができます．これを行う前に確認してください．添え字が範囲外になるようなことがあると，クラッシュやサイレント故障が発生する可能性があります．
+  * [`@fastmath`](@ref)を使用すると，実数では正しい浮動小数点最適化が可能になりますが，IEEE数では違いが生じます．これを行う際には，数値結果が変化する可能性があるので注意してください．これはclangの`-ffast-math`オプションに相当します．
+  * `for`ループの前に[`@simd`](@ref)を書くことで，反復が独立しており，順序を変えても良いことを約束します．多くの場合，Juliaは`@simd`マクロを使わなくても自動的にコードをベクトル化できることに注意してください．それは，浮動小数点の再関連付けを許可したり依存するメモリアクセスを無視したり（`@simd ivdep`）するような場合など，そのような変換がイリーガルな場合にのみ有効です．繰り返しになりますが，`@simd`をアサートする際には非常に注意が必要で，依存関係のあるループに間違ってアノテートしてしまうと予期せぬ結果につながる場合があります．特に，いくつかの`AbstractArray`サブタイプの`setindex!`は本質的に反復順序に依存していることに注意してください．**この機能は実験的なもの**であり，将来のJuliaのバージョンでは変更されたり消えたりする可能性があります．
 
-The common idiom of using 1:n to index into an AbstractArray is not safe if the Array uses unconventional indexing,
-and may cause a segmentation fault if bounds checking is turned off. Use `LinearIndices(x)` or `eachindex(x)`
-instead (see also [Arrays with custom indices](@ref man-custom-indices)).
+1:nを使用してAbstractArrayにインデックスを作成するという一般的な慣用句は，配列が一般的でない
+インデックスを使用している場合には安全ではなく，境界チェックがオフになっている場合にセグメン
+テーションエラーを引き起こす可能性があります．代わりに`LinearIndices(x)`または`eachindex(x)`
+を使用してください（[カスタムインデックスを持つ配列](@ref man-custom-indices)も参照してください）．
 
 !!! note
-    While `@simd` needs to be placed directly in front of an innermost `for` loop, both `@inbounds` and `@fastmath`
-    can be applied to either single expressions or all the expressions that appear within nested blocks of code, e.g.,
-    using `@inbounds begin` or `@inbounds for ...`.
+    `@simd`は一番内側の`for`ループの前に直接配置する必要がありますが，`@inbounds`や`@fastmath`はいずれも単一の式，またはコードの入れ子になったブロック内に現れる全ての式に適用できます．（例えば，`@inbounds begin`や`@inbounds for ...`を使用するなど）
 
-Here is an example with both `@inbounds` and `@simd` markup (we here use `@noinline` to prevent
-the optimizer from trying to be too clever and defeat our benchmark):
+ここでは，`@inbounds`と`@simd`の両方をマークアップした例を示します（ここではオプティマイザが
+賢くなりすぎてベンチマークを破ろうとするのを防ぐために`@noinline`を使用しています）:
 
 ```julia
 @noinline function inner(x, y)
@@ -1221,17 +1210,17 @@ end
 timeit(1000, 1000)
 ```
 
-On a computer with a 2.4GHz Intel Core i5 processor, this produces:
+2.4GHz Intel Core i5プロセッサを搭載したコンピュータでは，以下のような結果が得られます:
 
 ```
 GFlop/sec        = 1.9467069505224963
 GFlop/sec (SIMD) = 17.578554163920018
 ```
 
-(`GFlop/sec` measures the performance, and larger numbers are better.)
+(`GFlop/sec` で性能を測定しており，大きいほど良いです．)
 
-Here is an example with all three kinds of markup. This program first calculates the finite difference
-of a one-dimensional array, and then evaluates the L2-norm of the result:
+ここでは3種類のマークアップを用いた例を示します．このプログラムはまず一次元配列の有限差分を
+計算し，その結果のL2ノルムを評価します:
 
 ```julia
 function init!(u::Vector)
@@ -1282,7 +1271,7 @@ end
 main()
 ```
 
-On a computer with a 2.7 GHz Intel Core i7 processor, this produces:
+2.7GHz Intel Core i7プロセッサ上で実行すると，次のような結果になります:
 
 ```
 $ julia wave.jl;
@@ -1294,26 +1283,24 @@ $ julia --math-mode=ieee wave.jl;
 4.443986180758249
 ```
 
-Here, the option `--math-mode=ieee` disables the `@fastmath` macro, so that we can compare results.
+ここでは，オプション`--math-mode=ieee`は`@fastmath`マクロを無効にしているため，我々は結果を比較することができます．
 
-In this case, the speedup due to `@fastmath` is a factor of about 3.7. This is unusually large
-– in general, the speedup will be smaller. (In this particular example, the working set of the
-benchmark is small enough to fit into the L1 cache of the processor, so that memory access latency
-does not play a role, and computing time is dominated by CPU usage. In many real world programs
-this is not the case.) Also, in this case this optimization does not change the result – in
-general, the result will be slightly different. In some cases, especially for numerically unstable
-algorithms, the result can be very different.
+この場合，`@fastmath`による高速化は約3.7倍になります．これは異常に大きいです．一般的には
+スピードアップはもっと小さくなります．（この特定の例では，ベンチマークの作業セットは
+プロセッサのL1キャッシュに収まるほど小さいため，メモリアクセスのレイテンシは役割を果たさず，
+計算時間はCPU使用率に支配されます．多くの実世界のプログラムではこのようなことはありません．）
+また，この場合，この最適化を行っても計算結果は変わりません．一般的には，結果はわずかに異なます．場合によっては，特に数値的に不安定なアルゴリズムの場合，結果が大きく異なることがあります．
 
-The annotation `@fastmath` re-arranges floating point expressions, e.g. changing the order of
-evaluation, or assuming that certain special cases (inf, nan) cannot occur. In this case (and
-on this particular computer), the main difference is that the expression `1 / (2*dx)` in the function
-`deriv` is hoisted out of the loop (i.e. calculated outside the loop), as if one had written
-`idx = 1 / (2*dx)`. In the loop, the expression `... / (2*dx)` then becomes `... * idx`, which
-is much faster to evaluate. Of course, both the actual optimization that is applied by the compiler
-as well as the resulting speedup depend very much on the hardware. You can examine the change
-in generated code by using Julia's [`code_native`](@ref) function.
+`@fastmath`は浮動小数点式を再配置します．例えば評価の順序を変更したり，特定の特殊なケース
+（inf, nan）が発生しないと仮定したりします．この場合（そしてこの特定のコンピュータでは），
+主な違いは関数`deriv`の式`1 / (2*dx)`が，まるで`idx = 1 / (2*dx)`と書いたかのように，
+ループの外に持ち出される（つまり，ループの外で計算される）ということです．ループ内では，
+式`... / (2*dx)`は`... * idx`となり，評価がより速くなり．もちろん，コンパイラによって
+適用される実際の最適化とその結果の高速化は，ハードウェアに大きく依存します．生成された
+コードの変化はJuliaの[`code_native`](@ref)関数を使って調べることができます．
 
-Note that `@fastmath` also assumes that `NaN`s will not occur during the computation, which can lead to surprising behavior:
+また，`@fastmath`は計算中に`NaN`sが発生しないことを前提としているため，驚くような動作をする
+可能性があることに注意してください．
 
 ```julia-repl
 julia> f(x) = isnan(x);
@@ -1327,15 +1314,16 @@ julia> f_fast(NaN)
 false
 ```
 
-## Treat Subnormal Numbers as Zeros
+## 非正規化数をゼロとして扱う
 
-Subnormal numbers, formerly called [denormal numbers](https://en.wikipedia.org/wiki/Denormal_number),
-are useful in many contexts, but incur a performance penalty on some hardware. A call [`set_zero_subnormals(true)`](@ref)
-grants permission for floating-point operations to treat subnormal inputs or outputs as zeros,
-which may improve performance on some hardware. A call [`set_zero_subnormals(false)`](@ref) enforces
-strict IEEE behavior for subnormal numbers.
+以前は[denormal numbers](https://en.wikipedia.org/ことがwiki/Denormal_number)と呼ばれていた
+非正規化数（原文subnormal numbers）は，多くの文脈で有用ですが，ハードウェアによっては
+パフォーマンスが低下します．[`set_zero_subnormals(true)`](@ref)をコールすると，浮動小数点
+演算で非正規化数の入力または出力をゼロとして扱うことができるようになります．
+[`set_zero_subnormals(false)`](@ref)を呼び出すと，正規化数以下の数値に対しては厳格なIEEEの
+動作が強制されます．
 
-Below is an example where subnormals noticeably impact performance on some hardware:
+以下に非正規化数が一部のハードウェアで顕著にパフォーマンスに影響を与える例を示します:
 
 ```julia
 function timestep(b::Vector{T}, a::Vector{T}, Δt::T) where T
@@ -1364,7 +1352,7 @@ for trial=1:6
 end
 ```
 
-This gives an output similar to
+これにより以下のような結果が得られます．
 
 ```
   0.002202 seconds (1 allocation: 4.063 KiB)
@@ -1375,13 +1363,13 @@ This gives an output similar to
   0.001455 seconds (1 allocation: 4.063 KiB)
 ```
 
-Note how each even iteration is significantly faster.
+偶数回の繰り返しの度に速くなっていることに注目してください．
 
-This example generates many subnormal numbers because the values in `a` become an exponentially
-decreasing curve, which slowly flattens out over time.
+この例では，`a`の値が指数関数的に減少する曲線となり時間の経過とともにゆっくりと平らになるため，
+多くの非正規化数が生成されます．
 
-Treating subnormals as zeros should be used with caution, because doing so breaks some identities,
-such as `x-y == 0` implies `x == y`:
+非正規化数をゼロとして扱うのには注意が必要です．なぜなら`x-y == 0`が`x == y`を意味している
+というような，いくつかの等式関係を破ることになるからです:
 
 ```jldoctest
 julia> x = 3f-38; y = 2f-38;
@@ -1393,8 +1381,8 @@ julia> set_zero_subnormals(false); (x - y, x == y)
 (1.0000001f-38, false)
 ```
 
-In some applications, an alternative to zeroing subnormal numbers is to inject a tiny bit of noise.
- For example, instead of initializing `a` with zeros, initialize it with:
+アプリケーションによっては，非正規化数をゼロにする代わりに，わずかなノイズを注入する
+こともあります．例えば，`a`をゼロで初期化する代わりに，以下のようにします:
 
 ```julia
 a = rand(Float32,1000) * 1.f-9

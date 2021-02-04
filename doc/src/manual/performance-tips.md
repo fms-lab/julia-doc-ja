@@ -899,8 +899,6 @@ copy_row_col: 1.721531501
 残念なことに，メモリの割り当てとその逆であるガベージコレクションがボトルネックになることが
 よくあります．
 
-Sometimes you can circumvent the need to allocate memory on each function call by preallocating
-the output. As a trivial example, compare
 場合によっては出力を事前に確保することで，関数の呼び出しごとにメモリを確保する必要性を
 回避できることもあります．簡単な例として，次の2つの例を比較してみましょう:
 

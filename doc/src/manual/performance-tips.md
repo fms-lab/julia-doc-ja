@@ -1388,10 +1388,10 @@ julia> set_zero_subnormals(false); (x - y, x == y)
 a = rand(Float32,1000) * 1.f-9
 ```
 
-## [[`@code_warntype`](@ref)](@id man-code-warntype)
+## [[`@code_warntype`](@ref)マクロ](@id man-code-warntype)
 
-The macro [`@code_warntype`](@ref) (or its function variant [`code_warntype`](@ref)) can sometimes
-be helpful in diagnosing type-related problems. Here's an example:
+マクロ[`@code_warntype`](@ref)（またはその関数版[`code_warntype`](@ref)）は，型関連の
+問題を診断するのに役立つことがあります．ここでは例を示します:
 
 ```julia-repl
 julia> @noinline pos(x) = x < 0 ? 0 : x;
@@ -1415,62 +1415,56 @@ Body::Float64
 └──      return %4
 ```
 
-Interpreting the output of [`@code_warntype`](@ref), like that of its cousins [`@code_lowered`](@ref),
-[`@code_typed`](@ref), [`@code_llvm`](@ref), and [`@code_native`](@ref), takes a little practice.
-Your code is being presented in form that has been heavily digested on its way to generating
-compiled machine code. Most of the expressions are annotated by a type, indicated by the `::T`
-(where `T` might be [`Float64`](@ref), for example). The most important characteristic of [`@code_warntype`](@ref)
-is that non-concrete types are displayed in red; since this document is written in Markdown, which has no color,
-in this document, red text is denoted by uppercase.
+[`@code_llvm`](@ref)，[`@code_native`](@ref)の出力と同様に解釈するには，少し練習が必要です．
+あなたのコードは，コンパイルされたマシンコードを生成する途中で大きく要約された形で表示され
+ます．ほとんどの式は型によってアノテーションされており，`::T`で表されています（ここで，Tは
+例えば[`Float64`](@ref)のようなものです）．[`@code_warntype`](@ref)の最も重要な特徴は，
+具体的でない(non-concrete)型が赤で表示されることです．このドキュメント自体はMarkdownで書かれ
+ているので，このドキュメントでは赤文字は大見字で書いています．
 
-At the top, the inferred return type of the function is shown as `Body::Float64`.
-The next lines represent the body of `f` in Julia's SSA IR form.
-The numbered boxes are labels and represent targets for jumps (via `goto`) in your code.
-Looking at the body, you can see that the first thing that happens is that `pos` is called and the
-return value has been inferred as the `Union` type `UNION{FLOAT64, INT64}` shown in uppercase since
-it is a non-concrete type. This means that we cannot know the exact return type of `pos` based on the
-input types. However, the result of `y*x`is a `Float64` no matter if `y` is a `Float64` or `Int64`
-The net result is that `f(x::Float64)` will not be type-unstable
-in its output, even if some of the intermediate computations are type-unstable.
+上部には，関数の推測される戻り値の型が`Body::Float64`として表示されています．次の行は，
+JuliaのSSA IRフォームにおける`f`のボディを表しています．番号のついたボックスはラベルであり，
+コード内のジャンプ（`goto`経由）のターゲットを表しています．ボディを見てみると，まず`pos`が
+呼び出され，戻り値はnon-concrete型であるため，大文字で示された`Union`型の`UNION{FLOAT64, INT64}`
+と推論されていることがわかります．つまり入力された型から`pos`の正確な戻り値の型を知ることは
+できません．しかし`y*x`の結果は，`y`が`Float64`であろうと`Int64`であろうと，関係なく`Float64`
+となります．結果として，`f(x::Float64)`の出力は，たとえ中間の計算の一部が型不安定であったと
+しても型不安定にはなりません．
 
-How you use this information is up to you. Obviously, it would be far and away best to fix `pos`
-to be type-stable: if you did so, all of the variables in `f` would be concrete, and its performance
-would be optimal. However, there are circumstances where this kind of *ephemeral* type instability
-might not matter too much: for example, if `pos` is never used in isolation, the fact that `f`'s
-output is type-stable (for [`Float64`](@ref) inputs) will shield later code from the propagating
-effects of type instability. This is particularly relevant in cases where fixing the type instability
-is difficult or impossible. In such cases, the tips above (e.g., adding type annotations and/or
-breaking up functions) are your best tools to contain the "damage" from type instability.
-Also, note that even Julia Base has functions that are type unstable.
-For example, the function [`findfirst`](@ref) returns the index into an array where a key is found,
-or `nothing` if it is not found, a clear type instability. In order to make it easier to find the
-type instabilities that are likely to be important, `Union`s containing either `missing` or `nothing`
-are color highlighted in yellow, instead of red.
+この情報をどのように使うかはあなた次第です．明らかに，`pos`を型安定な形に直すのが断然最善
+です．そうすれば`f`の全ての変数が具体的(concrete)になり，その性能は最適になります．
+しかし，このような*一時的な*型の不安定があまり重要でない状況もあります．例えば，`pos`を
+単独で使用することがない場合，`f`の出力が（[`Float64`](@ref)入力に対して）型安定である
+という事実は，型の不安定性の影響が伝搬することから後のコードを保護します．これは，型の不安定
+性を修正することが難しい，あるいは不可能な場合に特に重要です．このような場合には，上記の
+ヒント（例えば，型のアノテーションを追加したり，関数を分割したりする）が，型の不安定性に
+よる「ダメージ」をおさえるための最良のツールとなります．また，Julia Baseにも型が不安定な
+関数があることにも注意してください．例えば，関数[`findfirst`](@ref)は，キーが見つかった配列
+のインデックスまたは見つからなければ`nothing`を返しますが，これは明らかに型不安定です．
+重要である可能性の高い型の不安定性を見つけやすくするために，`missing`か`nothing`を含む
+`Union`は赤ではなく黄色で色分けされています．
 
-The following examples may help you interpret expressions marked as containing non-leaf types:
+以下の例は非リーフ(non-leaf)型を含むとマークされた式を解釈するのに役立つかもしれません:
 
-  * Function body starting with `Body::UNION{T1,T2})`
-      * Interpretation: function with unstable return type
-      * Suggestion: make the return value type-stable, even if you have to annotate it
+  * `Body::UNION{T1,T2})`で始まる関数のボディ
+      * 解釈: 不安定な戻り値を持つ関数
+      * 提案: 返り値を型が安定しているものにします
 
   * `invoke Main.g(%%x::Int64)::UNION{FLOAT64, INT64}`
-      * Interpretation: call to a type-unstable function `g`.
-      * Suggestion: fix the function, or if necessary annotate the return value
-
+      * 解釈: 型不安定な関数`g`の呼び出し
+      * 提案: 関数を修正するか，必要であれば戻り値にアノテーションをつけます
+  
   * `invoke Base.getindex(%%x::Array{Any,1}, 1::Int64)::ANY`
-      * Interpretation: accessing elements of poorly-typed arrays
-      * Suggestion: use arrays with better-defined types, or if necessary annotate the type of individual
-        element accesses
+      * 解釈: 型付けの悪い配列の要素へのアクセス
+      * 提案: より良い定義の型を持つ配列を使用するか，必要に応じて個々の要素のアクセスの型をアノテーションします
 
   * `Base.getfield(%%x, :(:data))::ARRAY{FLOAT64,N} WHERE N`
-      * Interpretation: getting a field that is of non-leaf type. In this case, `ArrayContainer` had a
-        field `data::Array{T}`. But `Array` needs the dimension `N`, too, to be a concrete type.
-      * Suggestion: use concrete types like `Array{T,3}` or `Array{T,N}`, where `N` is now a parameter
-        of `ArrayContainer`
+      * 解釈: non-leaf型のフィールドを取得しています．この場合`ArrayContainer`はフィールド`data::Array{T}`を持っていました．しかし，`Array`がconcreteな型であるためには次元`N`も必要です
+      * 提案: `Array{T,3}`や`Array{T,N}`（`N`はここでは`ArrayContainer`のパラメータです）のようなconcreteな型を使用してください
 
-## [Performance of captured variable](@id man-performance-captured)
+## [キャプチャされた変数の性能](@id man-performance-captured)
 
-Consider the following example that defines an inner function:
+内部関数を定義する次の例を考えてみましょう:
 ```julia
 function abmult(r::Int)
     if r < 0
@@ -1481,40 +1475,33 @@ function abmult(r::Int)
 end
 ```
 
-Function `abmult` returns a function `f` that multiplies its argument by
-the absolute value of `r`. The inner function assigned to `f` is called a
-"closure". Inner functions are also used by the
-language for `do`-blocks and for generator expressions.
+関数`abmult`は，引数に`r`の絶対値を乗算する関数`f`を返します．`f`に割り当てられた
+内部関数は「クロージャ」と呼ばれます．内部関数は`do`ブロックやジェネレータ式にも
+使用されます．
 
-This style of code presents performance challenges for the language.
-The parser, when translating it into lower-level instructions,
-substantially reorganizes the above code by extracting the
-inner function to a separate code block.  "Captured" variables such as `r`
-that are shared by inner functions and their enclosing scope are
-also extracted into a heap-allocated "box" accessible to both inner and
-outer functions because the language specifies that `r` in the
-inner scope must be identical to `r` in the outer scope even after the
-outer scope (or another inner function) modifies `r`.
+このコードスタイルは，言語のパフォーマンスに課題があります．パーサは，これを低レベル命令
+に変換する際に，内部関数を別のコードブロックに抽出することで，上記のコード大幅に再編成
+します．内部関数とそれを囲むスコープで共有されている`r`のような「キャプチャ」された変数
+もまた，ヒープに割り当てられた「ボックス」に抽出され，内部スコープ内の`r`は外部スコープ
+（または別の内部関数）が`r`を変更した後でも，外部スコープ内の`r`と同一でならなければ
+ならないことが言語で指定されているため，内部関数と外部関数の両方からアクセス可能です．
 
-The discussion in the preceding paragraph referred to the "parser", that is, the phase
-of compilation that takes place when the module containing `abmult` is first loaded,
-as opposed to the later phase when it is first invoked. The parser does not "know" that
-`Int` is a fixed type, or that the statement `r = -r` transforms an `Int` to another `Int`.
-The magic of type inference takes place in the later phase of compilation.
+前の段ランクの議論では「パーサ」，つまり`abmult`を含むモジュールが最初にロードされた時に
+行われるコンパイルの段階について言及しましたが，それは最初に呼び出されたときの後の段階とは
+対照的です．パーサは`Int`が固定された型であることや，`r = -r`が`Int`を別の`Int`に変換する
+ことを「知っている」わけではありません．型推論の魔法はコンパイルの後の段階で行われます．
 
-Thus, the parser does not know that `r` has a fixed type (`Int`).
-nor that `r` does not change value once the inner function is created (so that
-the box is unneeded).  Therefore, the parser emits code for
-box that holds an object with an abstract type such as `Any`, which
-requires run-time type dispatch for each occurrence of `r`.  This can be
-verified by applying `@code_warntype` to the above function.  Both the boxing
-and the run-time type dispatch can cause loss of performance.
+したがって，パーサは`r`が固定型（`Int`)であることを知りませんし，（ボックスが不要になるように）
+内部関数が作成されても`r`が値を変更しないことも知りません．したがって，パーサは`Any`などの
+`r`の出現ごとにランタイム型ディスパッチが必要になるような抽象型を持つオブジェクトを保持して
+いるボックスのコードを出力します．これは上記の関数に`@code_warntype`を適用することで検証
+できます．ボックス化とランタイム型ディスパッチの両方がパフォーマンスの低下を引き起こす可能性
+があります．
 
-If captured variables are used in a performance-critical section of the code,
-then the following tips help ensure that their use is performant. First, if
-it is known that a captured variable does not change its type, then this can
-be declared explicitly with a type annotation (on the variable, not the
-right-hand side):
+キャプチャされた変数がコードのパフォーマンスクリティカルなセクションで使用されている場合，
+以下のヒントはそれらの使用がパフォーマンスを発揮することの保証に役立ちます．最初に，
+キャプチャされた変数がその方を変更しないことがわかっている場合，これは型アノテーションで
+明示的に宣言することができます（変数の右側ではなく，変数の上で）:
 ```julia
 function abmult2(r0::Int)
     r::Int = r0
@@ -1525,11 +1512,10 @@ function abmult2(r0::Int)
     return f
 end
 ```
-The type annotation partially recovers lost performance due to capturing because
-the parser can associate a concrete type to the object in the box.
-Going further, if the captured variable does not need to be boxed at all (because it
-will not be reassigned after the closure is created), this can be indicated
-with `let` blocks as follows.
+型アノテーションは，パーサがボックス内のオブジェクトにconcreteな型を関連付けることができる
+ので，キャプチャによるパフォーマンスの低下を部分的に回復します．さらに，キャプチャされた
+変数をボックスに入れる必要がない場合，（クロージャが作成された後に再割り当てされないため），
+次のように`let`ブロックを使用して表示することができます．
 ```julia
 function abmult3(r::Int)
     if r < 0
@@ -1541,19 +1527,17 @@ function abmult3(r::Int)
     return f
 end
 ```
-The `let` block creates a new variable `r` whose scope is only the
-inner function. The second technique recovers full language performance
-in the presence of captured variables. Note that this is a rapidly
-evolving aspect of the compiler, and it is likely that future releases
-will not require this degree of programmer annotation to attain performance.
-In the mean time, some user-contributed packages like
-[FastClosures](https://github.com/c42f/FastClosures.jl) automate the
-insertion of `let` statements as in `abmult3`.
+`let`ブロックは，スコープが内部関数のみである新しい変数`r`を作成します．2番目のテクニック
+は，キャプチャされた変数の存在下で完全な言語性能を回復します．これはコンパイラの急速に進化
+している側面であり，将来のリリースではし恵能を達成するためにプログラムがこの程度の
+アノテーションを必要としなくなる可能性があることに注意してください．その間に，
+[FastClosures](https://github.com/c42f/FastClosures.jl)のようなユーザが貢献している
+パッケージでは，`abmult3`のように`let`文の挿入を自動化しています．
 
-# Checking for equality with a singleton
+# シングルトンでの同等性のチェック
 
-When checking if a value is equal to some singleton it can be
-better for performance to check for identicality (`===`) instead of
-equality (`==`). The same advice applies to using `!==` over `!=`.
-These type of checks frequently occur e.g. when implementing the iteration
-protocol and checking if `nothing` is returned from [`iterate`](@ref).
+ある値がシングルトンと等しいかどうかをチェックする時は，イコール(`==`)ではなく
+同一性(`===`)をチェックした方が性能的に良い場合があります．同じアドバイスが，
+`!=`よりも`!==`を使う場合にも当てはまります．この種のチェックは，例えば，反復
+処理プロトコルを実装していて，[`iterate`](@ref)から`nothing`が返ってくるかどうか
+をチェックするときなどに頻繁に発生します．

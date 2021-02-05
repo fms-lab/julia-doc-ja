@@ -1,24 +1,24 @@
-# [Performance Tips](@id man-performance-tips)
+# [パフォーマンスのヒント](@id man-performance-tips)
 
-In the following sections, we briefly go through a few techniques that can help make your Julia
-code run as fast as possible.
+以下のセクションでは，Juliaのコードをできるだけ高速に動作させるためのいくつかのテクニックを
+簡単に説明します．
 
-## Avoid global variables
+## グローバル変数を避ける
 
-A global variable might have its value, and therefore its type, change at any point. This makes
-it difficult for the compiler to optimize code using global variables. Variables should be local,
-or passed as arguments to functions, whenever possible.
+グローバル変数の値と型はいつでも変更される可能性があります．これはグローバル変数を使用した
+コードをコンパイラが最適化するのを困難にします．変数は可能な限りローカルに定義するか，関数の
+引数として渡すようにしてください．
 
-Any code that is performance critical or being benchmarked should be inside a function.
+パフォーマンスが重要なコードやベンチマークを行うコードは関数の中に入れるべきです．
 
-We find that global names are frequently constants, and declaring them as such greatly improves
-performance:
+グローバルな名前を持つものは定数であることが多く，定数であることを宣言することで，
+パフォーマンスが大幅に向上することがわかりました:
 
 ```julia
 const DEFAULT_VAL = 0
 ```
 
-Uses of non-constant globals can be optimized by annotating their types at the point of use:
+定数ではないグローバル変数の使用は，使用時に型をアノテーションすることで最適化できます:
 
 ```julia
 global x = rand(1000)
@@ -32,31 +32,32 @@ function loop_over_global()
 end
 ```
 
-Passing arguments to functions is better style. It leads to more reusable code and clarifies what the inputs and outputs are.
+関数に引数を渡すのは，より良いスタイルです．関数に引数を渡すことは，コードの再利用性を高め，
+入出力が何であるかを明確にします．
 
 !!! note
-    All code in the REPL is evaluated in global scope, so a variable defined and assigned
-    at top level will be a **global** variable. Variables defined at top level scope inside
-    modules are also global.
+    REPL内の全てのコードはグローバルスコープで評価されるので，トップレベルで定義され，代入
+    された変数は**グローバル**変数になります．モジュール内部のトップレベルスコープで定義さ
+    れた変数もグローバルになります．
 
-In the following REPL session:
+以下のREPLセッションの例では一つ目の式:
 
 ```julia-repl
 julia> x = 1.0
 ```
 
-is equivalent to:
+と以下の2つ目の式は等価です:
 
 ```julia-repl
 julia> global x = 1.0
 ```
 
-so all the performance issues discussed previously apply.
+ゆえに，上で議論された全てのパフォーマンスの問題が適用されます．
 
-## Measure performance with [`@time`](@ref) and pay attention to memory allocation
+## [`@time`](@ref)によるパフォーマンスの計測とメモリ割り当てへの注意
 
-A useful tool for measuring performance is the [`@time`](@ref) macro. We here repeat the example
-with the global variable above, but this time with the type annotation removed:
+パフォーマンスの測定に便利なツールとして，[`@time`](@ref)マクロがあります．ここでは上記の
+グローバル変数を使用した例を繰り返しますが，今回は型アノテーションを削除しています:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234)), filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(1000);
@@ -78,21 +79,21 @@ julia> @time sum_global()
 496.84883432553846
 ```
 
-On the first call (`@time sum_global()`) the function gets compiled. (If you've not yet used [`@time`](@ref)
-in this session, it will also compile functions needed for timing.)  You should not take the results
-of this run seriously. For the second run, note that in addition to reporting the time, it also
-indicated that a significant amount of memory was allocated. We are here just computing a sum over all elements in
-a vector of 64-bit floats so there should be no need to allocate memory (at least not on the heap which is what `@time` reports).
+最初に`@time sum_global()`を呼び出したときに，関数がコンパイルされます．（このセクションで
+[`@time`](@ref)を使用していない場合は，計測に必要な関数もコンパイルされます．）この実行結果
+を深刻に受け止めるべきではありません．2回目の実行では，時間を報告するだけでなく，かなりの量
+のメモリが割り当てられていることに注意してください．ここでは64ビットの浮動小数点数のベクトル
+内の全ての要素の和を計算しているだけなので，メモリを割り当てる必要がありません（少なくとも
+`@time`が報告するヒープ上での割り当ては必要ありません）．
 
-Unexpected memory allocation is almost always a sign of some problem with your code, usually a
-problem with type-stability or creating many small temporary arrays.
-Consequently, in addition to the allocation itself, it's very likely
-that the code generated for your function is far from optimal. Take such indications seriously
-and follow the advice below.
+予期せぬメモリ割り当ては，ほとんどの場合において，コードに何らかの問題があることを示していま
+す．これは通常，型の安定性に問題があったり，小さな一時的な配列をたくさん生成したりするような
+問題です．その結果割り当て自体に加えて，関数のために生成されたコードが最適化されていない可能
+性が非常に高いです．このような兆候は真剣に受け止めて，以下のアドバイスに従ってください．
 
-If we instead pass `x` as an argument to the function it no longer allocates memory
-(the allocation reported below is due to running the `@time` macro in global scope)
-and is significantly faster after the first call:
+上述の例で，`x`を引数として渡すように変更すると，メモリが割り当てられなくなり（以下で
+報告されている割り当てはグローバルスコープで`@time`マクロを実行したことによるものです），
+最初の呼び出しの後には非常に高速に動作します:
 
 ```jldoctest sumarg; setup = :(using Random; Random.seed!(1234)), filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(1000);
@@ -114,8 +115,9 @@ julia> @time sum_arg(x)
 496.84883432553846
 ```
 
-The 5 allocations seen are from running the `@time` macro itself in global scope. If we instead run
-the timing in a function, we can see that indeed no allocations are performed:
+例の中で5つ割り当てられているのは，グローバルスコープで`@time`を実行したことによるものです．
+関数内で計測を行うように変更してから実行すると，確かにアロケーションが行われていないことが
+わかります:
 
 ```jldoctest sumarg; filter = r"[0-9\.]+ seconds"
 julia> time_sum(x) = @time sum_arg(x);
@@ -125,38 +127,30 @@ julia> time_sum(x)
 496.84883432553846
 ```
 
-In some situations, your function may need to allocate memory as part of its operation, and this
-can complicate the simple picture above. In such cases, consider using one of the [tools](@ref tools)
-below to diagnose problems, or write a version of your function that separates allocation from
-its algorithmic aspects (see [Pre-allocating outputs](@ref)).
+状況によっては，関数がその操作の一部としてメモリを割り当てる必要がある場合があり，上記の
+単純な状況を複雑にしてしまいます．そのような場合は，問題を診断するために以下の[tools](@ref tools)
+のいずれかを使用するか，アルゴリズム的な側面から割り当てを分離したバージョンの関数を書くこと
+を検討してください（[出力の事前割り当て](@ref Pre-allocating-outputs)を参照してください．
 
 !!! note
-    For more serious benchmarking, consider the [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
-    package which among other things evaluates the function multiple times in order to reduce noise.
+    より本格的なベンチマークを行うには，[BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)
+    パッケージの利用を検討してください．これはノイズを減らすために関数を複数回評価します．
 
-## [Tools](@id tools)
+## [ツール](@id tools)
 
-Julia and its package ecosystem includes tools that may help you diagnose problems and improve
-the performance of your code:
+Juliaとそのパッケージエコシステムには，問題を診断してコードのパフォーマンスを向上させるのに
+役立つツールが含まれています:
 
-  * [Profiling](@ref) allows you to measure the performance of your running code and identify lines
-    that serve as bottlenecks. For complex projects, the [ProfileView](https://github.com/timholy/ProfileView.jl)
-    package can help you visualize your profiling results.
-  * The [Traceur](https://github.com/JunoLab/Traceur.jl) package can help you find common performance problems in your code.
-  * Unexpectedly-large memory allocations--as reported by [`@time`](@ref), [`@allocated`](@ref), or
-    the profiler (through calls to the garbage-collection routines)--hint that there might be issues
-    with your code. If you don't see another reason for the allocations, suspect a type problem.
-     You can also start Julia with the `--track-allocation=user` option and examine the resulting
-    `*.mem` files to see information about where those allocations occur. See [Memory allocation analysis](@ref).
-  * `@code_warntype` generates a representation of your code that can be helpful in finding expressions
-    that result in type uncertainty. See [`@code_warntype`](@ref) below.
+  * [Profiling](@ref)により，実行中のコードのパフォーマンスを測定し，ボトルネックとなる行を特定することができます．複雑なプロジェクトでは，[ProfileView](https://github.com/timholy/ProfileView.jl)パッケージを使用sるうと，プロファイリング結果を可視化することができます．
+  * [Traceur](https://github.com/JunoLab/Traceur.jl)パッケージは，コード内の一般的なパフォーマンスの問題を見つけるのに役立ちます．
+  * [`@time`](@ref)や[`@allocated`](@ref)，あるいは（ガベージコレクションルーチンへの呼び出しを通じた）プロファイラが報告するような予想外に大きなメモリ割り当ては，コードに問題があるかもしれないことを示唆しています．割り当てで他の問題が見つからない場合は，型の問題を疑ってください．また，Juliaを`--track-allocation=user`オプションをつけて起動し，結果として得られた`*.mem`ファイルを調べて，どこで割り当てが行われているかの情報を確認することもできます．[Memory allocation analysis](@ref)を参照してください．
+  * `@code_warntype`はコードの表現を生成し，型の不確実性をもたらす式を見つけるのに役立ちます．以下の[`@code_warntype`](@ref)を参照してください．
 
-## [Avoid containers with abstract type parameters](@id man-performance-abstract-container)
+## [抽象型のパラメータを持つコンテナを避ける](@id man-performance-abstract-container)
 
-When working with parameterized types, including arrays, it is best to avoid parameterizing with
-abstract types where possible.
+配列を含む，パラメータ化された型を扱う際には，可能な限り抽象型でのパラメータ化は避けた方が良いでしょう．
 
-Consider the following:
+以下を考えてみましょう:
 
 ```jldoctest
 julia> a = Real[]
@@ -169,11 +163,11 @@ julia> push!(a, 1); push!(a, 2.0); push!(a, π)
  π = 3.1415926535897...
 ```
 
-Because `a` is a an array of abstract type [`Real`](@ref), it must be able to hold any
-`Real` value. Since `Real` objects can be of arbitrary size and structure, `a` must be
-represented as an array of pointers to individually allocated `Real` objects. However, if we instead
-only allow numbers of the same type, e.g. [`Float64`](@ref), to be stored in `a` these can be stored more
-efficiently:
+`a`は抽象型[`Real`](@ref)の配列なので，任意の`Real`型の値を保持できなければなりません．
+`Real`オブジェクトは任意のサイズと構造を持つことができるので，`a`は個別に割り当てられた
+`Real`オブジェクトへのポインタの配列として表現されなければなりません．しかし，代わりに
+同じ型の数値，例えば[`Float64`](@ref)などの数値だけを`a`に格納できるようにすれば，これら
+の数値をより効率的に格納することができます:
 
 ```jldoctest
 julia> a = Float64[]
@@ -186,21 +180,20 @@ julia> push!(a, 1); push!(a, 2.0); push!(a,  π)
  3.141592653589793
 ```
 
-Assigning numbers into `a` will now convert them to `Float64` and `a` will be stored as
-a contiguous block of 64-bit floating-point values that can be manipulated efficiently.
+`a`に数値を代入すると`Float64`に変換され，`a`は64ビット浮動小数点数値の連続したブロックと
+して格納され，効率的に操作できるようになります．
 
-See also the discussion under [Parametric Types](@ref).
+以下の[Parametric Types](@ref)の説明も参照してください．
 
-## Type declarations
+## 型宣言
 
-In many languages with optional type declarations, adding declarations is the principal way to
-make code run faster. This is *not* the case in Julia. In Julia, the compiler generally knows
-the types of all function arguments, local variables, and expressions. However, there are a few
-specific instances where declarations are helpful.
+型宣言がオプションとしてある多くの言語では，宣言を追加することがコードを高速に実行するため
+の主要な方法です．しかし，Juliaでは*そうではありません*．Juliaではコンパイラは通常，全ての
+関数引数，ローカル変数，式の型を知っています．しかし，宣言な有用な例はいくつか存在します．
 
-### Avoid fields with abstract type
+### 抽象型のフィールドを避ける
 
-Types can be declared without specifying the types of their fields:
+型は，フィールドの型を指定せずに宣言することができます:
 
 ```jldoctest myambig
 julia> struct MyAmbiguousType
@@ -208,10 +201,10 @@ julia> struct MyAmbiguousType
        end
 ```
 
-This allows `a` to be of any type. This can often be useful, but it does have a downside: for
-objects of type `MyAmbiguousType`, the compiler will not be able to generate high-performance
-code. The reason is that the compiler uses the types of objects, not their values, to determine
-how to build code. Unfortunately, very little can be inferred about an object of type `MyAmbiguousType`:
+これにより`a`に任意の型を指定することができます．これは便利ですが欠点もあります`MyAmbiguousType`
+型のオブジェクトの場合，コンパイラは高性能なコードを生成できません．その理由は，コンパイラが
+コードのビルド方法を決定するために，値ではなくオブジェクトの型を使用するからです．残念ながら
+`MyAmbiguousType`型のオブジェクトについてはほとんど推論できません:
 
 ```jldoctest myambig
 julia> b = MyAmbiguousType("Hello")
@@ -227,14 +220,15 @@ julia> typeof(c)
 MyAmbiguousType
 ```
 
-The values of `b` and `c` have the same type, yet their underlying representation of data in memory is very
-different. Even if you stored just numeric values in field `a`, the fact that the memory representation
-of a [`UInt8`](@ref) differs from a [`Float64`](@ref) also means that the CPU needs to handle
-them using two different kinds of instructions. Since the required information is not available
-in the type, such decisions have to be made at run-time. This slows performance.
+`b`と`c`は同じ型を持っていますが，メモリ上のデータの基本的な表現は全く異なっています．
+フィールド`a`に数値だけを格納したとしても，[`UInt8`](@ref)のメモリ表現は[`Float64`](@ref)
+とは異なるという事実は，CPUが2種類の異なる命令を使用してそれらを処理する必要があることを
+意味します．この型では必要な情報が得られないため，このような判断は実行時に行わなければ
+なりません．これがパフォーマンスを低下させます．
 
-You can do better by declaring the type of `a`. Here, we are focused on the case where `a` might
-be any one of several types, in which case the natural solution is to use parameters. For example:
+`a`の型を宣言することによるより良い方法があります．ここでは`a`がいくつかの型のうちいずれか
+であるような場合に焦点を当てていますが，この場合の自然な解決策はパラメータを使うことです．
+例えば:
 
 ```jldoctest myambig2
 julia> mutable struct MyType{T<:AbstractFloat}
@@ -242,7 +236,7 @@ julia> mutable struct MyType{T<:AbstractFloat}
        end
 ```
 
-This is a better choice than
+これは以下よりも優れています:
 
 ```jldoctest myambig2
 julia> mutable struct MyStillAmbiguousType
@@ -250,8 +244,7 @@ julia> mutable struct MyStillAmbiguousType
        end
 ```
 
-because the first version specifies the type of `a` from the type of the wrapper object. For
-example:
+これは，最初のバージョンではラッパーオブジェクトの型から`a`の型を指定しているからです．例えば:
 
 ```jldoctest myambig2
 julia> m = MyType(3.2)
@@ -267,8 +260,8 @@ julia> typeof(t)
 MyStillAmbiguousType
 ```
 
-The type of field `a` can be readily determined from the type of `m`, but not from the type of
-`t`. Indeed, in `t` it's possible to change the type of the field `a`:
+フィールド`a`の型は，`m`の型から容易に決定できますが，`t`の型からは決定できません．
+実際，`t`では，フィールド`a`の型を変更することができます:
 
 ```jldoctest myambig2
 julia> typeof(t.a)
@@ -281,7 +274,7 @@ julia> typeof(t.a)
 Float32
 ```
 
-In contrast, once `m` is constructed, the type of `m.a` cannot change:
+これに対して，一度`m`が構成されると，`m.a`の型を変えることはできません:
 
 ```jldoctest myambig2
 julia> m.a = 4.5f0
@@ -291,12 +284,12 @@ julia> typeof(m.a)
 Float64
 ```
 
-The fact that the type of `m.a` is known from `m`'s type—coupled with the fact that its type
-cannot change mid-function—allows the compiler to generate highly-optimized code for objects
-like `m` but not for objects like `t`.
+`m.a`の型が`m`の型からわかっているという事実と，関数の途中で型が変更できないという事実が
+組み合わさって，コンパイラは`m`のようなオブジェクトに対しては最適化されたコードを生成でき
+ますが，`t`のようばオブジェクトに対しては最適化されていません．
 
-Of course, all of this is true only if we construct `m` with a concrete type. We can break this
-by explicitly constructing it with an abstract type:
+もちろん，これらは`m`を具体的な型で構築した場合にのみ有効です．明示的に抽象的な型で構成する
+ことでこれを破ることができます:
 
 ```jldoctest myambig2
 julia> m = MyType{AbstractFloat}(3.2)
@@ -312,28 +305,28 @@ julia> typeof(m.a)
 Float32
 ```
 
-For all practical purposes, such objects behave identically to those of `MyStillAmbiguousType`.
+現実的には，このようなオブジェクトは`MyStillAmbiguousType`のものと同じように動作します．
 
-It's quite instructive to compare the sheer amount code generated for a simple function
+単純な関数
 
 ```julia
 func(m::MyType) = m.a+1
 ```
 
-using
+のために生成されるコードの量を，以下を用いて比較するのは非常に有益です:
 
 ```julia
 code_llvm(func, Tuple{MyType{Float64}})
 code_llvm(func, Tuple{MyType{AbstractFloat}})
 ```
 
-For reasons of length the results are not shown here, but you may wish to try this yourself. Because
-the type is fully-specified in the first case, the compiler doesn't need to generate any code
-to resolve the type at run-time. This results in shorter and faster code.
+長くなるのでここでは結果を示しませんが，ご自身で試してみたくなるかもしれません．
+最初のケースでは型が完全に指定されているため，コンパイラは実行時に型を解決するコードを
+生成する必要がありません．その結果，短く高速なコードが生成されます．
 
-### Avoid fields with abstract containers
+### [抽象的なコンテナを持つフィールドを避ける](@id Avoid-fields-with-abstract-containers)
 
-The same best practices also work for container types:
+同じベストプラクティスはコンテナ型でも機能します:
 
 ```jldoctest containers
 julia> struct MySimpleContainer{A<:AbstractVector}
@@ -345,7 +338,7 @@ julia> struct MyAmbiguousContainer{T}
        end
 ```
 
-For example:
+例えば:
 
 ```jldoctest containers
 julia> c = MySimpleContainer(1:3);
@@ -369,12 +362,13 @@ julia> typeof(b)
 MyAmbiguousContainer{Int64}
 ```
 
-For `MySimpleContainer`, the object is fully-specified by its type and parameters, so the compiler
-can generate optimized functions. In most instances, this will probably suffice.
+`MySimpleContainer`の場合，オブジェクトは型とパラメータで完全に指定されているので，コンパイ
+ラは最適化された関数を生成することができます．ほとんどの場合はこれで十分でしょう．
 
-While the compiler can now do its job perfectly well, there are cases where *you* might wish that
-your code could do different things depending on the *element type* of `a`. Usually the best
-way to achieve this is to wrap your specific operation (here, `foo`) in a separate function:
+コンパイラはこれで完璧に仕事をこなせるようになりましたが，`a`の*要素の型*に応じてコードを
+変えたい場合もあるかもしれません．通常これを実現する最良の方法は，特定の操作（ここでは`foo`
+）を別の関数でラップすることです:
+
 
 ```jldoctest containers
 julia> function sumfoo(c::MySimpleContainer)
@@ -393,11 +387,10 @@ julia> foo(x::AbstractFloat) = round(x)
 foo (generic function with 2 methods)
 ```
 
-This keeps things simple, while allowing the compiler to generate optimized code in all cases.
+これにより，シンプルさを保ちながら，全てのケースでコンパイラが最適化されたコードを生成できるようになります．
 
-However, there are cases where you may need to declare different versions of the outer function
-for different element types or types of the `AbstractVector` of the field `a` in `MySimpleContainer`.
-You could do it like this:
+しかし，異なる要素の型や，`MySimpleContainer`のフィールド`a`の`AbstractVector`の型ごとに
+異なるバージョンの外部関数を宣言する必要が場合もあるでしょう．それは以下のようにできます:
 
 ```jldoctest containers
 julia> function myfunc(c::MySimpleContainer{<:AbstractArray{<:Integer}})
@@ -427,11 +420,10 @@ julia> myfunc(MySimpleContainer([1:3;]))
 4
 ```
 
-### Annotate values taken from untyped locations
+### 型付けされていない場所から取得した値をアノテーションする
 
-It is often convenient to work with data structures that may contain values of any type (arrays
-of type `Array{Any}`). But, if you're using one of these structures and happen to know the type
-of an element, it helps to share this knowledge with the compiler:
+任意の型の値を含むデータ構造体（`Array{Any}`型の配列）を扱うのは便利です．しかし，これらの
+構造体を使用していて，たまたま要素の型を知っている場合は，その知識をコンパイラと共有するのに役立ちます:
 
 ```julia
 function foo(a::Array{Any,1})
@@ -441,21 +433,20 @@ function foo(a::Array{Any,1})
 end
 ```
 
-Here, we happened to know that the first element of `a` would be an [`Int32`](@ref). Making
-an annotation like this has the added benefit that it will raise a run-time error if the
-value is not of the expected type, potentially catching certain bugs earlier.
+ここでは，`a`の最初の要素が[`Int32`](@ref)であることを知っているものとします．このような
+アノテーションを作成することで，値が期待される型でない場合にランタイムエラーを発生させ，
+特定のバグを早期に発見できる可能性があるという利点があります．
 
-In the case that the type of `a[1]` is not known precisely, `x` can be declared via
-`x = convert(Int32, a[1])::Int32`. The use of the [`convert`](@ref) function allows `a[1]`
-to be any object convertible to an `Int32` (such as `UInt8`), thus increasing the genericity
-of the code by loosening the type requirement. Notice that `convert` itself needs a type
-annotation in this context in order to achieve type stability. This is because the compiler
-cannot deduce the type of the return value of a function, even `convert`, unless the types of
-all the function's arguments are known.
+`a[1]`の型が正確にわからない場合は，`x = convert(Int32, a[1])::Int32`で`x`を宣言することが
+できます．[`convert`](@ref)関数を使用することで，`a[1]`は`Int32`に変換可能な任意のオブジェ
+クト（`UInt8`など）になり，型の要件を緩くすることでコードの汎用性が高まります．型の安定性
+を実現するために，この文脈では`convert`自体に型アノテーションが必要であることに注意してくだ
+さい．これはある関数の全ての引数の型が既知でなければ，たとえ`convert`関数であっても，コンパ
+イラが関数の戻り値の型を推測することができないためです．
 
-Type annotation will not enhance (and can actually hinder) performance if the type is constructed
-at run-time. This is because the compiler cannot use the annotation to specialize the subsequent
-code, and the type-check itself takes time. For example, in the code:
+型のアノテーションは実行時に型が構築されている場合，パフォーマンスを向上させることはできませ
+ん（実際には妨げになることもあります）．これは，コンパイラがアノテーションを使用して後続の
+コードを特殊化することができず，型チェック自体に時間がかかるからです．例えばコードの中では:
 
 ```julia
 function nr(a, prec)
@@ -466,32 +457,31 @@ function nr(a, prec)
 end
 ```
 
-the annotation of `c` harms performance. To write performant code involving types constructed at
-run-time, use the [function-barrier technique](@ref kernel-functions) discussed below, and ensure
-that the constructed type appears among the argument types of the kernel function so that the kernel
-operations are properly specialized by the compiler. For example, in the above snippet, as soon as
-`b` is constructed, it can be passed to another function `k`, the kernel. If, for example, function
-`k` declares `b` as an argument of type `Complex{T}`, where `T` is a type parameter, then a type annotation
-appearing in an assignment statement within `k` of the form:
+`c`のアノテーションはパフォーマンスに悪影響を与えます．実行時に構築された型を含むパフォーマ
+ンスの高いコードを書くには，後述する[function-barrier technique](@ref kernel-functions)を
+使用し，カーネル関数の引数型の中に構築された型が現れるようにして，コンパイラがカーネル操作を
+適切に特殊化できるようにします．例えば，上のスニペットでは，`b`が構築されるとすぐに，それを
+カーネルである別の関数`k`に渡すことができます．例えば，関数`k`が`b`を`Complex{T}`型の引数と
+して宣言し，`T`が型パラメータである場合，`k`内の代入文に現れる型アノテーションは次のような
+形になります:
 
 ```julia
 c = (b + 1.0f0)::Complex{T}
 ```
 
-does not hinder performance (but does not help either) since the compiler can determine the type of `c`
-at the time `k` is compiled.
+これは`k`がコンパイルされた時点でコンパイラが`c`の型を決定することができるため，性能に
+支障をきたすことはありません（が，助けにもなりません）．
 
-### Be aware of when Julia avoids specializing
+### Juliaが特殊化を避ける場合に注意する
 
-As a heuristic, Julia avoids automatically specializing on argument type parameters in three
-specific cases: `Type`, `Function`, and `Vararg`. Julia will always specialize when the argument is
-used within the method, but not if the argument is just passed through to another function. This
-usually has no performance impact at runtime and
-[improves compiler performance](@ref compiler-efficiency-issues). If you find it does have a
-performance impact at runtime in your case, you can trigger specialization by adding a type
-parameter to the method declaration. Here are some examples:
+ヒューリスティックな方法として，Juliaは3つの特定のケースで引数の型パラメータを自動的に特殊化
+することを避けます．`Type`，`Function`と`Vararg`です．引数がメソッド内で使用される場合，
+Juliaは常に特殊化しますが，引数が他の関数に渡されただけの場合は特殊化しません．これは通常，
+実行時のパフォーマンスへの影響はなく，[コンパイラのパフォーマンスを向上させます](@ref compiler-efficiency-issues)．
+実行時にパフォーマンスに影響があることがわかった場合は，メソッド宣言に型パラメータを追加する
+ことで，特殊化をトリガすることができます．以下にいくつかの例を示します:
 
-This will not specialize:
+これは特殊化しません:
 
 ```julia
 function f_type(t)  # or t::Type
@@ -500,7 +490,7 @@ function f_type(t)  # or t::Type
 end
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 function g_type(t::Type{T}) where T
@@ -509,48 +499,49 @@ function g_type(t::Type{T}) where T
 end
 ```
 
-These will not specialize:
+これは特殊化しません:
 
 ```julia
 f_func(f, num) = ntuple(f, div(num, 2))
 g_func(g::Function, num) = ntuple(g, div(num, 2))
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 h_func(h::H, num) where {H} = ntuple(h, div(num, 2))
 ```
 
-This will not specialize:
+これは特殊化しません:
 
 ```julia
 f_vararg(x::Int...) = tuple(x...)
 ```
 
-but this will:
+これは特殊化します:
 
 ```julia
 g_vararg(x::Vararg{Int, N}) where {N} = tuple(x...)
 ```
 
-One only needs to introduce a single type parameter to force specialization, even if the other types are unconstrained. For example, this will also specialize, and is useful when the arguments are not all of the same type:
+他の型が制約されていない場合でも強制的に特殊化を行うためには，1つの型のパラメータを導入する
+だけでよいです．例えば，これも特殊化され，引数が全て同じ型ではない場合にも便利です．
 ```julia
 h_vararg(x::Vararg{Any, N}) where {N} = tuple(x...)
 ```
 
-Note that [`@code_typed`](@ref) and friends will always show you specialized code, even if Julia
-would not normally specialize that method call. You need to check the
-[method internals](@ref ast-lowered-method) if you want to see whether specializations are generated
-when argument types are changed, i.e., if `(@which f(...)).specializations` contains specializations
-for the argument in question.
+Juliaが通常そのメソッド呼び出しを特殊化しない場合でも，[`@code_typed`](@ref)とフレンドは
+常に特殊化されたコードを表示することに注意してください．引数の型が変更された時に特殊化が
+生成されるかどうか，つまり`(@which f(...)).specializations`に問題の引数の特殊化が含まれて
+いるかどうかを確認したい場合は，[メソッド内部](@ref ast-lowered-method)をチェックする必要
+があります．
 
-## Break functions into multiple definitions
+## 関数を複数の定義に分ける
 
-Writing a function as many small definitions allows the compiler to directly call the most applicable
-code, or even inline it.
+関数を多くの小さな定義として書くことで，コンパイラが直接最も適用可能なコードを呼び出すことが
+できますし，インライン化することもできます．
 
-Here is an example of a "compound function" that should really be written as multiple definitions:
+ここでは実際には複数の定義として記述されるべき「複合関数」の例を示します:
 
 ```julia
 using LinearAlgebra
@@ -566,40 +557,39 @@ function mynorm(A)
 end
 ```
 
-This can be written more concisely and efficiently as:
+これは以下のように書くと，より簡潔かつ効率的に書くことができます:
 
 ```julia
 norm(x::Vector) = sqrt(real(dot(x, x)))
 norm(A::Matrix) = maximum(svdvals(A))
 ```
 
-It should however be noted that the compiler is quite efficient at optimizing away the dead branches in code
-written as the `mynorm` example.
+ただし，コンパイラは`mynorm`の例のように記述されたコードのデッドブランチを最適化するのに
+非常に効率的であることに注意してください．
 
-## Write "type-stable" functions
+## 「型が安定している」関数を書く
 
-When possible, it helps to ensure that a function always returns a value of the same type. Consider
-the following definition:
+可能な場合，関数が常に同じ型の値を返すようにするのが役立ちます．次の定義を考えてみましょう:
 
 ```julia
 pos(x) = x < 0 ? 0 : x
 ```
 
-Although this seems innocent enough, the problem is that `0` is an integer (of type `Int`) and
-`x` might be of any type. Thus, depending on the value of `x`, this function might return a value
-of either of two types. This behavior is allowed, and may be desirable in some cases. But it can
-easily be fixed as follows:
+これは十分に悪くないように見えますが，問題は`0`が整数型（`Int`型）であり，`x`が任意型である
+可能性があるということです．したがって`x`の値によっては，この関数は2つの型のどちらかの値を
+返すことになります．この動作は許容されており，いくつかのケースでは望ましいかもしれません．
+しかし，以下のように簡単に修正することができます:
 
 ```julia
 pos(x) = x < 0 ? zero(x) : x
 ```
 
-There is also a [`oneunit`](@ref) function, and a more general [`oftype(x, y)`](@ref) function, which
-returns `y` converted to the type of `x`.
+また[`oneunit`](@ref)関数や，より一般的な[`oftype(x, y)`](@ref)関数もあり，これは`x`の型に
+変換された`y`を返します．
 
-## Avoid changing the type of a variable
+## 変数の型を変更することを避ける
 
-An analogous "type-stability" problem exists for variables used repeatedly within a function:
+関数内で繰り返し使用される変数には，類似の「型安定性」の問題が存在します:
 
 ```julia
 function foo()
@@ -611,21 +601,20 @@ function foo()
 end
 ```
 
-Local variable `x` starts as an integer, and after one loop iteration becomes a floating-point
-number (the result of [`/`](@ref) operator). This makes it more difficult for the compiler to
-optimize the body of the loop. There are several possible fixes:
+ローカル変数`x`は整数で始まり，1回ループした後には浮動小数点数（[`/`](@ref)演算子の結果）に
+なります．これによりコンパイラがループの本体を最適化するのが難しくなります．いくつかの修正
+方法が考えられます:
 
-  * Initialize `x` with `x = 1.0`
-  * Declare the type of `x` explicitly as `x::Float64 = 1`
-  * Use an explicit conversion by `x = oneunit(Float64)`
-  * Initialize with the first loop iteration, to `x = 1 / rand()`, then loop `for i = 2:10`
+  * `x`を`x = 1.0`で初期化する
+  * `x`の型を明示的に`x::Float64 = 1`として宣言する
+  * `x = oneunit(Float64)`による明示的な変換を使用する
+  * 最初のループの際に`x = 1 / rand()`で初期化してから，`for i = 2:10`をループします
 
-## [Separate kernel functions (aka, function barriers)](@id kernel-functions)
+## [カーネル関数を分離する（別名，関数バリア）](@id kernel-functions)
 
-Many functions follow a pattern of performing some set-up work, and then running many iterations
-to perform a core computation. Where possible, it is a good idea to put these core computations
-in separate functions. For example, the following contrived function returns an array of a randomly-chosen
-type:
+多くの関数は，いくつかの設定を実行した後，コア計算を実行するために何度も繰り返しを実行する
+というパターンに従っています．可能であれば，これらのコア計算は別の関数で行うことをお勧め
+します．例えば次のように不自然な関数は，ランダムに選ばれた型の配列を返します:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234))
 julia> function strange_twos(n)
@@ -643,7 +632,7 @@ julia> strange_twos(3)
  2.0
 ```
 
-This should be written as:
+これは次のように書くべきです:
 
 ```jldoctest; setup = :(using Random; Random.seed!(1234))
 julia> function fill_twos!(a)
@@ -665,24 +654,23 @@ julia> strange_twos(3)
  2.0
 ```
 
-Julia's compiler specializes code for argument types at function boundaries, so in the original
-implementation it does not know the type of `a` during the loop (since it is chosen randomly).
-Therefore the second version is generally faster since the inner loop can be recompiled as part
-of `fill_twos!` for different types of `a`.
+Juliaのコンパイラは関数の境界で引数の型のコードを特殊化しているので，オリジナルの実装では
+ループの間の`a`の型を知りません（ランダムに選ばれているので）．そのため，異なる型の`a`に
+対して，内側のループを`fill_twos!`の一部として再コンパイルできるため，2番目のバージョンは
+一般的に高速になります．
 
-The second form is also often better style and can lead to more code reuse.
+また，2番目の形式の方がスタイルがよく，コードの再利用性が高まります．
 
-This pattern is used in several places in Julia Base. For example, see `vcat` and `hcat`
-in [`abstractarray.jl`](https://github.com/JuliaLang/julia/blob/40fe264f4ffaa29b749bcf42239a89abdcbba846/base/abstractarray.jl#L1205-L1206),
-or the [`fill!`](@ref) function, which we could have used instead of writing our own `fill_twos!`.
+このパターンはJulia Baseのいくつかの場所で使われています．例えば，[`abstractarray.jl`](https://github.com/JuliaLang/julia/blob/40fe264f4ffaa29b749bcf42239a89abdcbba846/base/abstractarray.jl#L1205-L1206)の
+`vcat`や`hcat`，あるいは[`fill!`](@ref)関数を見てください．[`fill!`](@ref)関数は，上で独自に
+書いた`fill_twos!`の代わりに使うことができます．
 
-Functions like `strange_twos` occur when dealing with data of uncertain type, for example data
-loaded from an input file that might contain either integers, floats, strings, or something else.
+`strange_twos`のような関数は，例えば入力ファイルから読み込まれたデータが整数，浮動小数点数，
+文字列，その他の何らかの型のものを含んでいるような，型が不確かなデータを扱うときに発生します．
 
-## [Types with values-as-parameters](@id man-performance-value-type)
+## [パラメータとしての値を持つ型](@id man-performance-value-type)
 
-Let's say you want to create an `N`-dimensional array that has size 3 along each axis. Such arrays
-can be created like this:
+各軸に沿ったサイズが3の`N`次元配列を作成したいとしましょう．このような配列は以下のように作成できます:
 
 ```jldoctest
 julia> A = fill(5.0, (3, 3))
@@ -692,13 +680,13 @@ julia> A = fill(5.0, (3, 3))
  5.0  5.0  5.0
 ```
 
-This approach works very well: the compiler can figure out that `A` is an `Array{Float64,2}` because
-it knows the type of the fill value (`5.0::Float64`) and the dimensionality (`(3, 3)::NTuple{2,Int}`).
-This implies that the compiler can generate very efficient code for any future usage of `A` in
-the same function.
+このアプローチは非常にうまく機能します．コンパイラはfill値（`5.0::Float64`）と次元数（
+`(3, 3)::NTuple{2,Int}`）を知っているので，`A`が`Array{Float64,2}`であることがわかります．
+このことは，コンパイラが将来同じ関数で`A`を使用する際に，非常に効率的なコードを生成できる
+ことを意味しています．
 
-But now let's say you want to write a function that creates a 3×3×... array in arbitrary dimensions;
-you might be tempted to write a function
+しかしここで，任意の次元の3×3×...配列を作成する関数を書きたいとしましょう．次のような
+関数を書きたくなるかもしれません:
 
 ```jldoctest
 julia> function array3(fillval, N)
@@ -713,16 +701,16 @@ julia> array3(5.0, 2)
  5.0  5.0  5.0
 ```
 
-This works, but (as you can verify for yourself using `@code_warntype array3(5.0, 2)`) the problem
-is that the output type cannot be inferred: the argument `N` is a *value* of type `Int`, and type-inference
-does not (and cannot) predict its value in advance. This means that code using the output of this
-function has to be conservative, checking the type on each access of `A`; such code will be very
-slow.
+これは動作しますが，（`@code_warntype array3(5.0, 2)`を使って確認できるように，）問題は出力
+の型を推測できないことです．引数`N`は`Int`型の*値*であり，型推論ではその値を事前に予測する
+ことはしませんし，できません．これは，この関数の出力を使用するコードは`A`へアクセスするたび
+に型をチェックするような保守的なものでなければならないことを意味します．このようなコードは
+非常に遅くなります．
 
-Now, one very good way to solve such problems is by using the [function-barrier technique](@ref kernel-functions).
-However, in some cases you might want to eliminate the type-instability altogether. In such cases,
-one approach is to pass the dimensionality as a parameter, for example through `Val{T}()` (see
 ["Value types"](@ref)):
+さて，このような問題を解決するための非常に良い方法の一つが[関数バリアテクニック](@ref kernel-functions)です．
+しかし場合によっては，型の不安定性を完全に排除したいとい思うかもしれません．そのような場合，
+1つの方法として，例えば`Val{T}()`を通して次元性をパラメータを渡すものがあります（["Value types"](@ref)を参照してください）．
 
 ```jldoctest
 julia> function array3(fillval, ::Val{N}) where N
@@ -737,12 +725,13 @@ julia> array3(5.0, Val(2))
  5.0  5.0  5.0
 ```
 
-Julia has a specialized version of `ntuple` that accepts a `Val{::Int}` instance as the second
-parameter; by passing `N` as a type-parameter, you make its "value" known to the compiler.
-Consequently, this version of `array3` allows the compiler to predict the return type.
+Juliaには，2番目のパラメータとして`Val{::Int}`インスタンスを受け付ける特殊なバージョンの
+`ntuple`があります．`N`を型パラメータとして渡すことで，その「値」をコンパイラに知らせること
+ができます．その結果，このバージョンの`array3`では，コンパイラが戻り値の型を予測することが
+できます．
 
-However, making use of such techniques can be surprisingly subtle. For example, it would be of
-no help if you called `array3` from a function like this:
+しかし，このようなテクニックを利用することは，驚くほど微妙なことです．例えば，次のような関数
+から`array3`を呼び出しても何の役にも立ちません:
 
 ```julia
 function call_array3(fillval, n)
@@ -750,13 +739,12 @@ function call_array3(fillval, n)
 end
 ```
 
-Here, you've created the same problem all over again: the compiler can't guess what `n` is,
-so it doesn't know the *type* of `Val(n)`. Attempting to use `Val`, but doing so incorrectly, can
-easily make performance *worse* in many situations. (Only in situations where you're effectively
-combining `Val` with the function-barrier trick, to make the kernel function more efficient, should
-code like the above be used.)
+この場合，同じ問題を繰り返してしまいます．コンパイラは`n`が何であるかを推測できないので，
+`Val(n)`の*型*を知りません．`Val`を使おうとしても，それを誤って行うと，多くの状況でパフォーマンス
+が悪化します．（カーネル関数をより効率にするために，`Val`と関数バリアのトリックを効果的に
+組み合わせている状況でのみ，上記のようなコードを使うべきです．）
 
-An example of correct usage of `Val` would be:
+`Val`の正しい使い方の例は次のようになります:
 
 ```julia
 function filter3(A::AbstractArray{T,N}) where {T,N}
@@ -765,15 +753,16 @@ function filter3(A::AbstractArray{T,N}) where {T,N}
 end
 ```
 
-In this example, `N` is passed as a parameter, so its "value" is known to the compiler. Essentially,
-`Val(T)` works only when `T` is either hard-coded/literal (`Val(3)`) or already specified in the
-type-domain.
+この例では，`N`はパラメータとして渡されるので，その「値」はコンパイラに知られます．基本的に
+`Val(T)`は，`T`がハードコーディングされているか，リテラル（`Val(3)`）であるか，あるいは既に
+タイプドメインで指定されている場合にのみ動作します．
 
-## The dangers of abusing multiple dispatch (aka, more on types with values-as-parameters)
+## 複数のディスパッチを悪用する危険性（別名，パラメータとしての値を持つ型についての詳細）
 
-Once one learns to appreciate multiple dispatch, there's an understandable tendency to go overboard
-and try to use it for everything. For example, you might imagine using it to store information,
-e.g.
+一度複数のディスパッチのありがたみを知ると，行き過ぎて全てのことに使おうとする傾向があるのは
+理解できます．例えば，以下の例のような情報を格納するためにこれを使い，
+`Car{:Honda,:Accord}(year, args...)`のようなオブジェクトにディスパッチすることを想像してみて
+ください:
 
 ```
 struct Car{Make, Model}
@@ -782,45 +771,41 @@ struct Car{Make, Model}
 end
 ```
 
-and then dispatch on objects like `Car{:Honda,:Accord}(year, args...)`.
+以下のいずれかに当てはまる場合には，この方法は価値があるかもしれません:
 
-This might be worthwhile when either of the following are true:
+  * `Car`ごとにCPU負荷の高い処理を必要とし，コンパイル時に`Make`と`Model`がわかっていて，使用される`Make`と`Model`の総数が多すぎない場合は，はるかに効率的になります．
+  * 同じ種類の`Car`を処理するための均質なリストを持っているので，それらを全て`Array{Car{:Honda,:Accord},N}`に格納することができます．
 
-  * You require CPU-intensive processing on each `Car`, and it becomes vastly more efficient if you
-    know the `Make` and `Model` at compile time and the total number of different `Make` or `Model`
-    that will be used is not too large.
-  * You have homogenous lists of the same type of `Car` to process, so that you can store them all
-    in an `Array{Car{:Honda,:Accord},N}`.
+後者の場合，このような均質な配列を処理する関数は生産的に特殊化することができます．Juliaは各
+要素の型を事前に知っているので（コンテナ内のオブジェクトは全て同じ具体的な型を持つ），
+関数のコンパイル時に正しいメソッド呼び出しを「検索」することができ（実行時のチェックが不要に
+なる），リスト全体を処理するための効率的なコードを出すことができます．
 
-When the latter holds, a function processing such a homogenous array can be productively specialized:
-Julia knows the type of each element in advance (all objects in the container have the same concrete
-type), so Julia can "look up" the correct method calls when the function is being compiled (obviating
-the need to check at run-time) and thereby emit efficient code for processing the whole list.
+これらが保持されない場合には，何の利益も得られない可能性が高いです．さらに悪いことに，
+結果として生じる「型の組み合わせ爆発」は逆効果となります．`items[i+1]`が`items[i]`と異なる
+型を持っている場合，Juliaは実行時にそれらの型を調べ，メソッドテーブルから適切なメソッドを
+検索し，（型の共通部分を介して）どれがマッチするかを判断し，それが既にJITコンパイルされて
+いるかどうかを判断し（されていない場合はそうします），そして呼び出しをしなければなりません．
+要するに，完全な型システムとJITコンパイル機構に，基本的にはスイッチ文や辞書検索に相当する
+ものを，自分のコードで実行するように頼んでいることになります．
 
-When these do not hold, then it's likely that you'll get no benefit; worse, the resulting "combinatorial
-explosion of types" will be counterproductive. If `items[i+1]` has a different type than `item[i]`,
-Julia has to look up the type at run-time, search for the appropriate method in method tables,
-decide (via type intersection) which one matches, determine whether it has been JIT-compiled yet
-(and do so if not), and then make the call. In essence, you're asking the full type- system and
-JIT-compilation machinery to basically execute the equivalent of a switch statement or dictionary
-lookup in your own code.
+(1)型のディスパッチ，(2)辞書検索，(3)「スイッチ」文を比較したランタイムベンチマークが
+[メーリングリスト](https://groups.google.com/forum/#!msg/julia-users/jUMu9A3QKQQ/qjgVWr7vAwAJ)
+で公開されています．
 
-Some run-time benchmarks comparing (1) type dispatch, (2) dictionary lookup, and (3) a "switch"
-statement can be found [on the mailing list](https://groups.google.com/forum/#!msg/julia-users/jUMu9A3QKQQ/qjgVWr7vAwAJ).
+おそらく実行時の影響よりもさらに悪いのはコンパイル時の影響です．Juliaは`Car{Make, Model}`
+ごとに専用の関数をコンパイルします．もしそのような型を何百，何千も持っている場合，そのような
+オブジェクトをパラメータとして受け取る全ての関数（自分で書いたカスタムの`get_year`関数から
+Julia Baseの一般的な`push!`関数まで）は，何百，何千ものバリエーションをコンパイルしなければ
+なりません．これらはそれぞれ，コンパイルされたコードのキャッシュサイズやメソッドの内部リスト
+の長さなどを増加させます．パラメータとしての値に過度に熱中すると，膨大なリソースを簡単に浪費
+してしまいます．
 
-Perhaps even worse than the run-time impact is the compile-time impact: Julia will compile specialized
-functions for each different `Car{Make, Model}`; if you have hundreds or thousands of such types,
-then every function that accepts such an object as a parameter (from a custom `get_year` function
-you might write yourself, to the generic `push!` function in Julia Base) will have hundreds
-or thousands of variants compiled for it. Each of these increases the size of the cache of compiled
-code, the length of internal lists of methods, etc. Excess enthusiasm for values-as-parameters
-can easily waste enormous resources.
+## [列に沿ってメモリ順に配列にアクセスする](@id man-performance-column-major)
 
-## [Access arrays in memory order, along columns](@id man-performance-column-major)
-
-Multidimensional arrays in Julia are stored in column-major order. This means that arrays are
-stacked one column at a time. This can be verified using the `vec` function or the syntax `[:]`
-as shown below (notice that the array is ordered `[1 3 2 4]`, not `[1 2 3 4]`):
+Juliaの多次元配列は，列メジャーな順序で格納されます．これは配列が一度に一列ずつ積み重ね
+られることを意味します．これは次のように`vec`関数や`[:]`構文を使って確認できます（配列の
+順番は`[1 2 3 4]`ではなく，`[1 3 2 4]`であることに注意してください）:
 
 ```jldoctest
 julia> x = [1 2; 3 4]
@@ -836,19 +821,20 @@ julia> x[:]
  4
 ```
 
-This convention for ordering arrays is common in many languages like Fortran, Matlab, and R (to
-name a few). The alternative to column-major ordering is row-major ordering, which is the convention
-adopted by C and Python (`numpy`) among other languages. Remembering the ordering of arrays can
-have significant performance effects when looping over arrays. A rule of thumb to keep in mind
-is that with column-major arrays, the first index changes most rapidly. Essentially this means
-that looping will be faster if the inner-most loop index is the first to appear in a slice expression.
-Keep in mind that indexing an array with `:` is an implicit loop that iteratively accesses all elements within a particular dimension; it can be faster to extract columns than rows, for example.
+この配列の順序付けの規則は，Fortran，Matlab，Rなど多くの言語で共通しています．列メジャー
+順序の代替として，行メジャー順序があります．これは，他の言語の中でもC言語やPython(`numpy`）
+で採用されている規則です．配列の順序を覚えておくと，配列をループする際にパフォーマンスに
+大きな影響を与えることがあります．覚えておくべき経験則としては，列メジャー配列の場合，最初
+のインデックスが最も速く変化するということです．これは基本的に，ループインデックスの一番内側
+がスライス式の最初のインデックスである場合，ループ処理が速くなることを意味します．配列に`:`
+でインデックスをつけることは，特定の次元内の全ての要素に反復的にアクセスする暗黙のループで
+あることを覚えておいてください．例えば，行よりも列を抽出する方が速くなることがあります．
 
-Consider the following contrived example. Imagine we wanted to write a function that accepts a
-[`Vector`](@ref) and returns a square [`Matrix`](@ref) with either the rows or the columns filled with copies
-of the input vector. Assume that it is not important whether rows or columns are filled with these
-copies (perhaps the rest of the code can be easily adapted accordingly). We could conceivably
-do this in at least four ways (in addition to the recommended call to the built-in [`repeat`](@ref)):
+次の例を考えてみましょう．[`Vector`](@ref)を受け取り，入力ベクトルのコピーで行または列を
+埋めた正方[`Matrix`](@ref)を返す関数を書きたいとします．行または列がコピーで埋められているか
+どうかは，重要ではないと仮定します（おそらく，コードの残りの部分はそれに応じて簡単に適応
+させることができます）．少なくとも4つの方法でこれを行うことができます（推奨されている
+組み込みの[`repeat`](@ref)の呼び出しに加えて）:
 
 ```julia
 function copy_cols(x::Vector{T}) where T
@@ -888,7 +874,7 @@ function copy_row_col(x::Vector{T}) where T
 end
 ```
 
-Now we will time each of these functions using the same random `10000` by `1` input vector:
+今，我々は同じランダム`10000 x 1`の入力ベクトルを使用して，これらの関数のそれぞれの時間を計測します:
 
 ```julia-repl
 julia> x = randn(10000);
@@ -902,18 +888,19 @@ copy_col_row: 0.415630047
 copy_row_col: 1.721531501
 ```
 
-Notice that `copy_cols` is much faster than `copy_rows`. This is expected because `copy_cols`
-respects the column-based memory layout of the `Matrix` and fills it one column at a time. Additionally,
-`copy_col_row` is much faster than `copy_row_col` because it follows our rule of thumb that the
-first element to appear in a slice expression should be coupled with the inner-most loop.
+`copy_cols`は`copy_rows`よりもとても高速であることに注目してください．これは，`copy_cols`が
+行列の列ベースのメモリレイアウトを尊重し，一度に一列ずつ埋めていくからです．さらに，`copy_col_row`は
+`copy_row_col`よりもはるかに高速です．これはスライス式に最初に現れる要素は最も内側のループに
+結合されるべきであるという経験則にしたがっているからです．
 
-## Pre-allocating outputs
+## [出力の事前割り当て](@id Pre-allocating-outputs)
 
-If your function returns an `Array` or some other complex type, it may have to allocate memory.
-Unfortunately, oftentimes allocation and its converse, garbage collection, are substantial bottlenecks.
+関数が`Array`やその他の複雑な型を返す場合，メモリを確保する必要があるかもしれません．
+残念なことに，メモリの割り当てとその逆であるガベージコレクションがボトルネックになることが
+よくあります．
 
-Sometimes you can circumvent the need to allocate memory on each function call by preallocating
-the output. As a trivial example, compare
+場合によっては出力を事前に確保することで，関数の呼び出しごとにメモリを確保する必要性を
+回避できることもあります．簡単な例として，次の2つの例を比較してみましょう:
 
 ```jldoctest prealloc
 julia> function xinc(x)
@@ -930,7 +917,7 @@ julia> function loopinc()
        end;
 ```
 
-with
+と
 
 ```jldoctest prealloc
 julia> function xinc!(ret::AbstractVector{T}, x::T) where T
@@ -951,7 +938,7 @@ julia> function loopinc_prealloc()
        end;
 ```
 
-Timing results:
+です．計測の結果は以下のようになります:
 
 ```jldoctest prealloc; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> @time loopinc()
@@ -963,30 +950,28 @@ julia> @time loopinc_prealloc()
 50000015000000
 ```
 
-Preallocation has other advantages, for example by allowing the caller to control the "output"
-type from an algorithm. In the example above, we could have passed a `SubArray` rather than an
-[`Array`](@ref), had we so desired.
+例えば，呼び出し元がアルゴリズムからの「出力」の型を制御できるようになるなど，他にも事前
+割り当ての利点があります．上の例では，必要に応じて，[`Array`](@ref)ではなく，`SubArray`を
+渡すことができました．
 
-Taken to its extreme, pre-allocation can make your code uglier, so performance measurements and
-some judgment may be required. However, for "vectorized" (element-wise) functions, the convenient
-syntax `x .= f.(y)` can be used for in-place operations with fused loops and no temporary arrays
-(see the [dot syntax for vectorizing functions](@ref man-vectorized)).
+極端に言えば，事前割り当てはコードを醜くする可能性があるので，パフォーマンスの測定やある程度
+の判断が必要になるかもしれません．しかし，「ベクトル化された」（要素ごとの）関数の場合，
+便利な構文`x .= f.(y)`は融合ループと一時的な配列を使わないインプレース操作に使用できます
+（[関数をベクトル化するためのドット構文](@ref man-vectorized)を参照してください）．
 
-## More dots: Fuse vectorized operations
+## さらなるドット: ベクトル化された操作の融合
 
-Julia has a special [dot syntax](@ref man-vectorized) that converts
-any scalar function into a "vectorized" function call, and any operator
-into a "vectorized" operator, with the special property that nested
-"dot calls" are *fusing*: they are combined at the syntax level into
-a single loop, without allocating temporary arrays. If you use `.=` and
-similar assignment operators, the result can also be stored in-place
-in a pre-allocated array (see above).
+Juliaには特別な[ドット構文](@ref man-vectorized)があり，これはスカラ関数を
+「ベクトル化された」関数呼び出しに変換し，演算子を「ベクトル化された」演算子に
+変換するもので，入れ子になった「ドット呼び出し」が*融合*するという特別な性質
+を持っています．これらは一般的な配列を確保することなく，構文レベルで単一の
+ループに結合されます．`.=`や同様の代入演算子を使用した場合，結果は事前に割り当て
+られた配列にその場で保存することもできます（上述）．
 
-In a linear-algebra context, this means that even though operations like
-`vector + vector` and `vector * scalar` are defined, it can be advantageous
-to instead use `vector .+ vector` and `vector .* scalar` because the
-resulting loops can be fused with surrounding computations. For example,
-consider the two functions:
+線形代数の文脈では，`vector + vector`や`vector * scalar`のような演算が定義されて
+いても，結果のループを周りの計算と融合させることができるため，代わりに`vector .+ vector`
+や`vector .* scalar`を使用することが有利になることを意味しています．例えば，
+以下の2つの関数を考えてみましょう:
 
 ```jldoctest dotfuse
 julia> f(x) = 3x.^2 + 4x + 7x.^3;
@@ -994,9 +979,9 @@ julia> f(x) = 3x.^2 + 4x + 7x.^3;
 julia> fdot(x) = @. 3x^2 + 4x + 7x^3 # equivalent to 3 .* x.^2 .+ 4 .* x .+ 7 .* x.^3;
 ```
 
-Both `f` and `fdot` compute the same thing. However, `fdot`
-(defined with the help of the [`@.`](@ref @__dot__) macro) is
-significantly faster when applied to an array:
+`f`と`fdot`はいずれも同じことを計算します．しかし，配列を使用した場合，
+`fdot`（[`@.`](@ref @__dot__)マクロの助けを借りて定義されたもの）の方が
+はるかに高速に動作します:
 
 ```jldoctest dotfuse; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> x = rand(10^6);
@@ -1011,33 +996,29 @@ julia> @time f.(x);
   0.002626 seconds (8 allocations: 7.630 MiB)
 ```
 
-That is, `fdot(x)` is ten times faster and allocates 1/6 the
-memory of `f(x)`, because each `*` and `+` operation in `f(x)` allocates
-a new temporary array and executes in a separate loop. (Of course,
-if you just do `f.(x)` then it is as fast as `fdot(x)` in this
-example, but in many contexts it is more convenient to just sprinkle
-some dots in your expressions rather than defining a separate function
-for each vectorized operation.)
+つまり，`fdot(x)`は10倍速く，`f(x)`の1/6のメモリしか確保しません．これは，
+`f(x)`の`*`と`+`の各操作が新しい一時的な配列を確保し，別のループで実行される
+からです．（もちろん，単に`f.(x)`を実行するだけならば，この例の`fdot(x)`と同じ
+くらい高速ですが，多くの文脈では，ベクトル化された各演算のために個別の関数を
+定義するよりも，式の中にドットをちりばめるだけの方が便利です）．
 
-## [Consider using views for slices](@id man-performance-views)
+## [スライスのビューを使用することを検討する](@id man-performance-views)
 
-In Julia, an array "slice" expression like `array[1:5, :]` creates
-a copy of that data (except on the left-hand side of an assignment,
-where `array[1:5, :] = ...` assigns in-place to that portion of `array`).
-If you are doing many operations on the slice, this can be good for
-performance because it is more efficient to work with a smaller
-contiguous copy than it would be to index into the original array.
-On the other hand, if you are just doing a few simple operations on
-the slice, the cost of the allocation and copy operations can be
-substantial.
+Juliaでは，`array[1:5, :]`のような配列の「スライス」式は，そのデータのコピー
+を作成します（代入の左側に書かれるような場合，すなわち`array[1:5, :] = ...`が
+`array`のその部分にインプレースで代入されるような場合を除く）．スライスに対して
+多くの操作を行っている場合，元の配列にインデックスを作成するよりも，より小さい
+連続コピーを使用した方が効率的に作業ができるため，これはパフォーマンスの面で
+良いことがあります．一方で，スライスに対していくつかの単純な作業を行うだけの
+場合は，割り当てとコピー操作のコストが大きくなってしまう可能性もあります．
 
-An alternative is to create a "view" of the array, which is
-an array object (a `SubArray`) that actually references the data
-of the original array in-place, without making a copy. (If you
-write to a view, it modifies the original array's data as well.)
-This can be done for individual slices by calling [`view`](@ref),
-or more simply for a whole expression or block of code by putting
-[`@views`](@ref) in front of that expression. For example:
+別の方法として，配列の「ビュー」を作成する方法があります．これは
+配列オブジェクト（`SubArray`）で，コピーを行わずに元の配列のデータ
+をその場で実際に参照します．（ビューに書き込むと，元の配列のデータ
+も変更されます．）これは個々のスライスに対しては[`view`](@ref)を呼び
+出すことによって行うことができますし，より単純に式全体やコードブロックに
+対しては，式の前に[`@views`](@ref)を置くことで行うことができます．
+例えば以下のようになります:
 
 ```jldoctest; filter = r"[0-9\.]+ seconds \(.*?\)"
 julia> fcopy(x) = sum(x[2:end-1]);
@@ -1053,20 +1034,20 @@ julia> @time fview(x);
   0.001020 seconds (6 allocations: 224 bytes)
 ```
 
-Notice both the 3× speedup and the decreased memory allocation
-of the `fview` version of the function.
+この関数の`fview`バージョンが，3倍の高速化と，メモリ割り当て量の
+減少の双方を達成していることに注目してください．
 
-## Copying data is not always bad
+## データをコピーすることは必ずしも悪いことではない
 
-Arrays are stored contiguously in memory, lending themselves to CPU vectorization
-and fewer memory accesses due to caching. These are the same reasons that it is recommended
-to access arrays in column-major order (see above). Irregular access patterns and non-contiguous views
-can drastically slow down computations on arrays because of non-sequential memory access.
+配列はメモリ内に連続して格納されているため，CPUのベクトル化やキャッシュによるメモリアクセス
+が少なくなります．これらの理由は，配列に列メジャー順でアクセスすることが推奨されているのと
+同じです（上記参照）．不規則なアクセスパターンと非連続ビューは，非連続メモリアクセスのため，
+配列上の計算を大幅に遅くする可能性があります．
 
-Copying irregularly-accessed data into a contiguous array before operating on it can result
-in a large speedup, such as in the example below. Here, a matrix and a vector are being accessed at
-800,000 of their randomly-shuffled indices before being multiplied. Copying the views into
-plain arrays speeds up the multiplication even with the cost of the copying operation.
+不規則にアクセスされたデータを連続する配列にコピーしてから操作すると，以下の例のように，
+大幅な高速化が得られます．ここでは行列とベクトルが乗算される前に，ランダムにシャッフル
+された800,000個のインデックスでアクセスされています．ビューをプレーンな配列にコピーする
+ことで，コピー操作のコストを払ってでも乗算を高速化することができます．
 
 ```julia-repl
 julia> using Random
@@ -1094,41 +1075,43 @@ julia> @time begin
 -4256.759568345134
 ```
 
-Provided there is enough memory for the copies, the cost of copying the view to an array is
-far outweighed by the speed boost from doing the matrix multiplication on a contiguous array.
+コピーするのに十分なメモリがあれば，ビューを配列にコピーするコストよりも，連続する配列上で
+行列の乗算を行うことによる速度の向上の方が勝ります．
 
-## Avoid string interpolation for I/O
+## I/Oのための文字列補間を避ける
 
 When writing data to a file (or other I/O device), forming extra intermediate strings is a source
 of overhead. Instead of:
+ファイル（または他のI/Oデバイス）にデータを書き込む際，余分な中間文字列を形成することは
+オーバーヘッドの原因となります．以下の式:
 
 ```julia
 println(file, "$a $b")
 ```
 
-use:
+の代わりに，以下の式を使用してください:
 
 ```julia
 println(file, a, " ", b)
 ```
 
-The first version of the code forms a string, then writes it to the file, while the second version
-writes values directly to the file. Also notice that in some cases string interpolation can be
-harder to read. Consider:
+最初のバージョンのコードは文字列を形成してからファイルに書き込み，2番目のバージョンは値を
+直接ファイルに書き込みます．また場合によっては文字列の補間が読みにくくなることにも注意
+してください．以下の2つを比べてみましょう:
 
 ```julia
 println(file, "$(f(a))$(f(b))")
 ```
 
-versus:
+と:
 
 ```julia
 println(file, f(a), f(b))
 ```
 
-## Optimize network I/O during parallel execution
+## 並列実行時のネットワークI/Oの最適化
 
-When executing a remote function in parallel:
+リモート関数を並列に実行する場合，初めの例:
 
 ```julia
 using Distributed
@@ -1141,7 +1124,7 @@ responses = Vector{Any}(undef, nworkers())
 end
 ```
 
-is faster than:
+の方が次の例よりも高速です:
 
 ```julia
 using Distributed
@@ -1153,56 +1136,43 @@ end
 responses = [fetch(r) for r in refs]
 ```
 
-The former results in a single network round-trip to every worker, while the latter results in
-two network calls - first by the [`@spawnat`](@ref) and the second due to the [`fetch`](@ref)
-(or even a [`wait`](@ref)).
-The [`fetch`](@ref)/[`wait`](@ref) is also being executed serially resulting in an overall poorer performance.
+前者は全てのワーカへのネットワークランドトリップが1回になるのに対し，後者は2回のネットワーク
+コールが発生します．この2回のうち最初は[`@spawnat`](@ref)によるもの，2回目は[`fetch`](@ref)
+（あるいは[`wait`](@ref)）によるものです．[`fetch`](@ref)/[`wait`](@ref)もシリアルに実行
+されているため，全体的にパフォーマンスが低下してしまいます．
 
-## Fix deprecation warnings
+## 非推奨の警告を修正する
 
-A deprecated function internally performs a lookup in order to print a relevant warning only once.
-This extra lookup can cause a significant slowdown, so all uses of deprecated functions should
-be modified as suggested by the warnings.
+非推奨の関数は，関連する警告を一度だけ表示するために内部的にルックアップを実行します．
+この余分なルックアップは大幅な速度低下を引き起こす可能性があるため，非推奨関数の使用は
+全て，警告で示唆されているように修正しなければなりません．
 
-## Tweaks
+## 調整
 
-These are some minor points that might help in tight inner loops.
+これらはタイトなインナループに役立つかもしれない細かなポイントです．
 
-  * Avoid unnecessary arrays. For example, instead of [`sum([x,y,z])`](@ref) use `x+y+z`.
-  * Use [`abs2(z)`](@ref) instead of [`abs(z)^2`](@ref) for complex `z`. In general, try to rewrite
-    code to use [`abs2`](@ref) instead of [`abs`](@ref) for complex arguments.
-  * Use [`div(x,y)`](@ref) for truncating division of integers instead of [`trunc(x/y)`](@ref), [`fld(x,y)`](@ref)
-    instead of [`floor(x/y)`](@ref), and [`cld(x,y)`](@ref) instead of [`ceil(x/y)`](@ref).
+  * 不要な配列を避ける．例えば[`sum([x,y,z])`](@ref)の代わりに`x+y+z`を使う．
+  * 複素数`z`の場合は，[`abs(z)^2`](@ref)ではなく[`abs2(z)`](@ref)を使う．一般的には，複素数引数に[`abs`](@ref)の代わりに[`abs2`](@ref)を使うようにコードを書き換える．
+  * 整数の切り捨て除算には[`trunc(x/y)`](@ref)の代わりに[`div(x,y)`](@ref)を，[`floor(x/y)`](@ref)の代わりに[`fld(x,y)`](@ref)を，[`ceil(x/y)`](@ref)の代わりに[`cld(x,y)`](@ref)を使うようにする．
 
-## [Performance Annotations](@id man-performance-annotations)
+## [パフォーマンスアノテーション](@id man-performance-annotations)
 
-Sometimes you can enable better optimization by promising certain program properties.
+特定のプログラムのプロパティを約束することで，より良い最適化が可能になることがあります．
 
-  * Use [`@inbounds`](@ref) to eliminate array bounds checking within expressions. Be certain before doing
-    this. If the subscripts are ever out of bounds, you may suffer crashes or silent corruption.
-  * Use [`@fastmath`](@ref) to allow floating point optimizations that are correct for real numbers, but lead
-    to differences for IEEE numbers. Be careful when doing this, as this may change numerical results.
-    This corresponds to the `-ffast-math` option of clang.
-  * Write [`@simd`](@ref) in front of `for` loops to promise that the iterations are independent and may be
-    reordered.  Note that in many cases, Julia can automatically vectorize code without the `@simd` macro;
-    it is only beneficial in cases where such a transformation would otherwise be illegal, including cases
-    like allowing floating-point re-associativity and ignoring dependent memory accesses (`@simd ivdep`).
-    Again, be very careful when asserting `@simd` as erroneously annotating a loop with dependent iterations
-    may result in unexpected results. In particular, note that `setindex!` on some `AbstractArray` subtypes is
-    inherently dependent upon iteration order. **This feature is experimental**
-    and could change or disappear in future versions of Julia.
+  * [`@inbounds`](@ref)を使用して，式内の配列の境界チェックを排除することができます．これを行う前に確認してください．添え字が範囲外になるようなことがあると，クラッシュやサイレント故障が発生する可能性があります．
+  * [`@fastmath`](@ref)を使用すると，実数では正しい浮動小数点最適化が可能になりますが，IEEE数では違いが生じます．これを行う際には，数値結果が変化する可能性があるので注意してください．これはclangの`-ffast-math`オプションに相当します．
+  * `for`ループの前に[`@simd`](@ref)を書くことで，反復が独立しており，順序を変えても良いことを約束します．多くの場合，Juliaは`@simd`マクロを使わなくても自動的にコードをベクトル化できることに注意してください．それは，浮動小数点の再関連付けを許可したり依存するメモリアクセスを無視したり（`@simd ivdep`）するような場合など，そのような変換がイリーガルな場合にのみ有効です．繰り返しになりますが，`@simd`をアサートする際には非常に注意が必要で，依存関係のあるループに間違ってアノテートしてしまうと予期せぬ結果につながる場合があります．特に，いくつかの`AbstractArray`サブタイプの`setindex!`は本質的に反復順序に依存していることに注意してください．**この機能は実験的なもの**であり，将来のJuliaのバージョンでは変更されたり消えたりする可能性があります．
 
-The common idiom of using 1:n to index into an AbstractArray is not safe if the Array uses unconventional indexing,
-and may cause a segmentation fault if bounds checking is turned off. Use `LinearIndices(x)` or `eachindex(x)`
-instead (see also [Arrays with custom indices](@ref man-custom-indices)).
+1:nを使用してAbstractArrayにインデックスを作成するという一般的な慣用句は，配列が一般的でない
+インデックスを使用している場合には安全ではなく，境界チェックがオフになっている場合にセグメン
+テーションエラーを引き起こす可能性があります．代わりに`LinearIndices(x)`または`eachindex(x)`
+を使用してください（[カスタムインデックスを持つ配列](@ref man-custom-indices)も参照してください）．
 
 !!! note
-    While `@simd` needs to be placed directly in front of an innermost `for` loop, both `@inbounds` and `@fastmath`
-    can be applied to either single expressions or all the expressions that appear within nested blocks of code, e.g.,
-    using `@inbounds begin` or `@inbounds for ...`.
+    `@simd`は一番内側の`for`ループの前に直接配置する必要がありますが，`@inbounds`や`@fastmath`はいずれも単一の式，またはコードの入れ子になったブロック内に現れる全ての式に適用できます．（例えば，`@inbounds begin`や`@inbounds for ...`を使用するなど）
 
-Here is an example with both `@inbounds` and `@simd` markup (we here use `@noinline` to prevent
-the optimizer from trying to be too clever and defeat our benchmark):
+ここでは，`@inbounds`と`@simd`の両方をマークアップした例を示します（ここではオプティマイザが
+賢くなりすぎてベンチマークを破ろうとするのを防ぐために`@noinline`を使用しています）:
 
 ```julia
 @noinline function inner(x, y)
@@ -1238,17 +1208,17 @@ end
 timeit(1000, 1000)
 ```
 
-On a computer with a 2.4GHz Intel Core i5 processor, this produces:
+2.4GHz Intel Core i5プロセッサを搭載したコンピュータでは，以下のような結果が得られます:
 
 ```
 GFlop/sec        = 1.9467069505224963
 GFlop/sec (SIMD) = 17.578554163920018
 ```
 
-(`GFlop/sec` measures the performance, and larger numbers are better.)
+(`GFlop/sec` で性能を測定しており，大きいほど良いです．)
 
-Here is an example with all three kinds of markup. This program first calculates the finite difference
-of a one-dimensional array, and then evaluates the L2-norm of the result:
+ここでは3種類のマークアップを用いた例を示します．このプログラムはまず一次元配列の有限差分を
+計算し，その結果のL2ノルムを評価します:
 
 ```julia
 function init!(u::Vector)
@@ -1299,7 +1269,7 @@ end
 main()
 ```
 
-On a computer with a 2.7 GHz Intel Core i7 processor, this produces:
+2.7GHz Intel Core i7プロセッサ上で実行すると，次のような結果になります:
 
 ```
 $ julia wave.jl;
@@ -1311,26 +1281,24 @@ $ julia --math-mode=ieee wave.jl;
 4.443986180758249
 ```
 
-Here, the option `--math-mode=ieee` disables the `@fastmath` macro, so that we can compare results.
+ここでは，オプション`--math-mode=ieee`は`@fastmath`マクロを無効にしているため，我々は結果を比較することができます．
 
-In this case, the speedup due to `@fastmath` is a factor of about 3.7. This is unusually large
-– in general, the speedup will be smaller. (In this particular example, the working set of the
-benchmark is small enough to fit into the L1 cache of the processor, so that memory access latency
-does not play a role, and computing time is dominated by CPU usage. In many real world programs
-this is not the case.) Also, in this case this optimization does not change the result – in
-general, the result will be slightly different. In some cases, especially for numerically unstable
-algorithms, the result can be very different.
+この場合，`@fastmath`による高速化は約3.7倍になります．これは異常に大きいです．一般的には
+スピードアップはもっと小さくなります．（この特定の例では，ベンチマークの作業セットは
+プロセッサのL1キャッシュに収まるほど小さいため，メモリアクセスのレイテンシは役割を果たさず，
+計算時間はCPU使用率に支配されます．多くの実世界のプログラムではこのようなことはありません．）
+また，この場合，この最適化を行っても計算結果は変わりません．一般的には，結果はわずかに異なます．場合によっては，特に数値的に不安定なアルゴリズムの場合，結果が大きく異なることがあります．
 
-The annotation `@fastmath` re-arranges floating point expressions, e.g. changing the order of
-evaluation, or assuming that certain special cases (inf, nan) cannot occur. In this case (and
-on this particular computer), the main difference is that the expression `1 / (2*dx)` in the function
-`deriv` is hoisted out of the loop (i.e. calculated outside the loop), as if one had written
-`idx = 1 / (2*dx)`. In the loop, the expression `... / (2*dx)` then becomes `... * idx`, which
-is much faster to evaluate. Of course, both the actual optimization that is applied by the compiler
-as well as the resulting speedup depend very much on the hardware. You can examine the change
-in generated code by using Julia's [`code_native`](@ref) function.
+`@fastmath`は浮動小数点式を再配置します．例えば評価の順序を変更したり，特定の特殊なケース
+（inf, nan）が発生しないと仮定したりします．この場合（そしてこの特定のコンピュータでは），
+主な違いは関数`deriv`の式`1 / (2*dx)`が，まるで`idx = 1 / (2*dx)`と書いたかのように，
+ループの外に持ち出される（つまり，ループの外で計算される）ということです．ループ内では，
+式`... / (2*dx)`は`... * idx`となり，評価がより速くなり．もちろん，コンパイラによって
+適用される実際の最適化とその結果の高速化は，ハードウェアに大きく依存します．生成された
+コードの変化はJuliaの[`code_native`](@ref)関数を使って調べることができます．
 
-Note that `@fastmath` also assumes that `NaN`s will not occur during the computation, which can lead to surprising behavior:
+また，`@fastmath`は計算中に`NaN`sが発生しないことを前提としているため，驚くような動作をする
+可能性があることに注意してください．
 
 ```julia-repl
 julia> f(x) = isnan(x);
@@ -1344,15 +1312,16 @@ julia> f_fast(NaN)
 false
 ```
 
-## Treat Subnormal Numbers as Zeros
+## 非正規化数をゼロとして扱う
 
-Subnormal numbers, formerly called [denormal numbers](https://en.wikipedia.org/wiki/Denormal_number),
-are useful in many contexts, but incur a performance penalty on some hardware. A call [`set_zero_subnormals(true)`](@ref)
-grants permission for floating-point operations to treat subnormal inputs or outputs as zeros,
-which may improve performance on some hardware. A call [`set_zero_subnormals(false)`](@ref) enforces
-strict IEEE behavior for subnormal numbers.
+以前は[denormal numbers](https://en.wikipedia.org/ことがwiki/Denormal_number)と呼ばれていた
+非正規化数（原文subnormal numbers）は，多くの文脈で有用ですが，ハードウェアによっては
+パフォーマンスが低下します．[`set_zero_subnormals(true)`](@ref)をコールすると，浮動小数点
+演算で非正規化数の入力または出力をゼロとして扱うことができるようになります．
+[`set_zero_subnormals(false)`](@ref)を呼び出すと，正規化数以下の数値に対しては厳格なIEEEの
+動作が強制されます．
 
-Below is an example where subnormals noticeably impact performance on some hardware:
+以下に非正規化数が一部のハードウェアで顕著にパフォーマンスに影響を与える例を示します:
 
 ```julia
 function timestep(b::Vector{T}, a::Vector{T}, Δt::T) where T
@@ -1381,7 +1350,7 @@ for trial=1:6
 end
 ```
 
-This gives an output similar to
+これにより以下のような結果が得られます．
 
 ```
   0.002202 seconds (1 allocation: 4.063 KiB)
@@ -1392,13 +1361,13 @@ This gives an output similar to
   0.001455 seconds (1 allocation: 4.063 KiB)
 ```
 
-Note how each even iteration is significantly faster.
+偶数回の繰り返しの度に速くなっていることに注目してください．
 
-This example generates many subnormal numbers because the values in `a` become an exponentially
-decreasing curve, which slowly flattens out over time.
+この例では，`a`の値が指数関数的に減少する曲線となり時間の経過とともにゆっくりと平らになるため，
+多くの非正規化数が生成されます．
 
-Treating subnormals as zeros should be used with caution, because doing so breaks some identities,
-such as `x-y == 0` implies `x == y`:
+非正規化数をゼロとして扱うのには注意が必要です．なぜなら`x-y == 0`が`x == y`を意味している
+というような，いくつかの等式関係を破ることになるからです:
 
 ```jldoctest
 julia> x = 3f-38; y = 2f-38;
@@ -1410,17 +1379,17 @@ julia> set_zero_subnormals(false); (x - y, x == y)
 (1.0000001f-38, false)
 ```
 
-In some applications, an alternative to zeroing subnormal numbers is to inject a tiny bit of noise.
- For example, instead of initializing `a` with zeros, initialize it with:
+アプリケーションによっては，非正規化数をゼロにする代わりに，わずかなノイズを注入する
+こともあります．例えば，`a`をゼロで初期化する代わりに，以下のようにします:
 
 ```julia
 a = rand(Float32,1000) * 1.f-9
 ```
 
-## [[`@code_warntype`](@ref)](@id man-code-warntype)
+## [[`@code_warntype`](@ref)マクロ](@id man-code-warntype)
 
-The macro [`@code_warntype`](@ref) (or its function variant [`code_warntype`](@ref)) can sometimes
-be helpful in diagnosing type-related problems. Here's an example:
+マクロ[`@code_warntype`](@ref)（またはその関数版[`code_warntype`](@ref)）は，型関連の
+問題を診断するのに役立つことがあります．ここでは例を示します:
 
 ```julia-repl
 julia> @noinline pos(x) = x < 0 ? 0 : x;
@@ -1444,62 +1413,56 @@ Body::Float64
 └──      return %4
 ```
 
-Interpreting the output of [`@code_warntype`](@ref), like that of its cousins [`@code_lowered`](@ref),
-[`@code_typed`](@ref), [`@code_llvm`](@ref), and [`@code_native`](@ref), takes a little practice.
-Your code is being presented in form that has been heavily digested on its way to generating
-compiled machine code. Most of the expressions are annotated by a type, indicated by the `::T`
-(where `T` might be [`Float64`](@ref), for example). The most important characteristic of [`@code_warntype`](@ref)
-is that non-concrete types are displayed in red; since this document is written in Markdown, which has no color,
-in this document, red text is denoted by uppercase.
+[`@code_llvm`](@ref)，[`@code_native`](@ref)の出力と同様に解釈するには，少し練習が必要です．
+あなたのコードは，コンパイルされたマシンコードを生成する途中で大きく要約された形で表示され
+ます．ほとんどの式は型によってアノテーションされており，`::T`で表されています（ここで，Tは
+例えば[`Float64`](@ref)のようなものです）．[`@code_warntype`](@ref)の最も重要な特徴は，
+具体的でない(non-concrete)型が赤で表示されることです．このドキュメント自体はMarkdownで書かれ
+ているので，このドキュメントでは赤文字は大見字で書いています．
 
-At the top, the inferred return type of the function is shown as `Body::Float64`.
-The next lines represent the body of `f` in Julia's SSA IR form.
-The numbered boxes are labels and represent targets for jumps (via `goto`) in your code.
-Looking at the body, you can see that the first thing that happens is that `pos` is called and the
-return value has been inferred as the `Union` type `UNION{FLOAT64, INT64}` shown in uppercase since
-it is a non-concrete type. This means that we cannot know the exact return type of `pos` based on the
-input types. However, the result of `y*x`is a `Float64` no matter if `y` is a `Float64` or `Int64`
-The net result is that `f(x::Float64)` will not be type-unstable
-in its output, even if some of the intermediate computations are type-unstable.
+上部には，関数の推測される戻り値の型が`Body::Float64`として表示されています．次の行は，
+JuliaのSSA IRフォームにおける`f`のボディを表しています．番号のついたボックスはラベルであり，
+コード内のジャンプ（`goto`経由）のターゲットを表しています．ボディを見てみると，まず`pos`が
+呼び出され，戻り値はnon-concrete型であるため，大文字で示された`Union`型の`UNION{FLOAT64, INT64}`
+と推論されていることがわかります．つまり入力された型から`pos`の正確な戻り値の型を知ることは
+できません．しかし`y*x`の結果は，`y`が`Float64`であろうと`Int64`であろうと，関係なく`Float64`
+となります．結果として，`f(x::Float64)`の出力は，たとえ中間の計算の一部が型不安定であったと
+しても型不安定にはなりません．
 
-How you use this information is up to you. Obviously, it would be far and away best to fix `pos`
-to be type-stable: if you did so, all of the variables in `f` would be concrete, and its performance
-would be optimal. However, there are circumstances where this kind of *ephemeral* type instability
-might not matter too much: for example, if `pos` is never used in isolation, the fact that `f`'s
-output is type-stable (for [`Float64`](@ref) inputs) will shield later code from the propagating
-effects of type instability. This is particularly relevant in cases where fixing the type instability
-is difficult or impossible. In such cases, the tips above (e.g., adding type annotations and/or
-breaking up functions) are your best tools to contain the "damage" from type instability.
-Also, note that even Julia Base has functions that are type unstable.
-For example, the function [`findfirst`](@ref) returns the index into an array where a key is found,
-or `nothing` if it is not found, a clear type instability. In order to make it easier to find the
-type instabilities that are likely to be important, `Union`s containing either `missing` or `nothing`
-are color highlighted in yellow, instead of red.
+この情報をどのように使うかはあなた次第です．明らかに，`pos`を型安定な形に直すのが断然最善
+です．そうすれば`f`の全ての変数が具体的(concrete)になり，その性能は最適になります．
+しかし，このような*一時的な*型の不安定があまり重要でない状況もあります．例えば，`pos`を
+単独で使用することがない場合，`f`の出力が（[`Float64`](@ref)入力に対して）型安定である
+という事実は，型の不安定性の影響が伝搬することから後のコードを保護します．これは，型の不安定
+性を修正することが難しい，あるいは不可能な場合に特に重要です．このような場合には，上記の
+ヒント（例えば，型のアノテーションを追加したり，関数を分割したりする）が，型の不安定性に
+よる「ダメージ」をおさえるための最良のツールとなります．また，Julia Baseにも型が不安定な
+関数があることにも注意してください．例えば，関数[`findfirst`](@ref)は，キーが見つかった配列
+のインデックスまたは見つからなければ`nothing`を返しますが，これは明らかに型不安定です．
+重要である可能性の高い型の不安定性を見つけやすくするために，`missing`か`nothing`を含む
+`Union`は赤ではなく黄色で色分けされています．
 
-The following examples may help you interpret expressions marked as containing non-leaf types:
+以下の例は非リーフ(non-leaf)型を含むとマークされた式を解釈するのに役立つかもしれません:
 
-  * Function body starting with `Body::UNION{T1,T2})`
-      * Interpretation: function with unstable return type
-      * Suggestion: make the return value type-stable, even if you have to annotate it
+  * `Body::UNION{T1,T2})`で始まる関数のボディ
+      * 解釈: 不安定な戻り値を持つ関数
+      * 提案: 返り値を型が安定しているものにします
 
   * `invoke Main.g(%%x::Int64)::UNION{FLOAT64, INT64}`
-      * Interpretation: call to a type-unstable function `g`.
-      * Suggestion: fix the function, or if necessary annotate the return value
-
+      * 解釈: 型不安定な関数`g`の呼び出し
+      * 提案: 関数を修正するか，必要であれば戻り値にアノテーションをつけます
+  
   * `invoke Base.getindex(%%x::Array{Any,1}, 1::Int64)::ANY`
-      * Interpretation: accessing elements of poorly-typed arrays
-      * Suggestion: use arrays with better-defined types, or if necessary annotate the type of individual
-        element accesses
+      * 解釈: 型付けの悪い配列の要素へのアクセス
+      * 提案: より良い定義の型を持つ配列を使用するか，必要に応じて個々の要素のアクセスの型をアノテーションします
 
   * `Base.getfield(%%x, :(:data))::ARRAY{FLOAT64,N} WHERE N`
-      * Interpretation: getting a field that is of non-leaf type. In this case, `ArrayContainer` had a
-        field `data::Array{T}`. But `Array` needs the dimension `N`, too, to be a concrete type.
-      * Suggestion: use concrete types like `Array{T,3}` or `Array{T,N}`, where `N` is now a parameter
-        of `ArrayContainer`
+      * 解釈: non-leaf型のフィールドを取得しています．この場合`ArrayContainer`はフィールド`data::Array{T}`を持っていました．しかし，`Array`がconcreteな型であるためには次元`N`も必要です
+      * 提案: `Array{T,3}`や`Array{T,N}`（`N`はここでは`ArrayContainer`のパラメータです）のようなconcreteな型を使用してください
 
-## [Performance of captured variable](@id man-performance-captured)
+## [キャプチャされた変数の性能](@id man-performance-captured)
 
-Consider the following example that defines an inner function:
+内部関数を定義する次の例を考えてみましょう:
 ```julia
 function abmult(r::Int)
     if r < 0
@@ -1510,40 +1473,33 @@ function abmult(r::Int)
 end
 ```
 
-Function `abmult` returns a function `f` that multiplies its argument by
-the absolute value of `r`. The inner function assigned to `f` is called a
-"closure". Inner functions are also used by the
-language for `do`-blocks and for generator expressions.
+関数`abmult`は，引数に`r`の絶対値を乗算する関数`f`を返します．`f`に割り当てられた
+内部関数は「クロージャ」と呼ばれます．内部関数は`do`ブロックやジェネレータ式にも
+使用されます．
 
-This style of code presents performance challenges for the language.
-The parser, when translating it into lower-level instructions,
-substantially reorganizes the above code by extracting the
-inner function to a separate code block.  "Captured" variables such as `r`
-that are shared by inner functions and their enclosing scope are
-also extracted into a heap-allocated "box" accessible to both inner and
-outer functions because the language specifies that `r` in the
-inner scope must be identical to `r` in the outer scope even after the
-outer scope (or another inner function) modifies `r`.
+このコードスタイルは，言語のパフォーマンスに課題があります．パーサは，これを低レベル命令
+に変換する際に，内部関数を別のコードブロックに抽出することで，上記のコード大幅に再編成
+します．内部関数とそれを囲むスコープで共有されている`r`のような「キャプチャ」された変数
+もまた，ヒープに割り当てられた「ボックス」に抽出され，内部スコープ内の`r`は外部スコープ
+（または別の内部関数）が`r`を変更した後でも，外部スコープ内の`r`と同一でならなければ
+ならないことが言語で指定されているため，内部関数と外部関数の両方からアクセス可能です．
 
-The discussion in the preceding paragraph referred to the "parser", that is, the phase
-of compilation that takes place when the module containing `abmult` is first loaded,
-as opposed to the later phase when it is first invoked. The parser does not "know" that
-`Int` is a fixed type, or that the statement `r = -r` transforms an `Int` to another `Int`.
-The magic of type inference takes place in the later phase of compilation.
+前の段ランクの議論では「パーサ」，つまり`abmult`を含むモジュールが最初にロードされた時に
+行われるコンパイルの段階について言及しましたが，それは最初に呼び出されたときの後の段階とは
+対照的です．パーサは`Int`が固定された型であることや，`r = -r`が`Int`を別の`Int`に変換する
+ことを「知っている」わけではありません．型推論の魔法はコンパイルの後の段階で行われます．
 
-Thus, the parser does not know that `r` has a fixed type (`Int`).
-nor that `r` does not change value once the inner function is created (so that
-the box is unneeded).  Therefore, the parser emits code for
-box that holds an object with an abstract type such as `Any`, which
-requires run-time type dispatch for each occurrence of `r`.  This can be
-verified by applying `@code_warntype` to the above function.  Both the boxing
-and the run-time type dispatch can cause loss of performance.
+したがって，パーサは`r`が固定型（`Int`)であることを知りませんし，（ボックスが不要になるように）
+内部関数が作成されても`r`が値を変更しないことも知りません．したがって，パーサは`Any`などの
+`r`の出現ごとにランタイム型ディスパッチが必要になるような抽象型を持つオブジェクトを保持して
+いるボックスのコードを出力します．これは上記の関数に`@code_warntype`を適用することで検証
+できます．ボックス化とランタイム型ディスパッチの両方がパフォーマンスの低下を引き起こす可能性
+があります．
 
-If captured variables are used in a performance-critical section of the code,
-then the following tips help ensure that their use is performant. First, if
-it is known that a captured variable does not change its type, then this can
-be declared explicitly with a type annotation (on the variable, not the
-right-hand side):
+キャプチャされた変数がコードのパフォーマンスクリティカルなセクションで使用されている場合，
+以下のヒントはそれらの使用がパフォーマンスを発揮することの保証に役立ちます．最初に，
+キャプチャされた変数がその方を変更しないことがわかっている場合，これは型アノテーションで
+明示的に宣言することができます（変数の右側ではなく，変数の上で）:
 ```julia
 function abmult2(r0::Int)
     r::Int = r0
@@ -1554,11 +1510,10 @@ function abmult2(r0::Int)
     return f
 end
 ```
-The type annotation partially recovers lost performance due to capturing because
-the parser can associate a concrete type to the object in the box.
-Going further, if the captured variable does not need to be boxed at all (because it
-will not be reassigned after the closure is created), this can be indicated
-with `let` blocks as follows.
+型アノテーションは，パーサがボックス内のオブジェクトにconcreteな型を関連付けることができる
+ので，キャプチャによるパフォーマンスの低下を部分的に回復します．さらに，キャプチャされた
+変数をボックスに入れる必要がない場合，（クロージャが作成された後に再割り当てされないため），
+次のように`let`ブロックを使用して表示することができます．
 ```julia
 function abmult3(r::Int)
     if r < 0
@@ -1570,19 +1525,17 @@ function abmult3(r::Int)
     return f
 end
 ```
-The `let` block creates a new variable `r` whose scope is only the
-inner function. The second technique recovers full language performance
-in the presence of captured variables. Note that this is a rapidly
-evolving aspect of the compiler, and it is likely that future releases
-will not require this degree of programmer annotation to attain performance.
-In the mean time, some user-contributed packages like
-[FastClosures](https://github.com/c42f/FastClosures.jl) automate the
-insertion of `let` statements as in `abmult3`.
+`let`ブロックは，スコープが内部関数のみである新しい変数`r`を作成します．2番目のテクニック
+は，キャプチャされた変数の存在下で完全な言語性能を回復します．これはコンパイラの急速に進化
+している側面であり，将来のリリースではし恵能を達成するためにプログラムがこの程度の
+アノテーションを必要としなくなる可能性があることに注意してください．その間に，
+[FastClosures](https://github.com/c42f/FastClosures.jl)のようなユーザが貢献している
+パッケージでは，`abmult3`のように`let`文の挿入を自動化しています．
 
-# Checking for equality with a singleton
+# シングルトンでの同等性のチェック
 
-When checking if a value is equal to some singleton it can be
-better for performance to check for identicality (`===`) instead of
-equality (`==`). The same advice applies to using `!==` over `!=`.
-These type of checks frequently occur e.g. when implementing the iteration
-protocol and checking if `nothing` is returned from [`iterate`](@ref).
+ある値がシングルトンと等しいかどうかをチェックする時は，イコール(`==`)ではなく
+同一性(`===`)をチェックした方が性能的に良い場合があります．同じアドバイスが，
+`!=`よりも`!==`を使う場合にも当てはまります．この種のチェックは，例えば，反復
+処理プロトコルを実装していて，[`iterate`](@ref)から`nothing`が返ってくるかどうか
+をチェックするときなどに頻繁に発生します．

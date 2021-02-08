@@ -1,26 +1,19 @@
-# Running External Programs
+# 外部プログラムの実行
 
-Julia borrows backtick notation for commands from the shell, Perl, and Ruby. However, in Julia,
-writing
+JuliaはShell，Perl，Rubyのコマンドのバックティック記法を借用しています．しかしJuliaで以下のような書き方
 
 ```jldoctest
 julia> `echo hello`
 `echo hello`
 ```
 
-differs in several aspects from the behavior in various shells, Perl, or Ruby:
+をすると，様々なShellやPerl,Rubyでの動作といくつかの点で異なるものになります:
 
-  * Instead of immediately running the command, backticks create a [`Cmd`](@ref) object to represent the command.
-    You can use this object to connect the command to others via pipes, [`run`](@ref) it, and [`read`](@ref) or [`write`](@ref)
-    to it.
-  * When the command is run, Julia does not capture its output unless you specifically arrange for
-    it to. Instead, the output of the command by default goes to [`stdout`](@ref) as it would using
-    `libc`'s `system` call.
-  * The command is never run with a shell. Instead, Julia parses the command syntax directly, appropriately
-    interpolating variables and splitting on words as the shell would, respecting shell quoting syntax.
-    The command is run as `julia`'s immediate child process, using `fork` and `exec` calls.
+  * コマンドをすぐに実行するのではなく，バックティックはコマンドを表わす[`Cmd`](@ref)オブジェクトを作成します．このオブジェクトを使ってパイプを介してそれを[`run`](@ref)したり，[`read`](@ref)や[`write`](@ref)したりすることができます．
+  * コマンドが実行されると，特に指定しない限り，Juliaはその出力をキャプチャしません．その代わりに，コマンドの出力は`libc`の`system`コールを使用した場合と同様にデフォルトで[`stdout`](@ref)に出力されます．
+  * コマンドはシェルで実行されることはありません．代わりにJuliaはコマンドの構文を直接解析し，シェルの引用構文を尊重しながら，シェルが行うように変数を適切に補間したり，単語を分割したりします．コマンドは`julia`の直系の子プロセスとして実行され，`fork`と`exec`呼び出しを使用します．
 
-Here's a simple example of running an external program:
+ここに外部プログラムを実行する簡単な例があります:
 
 ```jldoctest
 julia> mycommand = `echo hello`
@@ -33,11 +26,11 @@ julia> run(mycommand);
 hello
 ```
 
-The `hello` is the output of the `echo` command, sent to [`stdout`](@ref). The run method itself
-returns `nothing`, and throws an [`ErrorException`](@ref) if the external command fails to run
-successfully.
+`hello`は[`stdout`](@ref)に送られた`echo`コマンドの出力です．runメソッドそのものは`nothing`を返し，
+外部コマンドの実行に失敗した場合には[`ErrorException`](@ref)をスローします．
 
-If you want to read the output of the external command, [`read`](@ref) can be used instead:
+
+外部コマンドの出力を読み込みたい場合には，代わりに[`read`](@ref)を使用することができます:
 
 ```jldoctest
 julia> a = read(`echo hello`, String)
@@ -47,7 +40,7 @@ julia> chomp(a) == "hello"
 true
 ```
 
-More generally, you can use [`open`](@ref) to read from or write to an external command.
+より一般的には，[`open`](@ref)を使用して外部コマンドを読み込んだり書き込んだりすることができます．
 
 ```jldoctest
 julia> open(`less`, "w", stdout) do io
@@ -60,8 +53,7 @@ julia> open(`less`, "w", stdout) do io
 3
 ```
 
-The program name and the individual arguments in a command can be accessed
-and iterated over as if the command were an array of strings:
+プログラム名とコマンド内の個々の引数にアクセスして，あたかもコマンドが文字列の配列であるかのように反復処理することができます．
 ```jldoctest
 julia> collect(`echo "foo bar"`)
 2-element Array{String,1}:
@@ -72,11 +64,10 @@ julia> `echo "foo bar"`[2]
 "foo bar"
 ```
 
-## [Interpolation](@id command-interpolation)
+## [補間](@id command-interpolation)
 
-Suppose you want to do something a bit more complicated and use the name of a file in the variable
-`file` as an argument to a command. You can use `$` for interpolation much as you would in a string
-literal (see [Strings](@ref)):
+もう少し複雑なことをして，変数`file`のファイル名をコマンドの引数として使いたいとしましょう．
+文字列リテラルの場合と同じように，補間に`$`を使うことができます（[Strings](@ref)を参照してください）．
 
 ```jldoctest
 julia> file = "/etc/passwd"
@@ -86,10 +77,10 @@ julia> `sort $file`
 `sort /etc/passwd`
 ```
 
-A common pitfall when running external programs via a shell is that if a file name contains characters
-that are special to the shell, they may cause undesirable behavior. Suppose, for example, rather
-than `/etc/passwd`, we wanted to sort the contents of the file `/Volumes/External HD/data.csv`.
-Let's try it:
+シェル経由で外部プログラムを実行する際によくある落とし穴は，ファイル名にシェルにとって特別な
+文字が含まれている場合に，望ましくない動作を引き起こす可能性があるということです．例えば，
+`/etc/passwd`の代わりに，`/Volumes/External HD/data.csv`というファイルの内容をソートしたいと
+します．試してみましょう:
 
 ```jldoctest
 julia> file = "/Volumes/External HD/data.csv"
@@ -99,11 +90,10 @@ julia> `sort $file`
 `sort '/Volumes/External HD/data.csv'`
 ```
 
-How did the file name get quoted? Julia knows that `file` is meant to be interpolated as a single
-argument, so it quotes the word for you. Actually, that is not quite accurate: the value of `file`
-is never interpreted by a shell, so there's no need for actual quoting; the quotes are inserted
-only for presentation to the user. This will even work if you interpolate a value as part of a
-shell word:
+ファイル名はどうやって引用されたのでしょうか？Juliaは`file`が一つの引数として補間されること
+を知っているので，その言葉を引用しています．実際にはこれは正確ではありません．`file`の値は
+シェルによって解釈されることはありませんので，実際の引用の必要はありません．引用が挿入される
+のはユーザに提示するためだけです．これはシェルの単語の一部として値を補間しても動作します:
 
 ```jldoctest
 julia> path = "/Volumes/External HD"
@@ -119,8 +109,8 @@ julia> `sort $path/$name.$ext`
 `sort '/Volumes/External HD/data.csv'`
 ```
 
-As you can see, the space in the `path` variable is appropriately escaped. But what if you *want*
-to interpolate multiple words? In that case, just use an array (or any other iterable container):
+ご覧のように，`path`変数のスペースは適切にエスケープされています．しかし，複数の単語を補間
+したい場合はどうでしょうか？その場合は，配列（またはその他の反復可能なコンテナ）を使用します:
 
 ```jldoctest
 julia> files = ["/etc/passwd","/Volumes/External HD/data.csv"]
@@ -132,8 +122,7 @@ julia> `grep foo $files`
 `grep foo /etc/passwd '/Volumes/External HD/data.csv'`
 ```
 
-If you interpolate an array as part of a shell word, Julia emulates the shell's `{a,b,c}` argument
-generation:
+シェルの単語の一部として配列を補間すると，Juliaはシェルの`{a,b,c}`引数生成をエミュレートします:
 
 ```jldoctest
 julia> names = ["foo","bar","baz"]
@@ -146,8 +135,7 @@ julia> `grep xylophone $names.txt`
 `grep xylophone foo.txt bar.txt baz.txt`
 ```
 
-Moreover, if you interpolate multiple arrays into the same word, the shell's Cartesian product
-generation behavior is emulated:
+さらに，複数の配列を同じ単語に補間すると，シェルのデカルト積生成動作がエミュレートされます:
 
 ```jldoctest
 julia> names = ["foo","bar","baz"]
@@ -165,8 +153,7 @@ julia> `rm -f $names.$exts`
 `rm -f foo.aux foo.log bar.aux bar.log baz.aux baz.log`
 ```
 
-Since you can interpolate literal arrays, you can use this generative functionality without needing
-to create temporary array objects first:
+リテラル配列を補間できるので，最初に一時的な配列オブジェクトを作成しなくても，この生成機能を使うことができます．
 
 ```jldoctest
 julia> `rm -rf $["foo","bar","baz","qux"].$["aux","log","pdf"]`

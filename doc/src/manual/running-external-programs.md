@@ -1,4 +1,4 @@
-# 外部プログラムの実行
+# [外部プログラムの実行](@id Running-External-Programs)
 
 JuliaはShell，Perl，Rubyのコマンドのバックティック記法を借用しています．しかしJuliaで以下のような書き方
 
@@ -160,10 +160,10 @@ julia> `rm -rf $["foo","bar","baz","qux"].$["aux","log","pdf"]`
 `rm -rf foo.aux foo.log foo.pdf bar.aux bar.log bar.pdf baz.aux baz.log baz.pdf qux.aux qux.log qux.pdf`
 ```
 
-## Quoting
+## 引用
 
-Inevitably, one wants to write commands that aren't quite so simple, and it becomes necessary
-to use quotes. Here's a simple example of a Perl one-liner at a shell prompt:
+必然的に，それほど単純ではないコマンドを書きたくなって，引用符を使う必要が出てきます．
+ここでは，シェルプロンプトでのPerlのワンライナの簡単な例を示します:
 
 ```
 sh$ perl -le '$|=1; for (0..3) { print }'
@@ -173,10 +173,9 @@ sh$ perl -le '$|=1; for (0..3) { print }'
 3
 ```
 
-The Perl expression needs to be in single quotes for two reasons: so that spaces don't break the
-expression into multiple shell words, and so that uses of Perl variables like `$|` (yes, that's
-the name of a variable in Perl), don't cause interpolation. In other instances, you may want to
-use double quotes so that interpolation *does* occur:
+スペースが式を複数のシェルワードに分割しないようにするためと，`$|`のようなPerlの変数（これは
+Perlの変数名です）を使用しても補間が発生しないようにするためです．他の例では，補間が*発生する*
+ように二重引用符を使用したい場合もあるでしょう:
 
 ```
 sh$ first="A"
@@ -186,11 +185,11 @@ sh$ perl -le '$|=1; print for @ARGV' "1: $first" "2: $second"
 2: B
 ```
 
-In general, the Julia backtick syntax is carefully designed so that you can just cut-and-paste
-shell commands as is into backticks and they will work: the escaping, quoting, and interpolation
-behaviors are the same as the shell's. The only difference is that the interpolation is integrated
-and aware of Julia's notion of what is a single string value, and what is a container for multiple
-values. Let's try the above two examples in Julia:
+一般的に，Juliaのバックティック構文は慎重に設計されているので，シェルコマンドをそのまま
+バックティックにカットアンドペーストするだけで動作するようになっています．エスケープ，引用，
+補間の動作はシェルのものと同じです．唯一の違いは，補間が統合されており，何が単一の文字列で
+何が複数の値のためのコンテナであるかというJuliaの概念を認識しているということです．上記2つ
+の例をJuliaで試してみましょう:
 
 ```jldoctest
 julia> A = `perl -le '$|=1; for (0..3) { print }'`
@@ -212,15 +211,16 @@ julia> run(B);
 2: B
 ```
 
-The results are identical, and Julia's interpolation behavior mimics the shell's with some improvements
-due to the fact that Julia supports first-class iterable objects while most shells use strings
-split on spaces for this, which introduces ambiguities. When trying to port shell commands to
-Julia, try cut and pasting first. Since Julia shows commands to you before running them, you can
-easily and safely just examine its interpretation without doing any damage.
+結果は同じで，ほとんどのシェルがスペースで分割された文字列を使用して曖昧さを出してしまう一方，
+Juliaは素晴らしい反復可能オブジェクトをサポートしているという事実から，Juliaの補間動作は
+シェルのものをいくらか改善しながら真似ています．シェルコマンドをJuliaに移植使用とする時は，
+まずはカットアンドペーストを試してみてください．Juliaコマンドを実行する前にコマンドを見せて
+くれるので，ダメージを与えることなく，簡単かつ安全にコメントの解釈を調べることができます．
 
-## Pipelines
+## パイプライン
 
-Shell metacharacters, such as `|`, `&`, and `>`, need to be quoted (or escaped) inside of Julia's backticks:
+`|`や`&`，`>`といったシェルのメタ文字は，Juliaのバックティックの中では引用符を付けるか，
+エスケープする必要があります:
 
 ```jldoctest
 julia> run(`echo hello '|' sort`);
@@ -230,18 +230,17 @@ julia> run(`echo hello \| sort`);
 hello | sort
 ```
 
-This expression invokes the `echo` command with three words as arguments: `hello`, `|`, and `sort`.
-The result is that a single line is printed: `hello | sort`. How, then, does one construct a
-pipeline? Instead of using `'|'` inside of backticks, one uses [`pipeline`](@ref):
+この式は3つのワード`hello`，`|`，`sort`を引数として`echo`コマンドを呼び出します．その結果，
+`hello | sort`という一行が表示されます．では，どのようにしてパイプラインを構築するのでしょうか？
+バックティックの中で，`|`を使うかわりに，[`pipeline`](@ref)を使います．
 
 ```jldoctest
 julia> run(pipeline(`echo hello`, `sort`));
 hello
 ```
 
-This pipes the output of the `echo` command to the `sort` command. Of course, this isn't terribly
-interesting since there's only one line to sort, but we can certainly do much more interesting
-things:
+これは`echo`コマンドwを`sort`コマンドにパイプします．もちろん，これはソートする行が一行しか
+ないので，あまり面白いものではありませんが，実際もっと面白いことができます:
 
 ```julia-repl
 julia> run(pipeline(`cut -d: -f3 /etc/passwd`, `sort -n`, `tail -n5`))
@@ -252,13 +251,13 @@ julia> run(pipeline(`cut -d: -f3 /etc/passwd`, `sort -n`, `tail -n5`))
 214
 ```
 
-This prints the highest five user IDs on a UNIX system. The `cut`, `sort` and `tail` commands
-are all spawned as immediate children of the current `julia` process, with no intervening shell
-process. Julia itself does the work to setup pipes and connect file descriptors that is normally
-done by the shell. Since Julia does this itself, it retains better control and can do some things
-that shells cannot.
+これは，UNIXシステム上のユーザIDのうち，上位5つのユーザIDを表示します．`cut`，`sort`，`tail`
+コマンドは全て現在の`julia`プロセスの即席子プロセスとして生成され，シェルプロセスは介在
+しません．通常シェルが行うパイプの設定やファイルディスクリプタの接続は，Julia自身が行い
+ます．Julia自身がこれを行うので，より良い制御を保持し，シェルにはできないことを行うことが
+できます．
 
-Julia can run multiple commands in parallel:
+Juliaは複数のコマンドを並列に実行することができます:
 
 ```jldoctest; filter = r"(world\nhello|hello\nworld)"
 julia> run(`echo hello` & `echo world`);
@@ -266,10 +265,9 @@ world
 hello
 ```
 
-The order of the output here is non-deterministic because the two `echo` processes are started
-nearly simultaneously, and race to make the first write to the [`stdout`](@ref) descriptor they
-share with each other and the `julia` parent process. Julia lets you pipe the output from both
-of these processes to another program:
+2つの`echo`プロセスはほぼ同時に実行され，お互いに共有している[`stdout`](@ref)ディスクリプタ
+と`julia`親プロセスへの最初の書き込みを競って行うため，ここでの出力の順序は決定性がありませ
+ん．Juliaではこれら両方のプロセスからの出力を別のプログラムにパイプすることができます:
 
 ```jldoctest
 julia> run(pipeline(`echo world` & `echo hello`, `sort`));
@@ -277,27 +275,28 @@ hello
 world
 ```
 
-In terms of UNIX plumbing, what's happening here is that a single UNIX pipe object is created
-and written to by both `echo` processes, and the other end of the pipe is read from by the `sort`
-command.
+UNIXの配管の観点から見て，ここで何が起こっているのかというと，両方の`echo`プロセスによって
+単一のUNIXパイプオブジェクトが作成されて書き込まれ，パイプのもう一方の端が`sort`コマンド
+によって読み込まれるということになっています．
 
-IO redirection can be accomplished by passing keyword arguments `stdin`, `stdout`, and `stderr` to the
-`pipeline` function:
+
+IOリダイレクトは，キーワード変数`stdin`，`stdout`，`stderr`を`pipeline`関数に渡すことで実現できます:
 
 ```julia
 pipeline(`do_work`, stdout=pipeline(`sort`, "out.txt"), stderr="errs.txt")
 ```
 
-### Avoiding Deadlock in Pipelines
+### パイプラインでのデッドロックを避ける
 
-When reading and writing to both ends of a pipeline from a single process, it is important to
-avoid forcing the kernel to buffer all of the data.
+単一プロセスからパイプラインの両端に読み書きする場合，カーネルが全てのデータをバッファリング
+することを強制しないようにすることが重要です．
 
-For example, when reading all of the output from a command, call `read(out, String)`, not `wait(process)`,
-since the former will actively consume all of the data written by the process, whereas the latter
-will attempt to store the data in the kernel's buffers while waiting for a reader to be connected.
+例えば，コマンドからの出力を全て読み込む場合は，`wait(process)`ではなく，`read(out, String)`
+を呼び出してください．なぜなら，前者はプロセスによって書き込まれた全てのデータを積極的に
+消費するのに対し，後者はリーダが接続されるのを待っている間にカーネルのバッファにデータを
+保存しようとするからです．
 
-Another common solution is to separate the reader and writer of the pipeline into separate [`Task`](@ref)s:
+もう一つの一般的な解決策は，パイプラインのリーダとライタを別々の[`Task`](@ref)sに分離することです:
 
 ```julia
 writer = @async write(process, "data")
@@ -306,12 +305,12 @@ wait(writer)
 fetch(reader)
 ```
 
-### Complex Example
+### 複雑な例
 
-The combination of a high-level programming language, a first-class command abstraction, and automatic
-setup of pipes between processes is a powerful one. To give some sense of the complex pipelines
-that can be created easily, here are some more sophisticated examples, with apologies for the
-excessive use of Perl one-liners:
+高レベルのプログラミング言語，素晴らしいコマンド抽象化，そしてプロセス間の自動セットアップ
+の組み合わせは強力なものです．簡単に作成できる複雑なパイプラインを理解してもらうために，
+ここではより洗練された例をいくつか紹介します．Perlのワンライナを多用しすぎたことをお詫び
+しておきます:
 
 ```jldoctest prefixer; filter = r"([A-B] [0-5])"
 julia> prefixer(prefix, sleep) = `perl -nle '$|=1; print "'$prefix' ", $_; sleep '$sleep';'`;
@@ -325,15 +324,16 @@ B 4
 A 5
 ```
 
-This is a classic example of a single producer feeding two concurrent consumers: one `perl` process
-generates lines with the numbers 0 through 5 on them, while two parallel processes consume that
-output, one prefixing lines with the letter "A", the other with the letter "B". Which consumer
-gets the first line is non-deterministic, but once that race has been won, the lines are consumed
-alternately by one process and then the other. (Setting `$|=1` in Perl causes each print statement
-to flush the [`stdout`](@ref) handle, which is necessary for this example to work. Otherwise all
-the output is buffered and printed to the pipe at once, to be read by just one consumer process.)
+これは1つのプロデューサが2つの並行したコンシューマに同時に供給している例です．1つのPerl
+プロセスが0から5までの数字が書かれた行を生成し，2つの並列プロセスがその出力を消費して
+います．片方は行を「A」でプレフィックスし，もう片方は「B」でプレフィックスいます．
+どちらが最初の行を取得するかは非決定論的ですが，その競争に勝利すると，行は一方のプロセス
+ともう一方のプロセスによって交互に消費されます．（Perlで`$|=1`を設定すると，各print文は
+[`stdout`](@ref)ハンドルをフラッシュするようになります．これはこの例が動作するのに必要
+なことで，そうしないと全ての出力はバッファリングされてパイプに一度だけプリントされ，1つの
+コンシューマプロセスだけからしか読めないようになってしまいます．）
 
-Here is an even more complex multi-stage producer-consumer example:
+ここでは更に複雑な多段のプロデューサとコンシューマの例を示します:
 
 ```jldoctest prefixer; filter = r"[A-B] [X-Z] [0-5]"
 julia> run(pipeline(`perl -le '$|=1; for(0..5){ print; sleep 1 }'`,
@@ -347,8 +347,8 @@ A Y 4
 B Z 5
 ```
 
-This example is similar to the previous one, except there are two stages of consumers, and the
-stages have different latency so they use a different number of parallel workers, to maintain
-saturated throughput.
+この例は前の例に似ていますが，コンシューマの2つのステージがあり，各ステージは異なる
+レイテンシを持っているので，飽和したスループットを維持するために異なる数の並列ワーカ
+を使用します．
 
-We strongly encourage you to try all these examples to see how they work.
+これらの例を全て試してみて，どのように動作するかを確認することを強くお勧めします．

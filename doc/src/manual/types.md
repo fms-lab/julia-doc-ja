@@ -1,55 +1,47 @@
-# [Types](@id man-types)
+# [型](@id man-types)
 
-Type systems have traditionally fallen into two quite different camps: static type systems, where
-every program expression must have a type computable before the execution of the program, and
-dynamic type systems, where nothing is known about types until run time, when the actual values
-manipulated by the program are available. Object orientation allows some flexibility in statically
-typed languages by letting code be written without the precise types of values being known at
-compile time. The ability to write code that can operate on different types is called polymorphism.
-All code in classic dynamically typed languages is polymorphic: only by explicitly checking types,
-or when objects fail to support operations at run-time, are the types of any values ever restricted.
+型システムは伝統的に2つの異なる陣営に分類されてきました．静的型システムでは，プログラム
+の実行前に全てのプログラム式が計算可能な型を持たねばならず，動的型システムでは，プログラム
+によって操作される実際の値が利用可能になる実行時まで型については何も知らされていません．
+オブジェクト指向は，コンパイル時に値の正確な値を知らなくてもコードを書けるようにすることで，
+静的型付け言語にある程度の柔軟性を持たせることができます．異なる型で動作するコードが書ける
+ことをポリモーフィズム（多態性）と呼びます．古典的な動的型付け言語のコードは全て多態性を
+持ちます．明示的に型をチェックするか，または実行時にオブジェクトが操作をサポートしていない
+場合にのみ，値の型が制限されることがあります．
 
-Julia's type system is dynamic, but gains some of the advantages of static type systems by making
-it possible to indicate that certain values are of specific types. This can be of great assistance
-in generating efficient code, but even more significantly, it allows method dispatch on the types
-of function arguments to be deeply integrated with the language. Method dispatch is explored in
-detail in [Methods](@ref), but is rooted in the type system presented here.
+Juliaの型システムは動的ですが，特定の値が特定の型であることを示すことを可能にすることで，
+静的型システムの利点をいくつか得ることができます．これは効率的なコードを生成する上で大きな
+助けとなりますが，それ以上に重要なことは，関数引数の型に対するメソッドディスパッチを言語に
+深く統合することができるということです．メソッドのディスパッチについては，[Methods](@ref)で
+詳しく説明されていますが，ここで紹介する型システムに根ざしています．
 
-The default behavior in Julia when types are omitted is to allow values to be of any type. Thus,
-one can write many useful Julia functions without ever explicitly using types. When additional
-expressiveness is needed, however, it is easy to gradually introduce explicit type annotations
-into previously "untyped" code. Adding annotations serves three primary purposes: to take advantage
-of Julia's powerful multiple-dispatch mechanism,  to improve human readability, and to catch
-programmer errors.
+型が省略された場合のJuliaのデフォルトの動作は，任意の型の値を許容することです．このため，
+明示的に型を指定しなくても，多くの有用なJuliaの関数を書くことができます．しかし，さらなる
+表現力が必要な場合には，以前に「型を使わない」で書いたコードに，明示的な型アノテーションを
+徐々に導入していくことが簡単にできます．アノテーションを追加することは，Juliaの強力な多重
+ディスパッチ機構を利用すること，人間の可読性を向上させること，そしてプログラマのエラーを
+検出することの3つの主要な目的に役立ちます．
 
-Describing Julia in the lingo of [type systems](https://en.wikipedia.org/wiki/Type_system), it
-is: dynamic, nominative and parametric. Generic types can be parameterized, and the hierarchical
-relationships between types are [explicitly declared](https://en.wikipedia.org/wiki/Nominal_type_system),
-rather than [implied by compatible structure](https://en.wikipedia.org/wiki/Structural_type_system).
-One particularly distinctive feature of Julia's type system is that concrete types may not subtype
-each other: all concrete types are final and may only have abstract types as their supertypes.
-While this might at first seem unduly restrictive, it has many beneficial consequences with surprisingly
-few drawbacks. It turns out that being able to inherit behavior is much more important than being
-able to inherit structure, and inheriting both causes significant difficulties in traditional
-object-oriented languages. Other high-level aspects of Julia's type system that should be mentioned
-up front are:
+Juliaを[型システム](https://en.wikipedia.org/wiki/Type_system)の専門用語で表現すると，
+動的な方，指名的な型，パラメトリックな型です．一般的な型はパラメータ化することができ，型間
+の階層的な関係は[互換性のある構造によって暗示される](https://en.wikipedia.org/wiki/Structural_type_system)のではなく，
+[明示的に宣言](https://en.wikipedia.org/wiki/Nominal_type_system)されます．
+Juliaの型システムの特に特徴的な点は，具象型が互いにサブタイプしてはならないということです．
+全ての具象型は最終型であり，抽象型のみをスーパータイプとして持つことができます．これは
+最初は過度に制限されているように見えるかもしれませんが，多くの有益な結果をもたらし，欠点は
+驚くほど少ないのです．構造を継承できることよりも，動作を継承できることの方がはるかに重要
+であり，両方を継承することは従来のオブジェクト指向言語では大きな問題を引き起こしています．
+Juliaの型システムの他の高レベルな側面としては，以下のようなものがあります:
 
-  * There is no division between object and non-object values: all values in Julia are true objects
-    having a type that belongs to a single, fully connected type graph, all nodes of which are equally
-    first-class as types.
-  * There is no meaningful concept of a "compile-time type": the only type a value has is its actual
-    type when the program is running. This is called a "run-time type" in object-oriented languages
-    where the combination of static compilation with polymorphism makes this distinction significant.
-  * Only values, not variables, have types -- variables are simply names bound to values.
-  * Both abstract and concrete types can be parameterized by other types. They can also be parameterized
-    by symbols, by values of any type for which [`isbits`](@ref) returns true (essentially, things
-    like numbers and bools that are stored like C types or `struct`s with no pointers to other objects),
-    and also by tuples thereof. Type parameters may be omitted when they do not need to be referenced
-    or restricted.
+  * オブジェクトと非オブジェクトの間には分け隔てがありません．Juliaの全ての値は，完全に接続された単一の型グラフに属する型を持つ真のオブジェクトであり，全てのノードは型として等しくファーストクラスのものです．
+  * 「コンパイル時の型」という意味のある概念はありません．値が持つ唯一の型は，プログラムが実行されている時の実際の型です．これはオブジェクト指向言語では「ランタイム型」と呼ばれ，静的コンパイルと多態性の組み合わせにより，この区別が重要になります．
+  * 変数ではなく，値だけが型をもちます．変数は単に値に結びつけられた名前です．
+  * 抽象型も具象型も，他の型によってパラメータ化することができます．また，シンボルや，[`isbits`](@ref)が真を返す任意の型の値（基本的には，Cの型や他のオブジェクトへのポインタを持たない`struct`のように格納されている数値やboolのようなもの），およびそれらのタプルによってもパラメータ化することができます．型のパラメータは，参照や制限が不要な場合には省略することができます．
 
-Julia's type system is designed to be powerful and expressive, yet clear, intuitive and unobtrusive.
-Many Julia programmers may never feel the need to write code that explicitly uses types. Some
-kinds of programming, however, become clearer, simpler, faster and more robust with declared types.
+Juliaの型システムは，パワフルで表現力豊かでありながら，明確で直観的で控えめな設計になっています．
+多くのJuliaプログラマは，明示的に型を使用するコードを書く必要性を感じないかもしれません．
+しかし，ある種のプログラミングでは，宣言された型を使うことで，より明確に，よりシンプルに，
+より早く，より堅牢になります．
 
 ## Type Declarations
 

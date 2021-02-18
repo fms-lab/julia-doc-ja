@@ -43,22 +43,20 @@ Juliaの型システムは，パワフルで表現力豊かでありながら，
 しかし，ある種のプログラミングでは，宣言された型を使うことで，より明確に，よりシンプルに，
 より早く，より堅牢になります．
 
-## Type Declarations
+## 型宣言
 
-The `::` operator can be used to attach type annotations to expressions and variables in programs.
-There are two primary reasons to do this:
+`::`演算子を使用して，プログラム内の式や変数に型アノテーションを付けることができます．
+これには主に2つの理由があります:
 
-1. As an assertion to help confirm that your program works the way you expect,
-2. To provide extra type information to the compiler, which can then improve performance in some
-   cases
+1. プログラムが期待通りに動作することを確認するためのアサーション
+2. コンパイラに追加で型情報を提供することで，場合によってはパフォーマンスを向上させることができます
 
-When appended to an expression computing a value, the `::` operator is read as "is an instance
-of". It can be used anywhere to assert that the value of the expression on the left is an instance
-of the type on the right. When the type on the right is concrete, the value on the left must have
-that type as its implementation -- recall that all concrete types are final, so no implementation
-is a subtype of any other. When the type is abstract, it suffices for the value to be implemented
-by a concrete type that is a subtype of the abstract type. If the type assertion is not true,
-an exception is thrown, otherwise, the left-hand value is returned:
+値を計算する式に追加された場合，`::`演算子は"is a instance of"と読まれます．これは，左の
+式の値が右の型のインスタンスであることをアサートするために，どこでも使用できます．右側の
+型が具象型の場合，左側の値はその型の実装でなければなりません．具象型は全て最終型であり，
+実装は他の型のサブタイプではないことを思い出してください．型が抽象型の場合，値は抽象型の
+サブタイプである具象型によって実装されていれば十分です．型のアサーションが真でない場合には
+例外がスローされ，そうでない場合には左辺の値が返されます:
 
 ```jldoctest
 julia> (1+2)::AbstractFloat
@@ -68,12 +66,12 @@ julia> (1+2)::Int
 3
 ```
 
-This allows a type assertion to be attached to any expression in-place.
+これにより，任意の式に型のアサーションをその場でアタッチすることができます．
 
-When appended to a variable on the left-hand side of an assignment, or as part of a `local` declaration,
-the `::` operator means something a bit different: it declares the variable to always have the
-specified type, like a type declaration in a statically-typed language such as C. Every value
-assigned to the variable will be converted to the declared type using [`convert`](@ref):
+代入の左側にある変数に追加された場合，あるいはローカル宣言の一部として追加された場合には，
+`::`演算子は少し違った意味を持ちます．Cのような静的型付け言語の型宣言のように，変数が常に
+指定された型を持つことを宣言します．変数に代入された全ての値は，[`convert`](@ref)を使用して
+宣言された型に変換されます:
 
 ```jldoctest
 julia> function foo()
@@ -89,21 +87,21 @@ julia> typeof(ans)
 Int8
 ```
 
-This feature is useful for avoiding performance "gotchas" that could occur if one of the assignments
-to a variable changed its type unexpectedly.
+この機能は，変数への代入の1つが予期せず型を変更した場合に発生する可能性のある，
+パフォーマンスへの「瑕疵」を回避するのに便利です．
 
-This "declaration" behavior only occurs in specific contexts:
+この「宣言」動作は特定のコンテキストでのみ発生します:
 
 ```julia
 local x::Int8  # in a local declaration
 x::Int8 = 10   # as the left-hand side of an assignment
 ```
 
-and applies to the whole current scope, even before the declaration. Currently, type declarations
-cannot be used in global scope, e.g. in the REPL, since Julia does not yet have constant-type
-globals.
+またこの宣言動作は宣言が行われる前であっても現在のスコープ全体に適用されます．現在のところ，
+Juliaにはまだ定数型のグローバルがないため，REPLなどのグローバルスコープでは型宣言を使用する
+ことができません．
 
-Declarations can also be attached to function definitions:
+宣言は関数定義にも付けることができます:
 
 ```julia
 function sinc(x)::Float64
@@ -114,8 +112,8 @@ function sinc(x)::Float64
 end
 ```
 
-Returning from this function behaves just like an assignment to a variable with a declared type:
-the value is always converted to `Float64`.
+この関数からの戻り値は，宣言された型を持つ変数への代入と同じように動作します．値は常に，
+`Float64`に変換されます．
 
 ## [Abstract Types](@id man-abstract-types)
 

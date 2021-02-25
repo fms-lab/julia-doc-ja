@@ -115,48 +115,48 @@ end
 この関数からの戻り値は，宣言された型を持つ変数への代入と同じように動作します．値は常に，
 `Float64`に変換されます．
 
-## [Abstract Types](@id man-abstract-types)
+## [抽象型](@id man-abstract-types)
 
-Abstract types cannot be instantiated, and serve only as nodes in the type graph, thereby describing
-sets of related concrete types: those concrete types which are their descendants. We begin with
-abstract types even though they have no instantiation because they are the backbone of the type
-system: they form the conceptual hierarchy which makes Julia's type system more than just a collection
-of object implementations.
+抽象型はインスタンス化することができず，型グラフのノードとしてしか機能せず，それによって
+関連する具象型の集合，つまりそれらの子孫である具象型を記述します．抽象型は型システムの
+バックボーンであり，Juliaの型システムを単なるオブジェクト実装の集合以上のものにする
+概念的な階層を形成しているので，インスタンス化できないですが，抽象型から話を始めます．
 
-Recall that in [Integers and Floating-Point Numbers](@ref), we introduced a variety of concrete
-types of numeric values: [`Int8`](@ref), [`UInt8`](@ref), [`Int16`](@ref), [`UInt16`](@ref),
-[`Int32`](@ref), [`UInt32`](@ref), [`Int64`](@ref), [`UInt64`](@ref), [`Int128`](@ref),
-[`UInt128`](@ref), [`Float16`](@ref), [`Float32`](@ref), and [`Float64`](@ref). Although
-they have different representation sizes, `Int8`, `Int16`, `Int32`, `Int64` and `Int128`
-all have in common that they are signed integer types. Likewise `UInt8`, `UInt16`, `UInt32`,
-`UInt64` and `UInt128` are all unsigned integer types, while `Float16`, `Float32` and
-`Float64` are distinct in being floating-point types rather than integers. It is common for
-a piece of code to make sense, for example, only if its arguments are some kind of integer,
-but not really depend on what particular *kind* of integer. For example, the greatest common
-denominator algorithm works for all kinds of integers, but will not work for floating-point
-numbers. Abstract types allow the construction of a hierarchy of types, providing a context
-into which concrete types can fit. This allows you, for example, to easily program to any type
-that is an integer, without restricting an algorithm to a specific type of integer.
+[Integers and Floating-Point Numbers](@ref)で数値の様々な具象型を紹介したことを思い
+出してください．[`Int8`](@ref)， [`UInt8`](@ref)， [`Int16`](@ref)， [`UInt16`](@ref)，
+[`Int32`](@ref)， [`UInt32`](@ref)， [`Int64`](@ref)， [`UInt64`](@ref)， [`Int128`](@ref)，
+[`UInt128`](@ref)， [`Float16`](@ref)， [`Float32`](@ref)，[`Float64`](@ref)です．
+表現サイズは異なりますが，`Int8`， `Int16`， `Int32`， `Int64`，`Int128`は全て符号付き
+整数型であるという共通点があります．同様に，`UInt8`， `UInt16`， `UInt32`，`UInt64`，
+`UInt128`は全て符号なし整数型です．一方で，`Float16`，`Float32`，`Float64`は整数型
+ではなく浮動小数点型であるという点で区別されています．コードの一部が意味を持つのは，
+例えば，その引数がある種の整数である場合だけで，実際にはどのような特定の*種類*の整数
+であるかに依存しないのが一般的です．例えば，最大公約数アルゴリズムはあらゆる種類の整数
+に対して動作しますが，浮動小数点数に対しては動作しません．抽象型を使用すると，型の階層
+を構築することができ，具体的な型が収まるコンテキストを提供します．これにより，例えば，
+アルゴリズムを特定の整数型に制限することなく，任意の整数型に簡単にプログラムすることが
+できます．
 
-Abstract types are declared using the [`abstract type`](@ref) keyword. The general syntaxes for declaring an
-abstract type are:
+抽象型は，[`abstract type`](@ref)キーワードを使用して宣言されます．抽象型を宣言する
+ための一般的な構文は以下の通りです:
 
 ```
 abstract type «name» end
 abstract type «name» <: «supertype» end
 ```
 
-The `abstract type` keyword introduces a new abstract type, whose name is given by `«name»`. This
-name can be optionally followed by [`<:`](@ref) and an already-existing type, indicating that the newly
-declared abstract type is a subtype of this "parent" type.
+`abstract type`キーワードは，新しい抽象型を導入し，その名前は`«name»`で与えられます．
+この名前の後には，オプションで[`<:`](@ref)と既存の型を付けることができ，新しく宣言
+された抽象型がこの「親」型のサブタイプであることを示します．
 
-When no supertype is given, the default supertype is `Any` -- a predefined abstract type that
-all objects are instances of and all types are subtypes of. In type theory, `Any` is commonly
-called "top" because it is at the apex of the type graph. Julia also has a predefined abstract
-"bottom" type, at the nadir of the type graph, which is written as `Union{}`. It is the exact
-opposite of `Any`: no object is an instance of `Union{}` and all types are supertypes of `Union{}`.
+スーパータイプが与えられていない場合，デフォルトのスーパータイプは`Any`になります．
+`Any`は全てのオブジェクトがそのインスタンスであり，全ての型がそのサブタイプである
+ような，定義済みの抽象型です．型理論では，`Any`は型グラフの頂点にあるので，一般的に
+「トップ」と呼ばれています．また，Juliaには，型グラフの一番下にある定義済みの抽象的な
+「ボトム」型があり，`Union{}`と書かれています．これは`Any`とは正反対で，全ての
+オブジェクトは`Union{}`のインスタンスではなく，全ての型は`Union{}`のスーパータイプです．
 
-Let's consider some of the abstract types that make up Julia's numerical hierarchy:
+Juliaの数値階層を構成する抽象型のいくつかを考えてみましょう:
 
 ```julia
 abstract type Number end
@@ -167,19 +167,18 @@ abstract type Signed   <: Integer end
 abstract type Unsigned <: Integer end
 ```
 
-The [`Number`](@ref) type is a direct child type of `Any`, and [`Real`](@ref) is its child.
-In turn, `Real` has two children (it has more, but only two are shown here; we'll get to
-the others later): [`Integer`](@ref) and [`AbstractFloat`](@ref), separating the world into
-representations of integers and representations of real numbers. Representations of real
-numbers include, of course, floating-point types, but also include other types, such as
-rationals. Hence, `AbstractFloat` is a proper subtype of `Real`, including only
-floating-point representations of real numbers. Integers are further subdivided into
-[`Signed`](@ref) and [`Unsigned`](@ref) varieties.
+[`Number`](@ref)型は`Any`の直接の子孫であり，[`Real`](@ref)はその子です．また，
+`Real`には2つの子があります（もっとたくさんいますが，ここでは2つだけを示しています．
+他の者には後に触れます）．[`Integer`](@ref)と[`AbstractFloat`](@ref)で，世界を整数
+の表現と実数の表現に分けています．実数の世界にはもちろん浮動小数点型が含まれています
+が，それ以外にも有理数などの他の方も含まれています．したがって，`AbstractFloat`は
+`Real`の適切なサブタイプであり，実数の浮動小数点表現のみを含みます．整数は更に
+[`Signed`](@ref)と[`Unsigned`](@ref)に細分化されています．
 
-The `<:` operator in general means "is a subtype of", and, used in declarations like this, declares
-the right-hand type to be an immediate supertype of the newly declared type. It can also be used
-in expressions as a subtype operator which returns `true` when its left operand is a subtype of
-its right operand:
+一般的に`<:`演算子は，"is a subtype of"を意味し，このような宣言で使用すると，右手の
+型が，新しく宣言された型の即時のスーパータイプであることを宣言します．また左の
+オペランドが右のオペランドのサブタイプである場合に`true`を返すサブタイプ演算子として
+式の中で使用することもできます．
 
 ```jldoctest
 julia> Integer <: Number
@@ -189,8 +188,8 @@ julia> Integer <: AbstractFloat
 false
 ```
 
-An important use of abstract types is to provide default implementations for concrete types. To
-give a simple example, consider:
+抽象型の重要な使用法は，具象型のデフォルト実装を提供することです．簡単な例を挙げると，
+次のようになります:
 
 ```julia
 function myplus(x,y)
@@ -198,14 +197,14 @@ function myplus(x,y)
 end
 ```
 
-The first thing to note is that the above argument declarations are equivalent to `x::Any` and
-`y::Any`. When this function is invoked, say as `myplus(2,5)`, the dispatcher chooses the most
-specific method named `myplus` that matches the given arguments. (See [Methods](@ref) for more
-information on multiple dispatch.)
+まず注意すべき点は，上記の引数宣言が`x::Any`と`y::Any`と同等であるということです．
+この関数が`myplus(2,5)`のように呼び出されると，ディスパッチャは与えられた引数に
+マッチする`myplus`という名前の最も具体的なメソッドを選択します．（複数のディスパッチ
+についての詳細は[Methods](@ref)を参照してください．）
 
-Assuming no method more specific than the above is found, Julia next internally defines and compiles
-a method called `myplus` specifically for two `Int` arguments based on the generic function given
-above, i.e., it implicitly defines and compiles:
+上記よりも特定のメソッドが見つからないと仮定して，次にJuliaは上で与えられた汎用
+関数に基づいて，二つの`Int`引数に対して特別に`myplus`と呼ばれるメソッドを内部的に定義
+してコンパイルします．つまり暗黙的に定義してコンパイルするのです:
 
 ```julia
 function myplus(x::Int,y::Int)
@@ -213,16 +212,18 @@ function myplus(x::Int,y::Int)
 end
 ```
 
-and finally, it invokes this specific method.
+そして最後に，この特定のメソッドを呼び出します．
 
-Thus, abstract types allow programmers to write generic functions that can later be used as the
-default method by many combinations of concrete types. Thanks to multiple dispatch, the programmer
-has full control over whether the default or more specific method is used.
+このように，抽象型は，プログラマが後に具象型の多くの組み合わせによってデフォルト
+メソッドとして使用できる汎用関数を書くことを可能にします．複数ディスパッチのおかげで，
+プログラマはデフォルトのメソッドが使用されるか，より具体的なメソッドが使用されるかを
+完全に制御することができます．
 
-An important point to note is that there is no loss in performance if the programmer relies on
-a function whose arguments are abstract types, because it is recompiled for each tuple of argument
-concrete types with which it is invoked. (There may be a performance issue, however, in the case
-of function arguments that are containers of abstract types; see [Performance Tips](@ref man-performance-abstract-container).)
+注意すべき重要な点は，プログラマが，引数が抽象型である関数に依存していても，その関数が
+呼び出される引数の具象型のタプルごとに再コンパイルされるため，パフォーマンスが低下する
+ことはないということです（だたし関数の引数が抽象型のコンテナの場合には，パフォーマンス
+の問題がある場合があります．[Performance Tips](@ref man-performance-abstract-container)
+を参照してください．）
 
 ## Primitive Types
 

@@ -176,7 +176,7 @@ abstract type Unsigned <: Integer end
 [`Signed`](@ref)と[`Unsigned`](@ref)に細分化されています．
 
 一般的に`<:`演算子は，"is a subtype of"を意味し，このような宣言で使用すると，右手の
-型が，新しく宣言された型の即時のスーパータイプであることを宣言します．また左の
+型が，新しく宣言された型の直接のスーパータイプであることを宣言します．また左の
 オペランドが右のオペランドのサブタイプである場合に`true`を返すサブタイプ演算子として
 式の中で使用することもできます．
 
@@ -225,20 +225,20 @@ end
 の問題がある場合があります．[Performance Tips](@ref man-performance-abstract-container)
 を参照してください．）
 
-## Primitive Types
+## プリミティブ型
 
-!!! warning
-    It is almost always preferable to wrap an existing primitive type in a new
-    composite type than to define your own primitive type.
+!!! 注意
+    ほとんどの場合，独自のプリミティブ型を定義するよりも，既存のプリミティブ型を
+    新しい複合型でラップする方が望ましいです．
 
-    This functionality exists to allow Julia to bootstrap the standard primitive
-    types that LLVM supports. Once they are defined, there is very little reason
-    to define more.
+    この機能は，LLVMがサポートする標準のプリミティブ型をJuliaがブートストラップする
+    できるようにするために存在します．一度定義されれば，それ以上定義する理由はほとんど
+    ありません．
 
-A primitive type is a concrete type whose data consists of plain old bits. Classic examples of primitive
-types are integers and floating-point values. Unlike most languages, Julia lets you declare your
-own primitive types, rather than providing only a fixed set of built-in ones. In fact, the standard
-primitive types are all defined in the language itself:
+プリミティブ型とは，データが古いビットで構成される具体的な型のことです．プリミティブ型の
+典型的な例は，整数と浮動小数点です．多くの言語とは異なり，Juliaでは，組み込みの固定された
+型のセットだけを提供するのではなく，独自のプリミティブ型を宣言することができます．実際，
+標準的なプリミティブ型は全てこの言語自身で定義されています:
 
 ```julia
 primitive type Float16 <: AbstractFloat 16 end
@@ -260,34 +260,35 @@ primitive type Int128  <: Signed   128 end
 primitive type UInt128 <: Unsigned 128 end
 ```
 
-The general syntaxes for declaring a primitive type are:
+プリミティブ型を宣言する一般的な構文は以下のようになります:
 
 ```
 primitive type «name» «bits» end
 primitive type «name» <: «supertype» «bits» end
 ```
 
-The number of bits indicates how much storage the type requires and the name gives the new type
-a name. A primitive type can optionally be declared to be a subtype of some supertype. If a supertype
-is omitted, then the type defaults to having `Any` as its immediate supertype. The declaration
-of [`Bool`](@ref) above therefore means that a boolean value takes eight bits to store, and has
-[`Integer`](@ref) as its immediate supertype. Currently, only sizes that are multiples of
-8 bits are supported and you are likely to experience LLVM bugs with sizes other than those used above.
-Therefore, boolean values, although they really need just a single bit, cannot be declared to be any
-smaller than eight bits.
+ビット数はその型が必要とするストレージの量を示し，nameは新しい方に名前を与えます．
+プリミティブ型は，オプションでスーパータイプのサブタイプであることを宣言することができます．
+スーパータイプが省略された場合，その型はデフォルトで`Any`をその直接のスーパータイプとして
+持つことになります．したがって，上記の[`Bool`](@ref)の宣言は，ブール値の格納に8ビットを
+必要とし，直接のスーパータイプとして[`Integer`](@ref)を持つことを意味します．現在のところ，
+8ビットの倍数のサイズのみがサポートされており，上記以外のサイズではLLVMのバグが発生する
+可能性があります．したがって，ブーリアン値は，実際には1ビットしか必要ありませんが，8ビット
+よりも小さいサイズを宣言することはできません．
 
-The types [`Bool`](@ref), [`Int8`](@ref) and [`UInt8`](@ref) all have identical representations:
-they are eight-bit chunks of memory. Since Julia's type system is nominative, however, they
-are not interchangeable despite having identical structure. A fundamental difference between
-them is that they have different supertypes: [`Bool`](@ref)'s direct supertype is [`Integer`](@ref),
-[`Int8`](@ref)'s is [`Signed`](@ref), and [`UInt8`](@ref)'s is [`Unsigned`](@ref). All other
-differences between [`Bool`](@ref), [`Int8`](@ref), and [`UInt8`](@ref) are matters of
-behavior -- the way functions are defined to act when given objects of these types as
-arguments. This is why a nominative type system is necessary: if structure determined type,
-which in turn dictates behavior, then it would be impossible to make [`Bool`](@ref) behave
-any differently than [`Int8`](@ref) or [`UInt8`](@ref).
+[`Bool`](@ref)，[`Int8`](@ref)，[`UInt8`](@ref)の型は全て同じ表現で，8ビットのメモリチャンク
+です．しかし，Juliaの型システムは命名型なので，同じ構造を持っているにも拘わらず，これらの
+型には互換性がありません．両社の根本的な違いは，スーパータイプが異なることです．
+[`Bool`](@ref)の直接のスーパータイプは[`Integer`](@ref)，[`Int8`](@ref)のスーパータイプは
+[`Signed`](@ref)，[`UInt8`](@ref)のスーパータイプは[`Unsigned`](@ref)です．
+[`Bool`](@ref)，[`Int8`](@ref)，[`UInt8`](@ref)の間のその他の違いは全て動作，すなわち
+これらの型のオブジェクトを引数として与えられた時に関数がどのように動作するかの定義の問題
+です．これが命名型システムが必要な理由です．もし構造体が型を決定し，それが動作を決定する
+のであれば，[`Bool`](@ref)に[`Int8`](@ref)や[`UInt8`](@ref)と異なる動作をさせることは
+不可能でしょう．
 
-## Composite Types
+
+## 複合型
 
 [Composite types](https://en.wikipedia.org/wiki/Composite_data_type) are called records, structs,
 or objects in various languages. A composite type is a collection of named fields,

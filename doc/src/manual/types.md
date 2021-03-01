@@ -290,28 +290,26 @@ primitive type «name» <: «supertype» «bits» end
 
 ## 複合型
 
-[Composite types](https://en.wikipedia.org/wiki/Composite_data_type) are called records, structs,
-or objects in various languages. A composite type is a collection of named fields,
-an instance of which can be treated as a single value. In many languages, composite types are
-the only kind of user-definable type, and they are by far the most commonly used user-defined
-type in Julia as well.
+[Composite types](https://en.wikipedia.org/wiki/Composite_data_type)は，様々な言語で，
+レコード，構造体，またはオブジェクトと呼ばれます．複合型は名前付きフィールドの集合で，
+そのインスタンスは単一の値として扱うことができます．多くの言語では，複合型は唯一の
+ユーザ定義可能な型であり，Juliaでもユーザ定義型としては最も一般的に使用されています．
 
-In mainstream object oriented languages, such as C++, Java, Python and Ruby, composite types also
-have named functions associated with them, and the combination is called an "object". In purer
-object-oriented languages, such as Ruby or Smalltalk, all values are objects whether they are
-composites or not. In less pure object oriented languages, including C++ and Java, some values,
-such as integers and floating-point values, are not objects, while instances of user-defined composite
-types are true objects with associated methods. In Julia, all values are objects, but functions
-are not bundled with the objects they operate on. This is necessary since Julia chooses which
-method of a function to use by multiple dispatch, meaning that the types of *all* of a function's
-arguments are considered when selecting a method, rather than just the first one (see [Methods](@ref)
-for more information on methods and dispatch). Thus, it would be inappropriate for functions to
-"belong" to only their first argument. Organizing methods into function objects rather than having
-named bags of methods "inside" each object ends up being a highly beneficial aspect of the language
-design.
+C++，Java，Python，Rubyなどの主流のオブジェクト指向言語では，複合型に名前付き関数も含まれて
+おり，その組み合わせは「オブジェクト」と呼ばれます．RubyやSmalltalkのような純粋なオブジェクト
+指向言語では，複合型であるかどうかに関わらず，全ての値がオブジェクトになります．C++やJava
+などのやや純粋でないオブジェクト指向言語では，整数や浮動小数点数などの一部の値はオブジェクト
+ではありませんが，ユーザ定義の複合型のインスタンスは，関連するメソッドを持つ真のオブジェクト
+です．Juliaでは，全ての値はオブジェクトですが，関数は操作するオブジェクトにバンドルされて
+いません．これはJuliaが関数のどのメソッドを使用するかを，複数回のディスパッチによって選択
+するために必要なことで，つまりはメソッドを選択する際には，最初のメソッドだけではなく，関数
+の*全て*の引数の型が考慮されることを意味します（メソッドとディスパッチについての詳細は，
+[Methods](@ref)を参照してください）．このように，関数が最初の引数だけに「属する」のは不適切
+です．それぞれのオブジェクトの「中」にメソッドの名前付きの袋を持つのではなく，メソッドを
+関数オブジェクトに整理することは，最終的には言語設計の非常に有益な側面となります．
 
-Composite types are introduced with the [`struct`](@ref) keyword followed by a block of field names, optionally
-annotated with types using the `::` operator:
+複合型は，[`struct`](@ref)キーワードの後にフィールド名のブロックを付けて導入され，
+オプションで`::`オペレータを使用して，型のアノテーションを付けることができます:
 
 ```jldoctest footype
 julia> struct Foo
@@ -321,10 +319,10 @@ julia> struct Foo
        end
 ```
 
-Fields with no type annotation default to `Any`, and can accordingly hold any type of value.
+型のアノテーションがないフィールドのデフォルトは`Any`型なので，任意の型の値を保持することができます．
 
-New objects of type `Foo` are created by applying the `Foo` type object like a function
-to values for its fields:
+`Foo`型の新しいオブジェクトは，`Foo`型のオブジェクトを，関数のようにフィールドの値
+に適用することで作成されます:
 
 ```jldoctest footype
 julia> foo = Foo("Hello, world.", 23, 1.5)
@@ -334,14 +332,14 @@ julia> typeof(foo)
 Foo
 ```
 
-When a type is applied like a function it is called a *constructor*. Two constructors are generated
-automatically (these are called *default constructors*). One accepts any arguments and calls
-[`convert`](@ref) to convert them to the types of the fields, and the other accepts arguments
-that match the field types exactly. The reason both of these are generated is that this makes
-it easier to add new definitions without inadvertently replacing a default constructor.
+型が関数のように適用される場合，それは*コンストラクタ*と呼ばれます．2つのコンストラクタが
+自動的に生成されます（これらを*デフォルトコンストラクタ*と呼びます）．1つは任意の引数を
+受け取り，フィールドの値に変換するために[`convert`](@ref)を呼び出し，もう一つはフィールド
+の型に正確に一致する引数を受け取ります．これらの両方が生成される理由は，デフォルトの
+コンストラクタを何気なく置き換えることなく，新しい定義を簡単に追加できるようにするためです．
 
-Since the `bar` field is unconstrained in type, any value will do. However, the value for `baz`
-must be convertible to `Int`:
+`bar`フィールドは型に制約がないので，どのような型でも構いません．しかし，`baz`の値は，
+`Int`に変換可能でなければなりません:
 
 ```jldoctest footype
 julia> Foo((), 23.5, 1)
@@ -350,14 +348,14 @@ Stacktrace:
 [...]
 ```
 
-You may find a list of field names using the [`fieldnames`](@ref) function.
+[`fieldnames`](@ref)関数を使ってフィールド名のリストを参照できます．
 
 ```jldoctest footype
 julia> fieldnames(Foo)
 (:bar, :baz, :qux)
 ```
 
-You can access the field values of a composite object using the traditional `foo.bar` notation:
+複合オブジェクトのフィールド値には，伝統的な`foo.bar`記法を使ってアクセスすることができます:
 
 ```jldoctest footype
 julia> foo.bar
@@ -370,22 +368,21 @@ julia> foo.qux
 1.5
 ```
 
-Composite objects declared with `struct` are *immutable*; they cannot be modified
-after construction. This may seem odd at first, but it has several advantages:
+`struct`で作られた複合オブジェクトは*不変*です．つまり構築後に変更することはできません．
+これは最初は奇妙に思えるかもしれませんが，いくつか利点があります:
 
-  * It can be more efficient. Some structs can be packed efficiently into arrays, and
-    in some cases the compiler is able to avoid allocating immutable objects entirely.
-  * It is not possible to violate the invariants provided by the type's constructors.
-  * Code using immutable objects can be easier to reason about.
+  * より効率的になります．構造体の中には，効率的に配列にまとめることができるものもありますし，コンパイラによっては不変オブジェクトの割り当てを完全に回避できる場合もあります．
+  * 型のコンストラクタが提供する不変量に違反することができません．
+  * 不変オブジェクトを使用したコードは，推論が容易になります．
 
-An immutable object might contain mutable objects, such as arrays, as fields. Those contained
-objects will remain mutable; only the fields of the immutable object itself cannot be changed
-to point to different objects.
+不変オブジェクトには，フィールドとして，配列などの変異可能なオブジェクトが含まれているかも
+しれません．それらは変更可能なままであり，不変オブジェクトのフィールドだけが異なる
+オブジェクトを指すように変更されることはない，というものです．
 
-Where required, mutable composite objects can be declared with the keyword [`mutable struct`](@ref), to be
-discussed in the next section.
+必要に応じて，次のセクションで説明するように，キーワード[`mutable struct`](@ref)を使用して
+宣言することができます．
 
-Immutable composite types with no fields are singletons; there can be only one instance of such types:
+フィールドを持たない不変複合型はシングルトンです．このような型のインスタンスは1つだけ存在できます:
 
 ```jldoctest
 julia> struct NoFields
@@ -395,12 +392,13 @@ julia> NoFields() === NoFields()
 true
 ```
 
-The [`===`](@ref) function confirms that the "two" constructed instances of `NoFields` are actually one
-and the same. Singleton types are described in further detail [below](@ref man-singleton-types).
+ [`===`](@ref)関数は，構築された`NoFields`の「2つ」のインスタンスが，実際には1つだけで，
+ 同じものであることを確認します．シングルトン型に関しては，[下記](@ref man-singleton-types)
+ で更に詳しく説明していきます．
 
-There is much more to say about how instances of composite types are created, but that discussion
-depends on both [Parametric Types](@ref) and on [Methods](@ref), and is sufficiently important
-to be addressed in its own section: [Constructors](@ref man-constructors).
+複合型のインスタンスがどのようにして生成されるかについては，もっと多く書くことがありますが，
+この議論は[Parametric Types](@ref)と [Methods](@ref)の両方に依存しており，それ自身のセクション
+[Constructors](@ref man-constructors)で説明するのに十分なほど重要です．
 
 ## Mutable Composite Types
 

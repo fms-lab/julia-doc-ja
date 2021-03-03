@@ -290,7 +290,7 @@ primitive type «name» <: «supertype» «bits» end
 
 ## 複合型
 
-[Composite types](https://en.wikipedia.org/wiki/Composite_data_type)は，様々な言語で，
+[Composite types（複合型）](https://en.wikipedia.org/wiki/Composite_data_type)は，様々な言語で，
 レコード，構造体，またはオブジェクトと呼ばれます．複合型は名前付きフィールドの集合で，
 そのインスタンスは単一の値として扱うことができます．多くの言語では，複合型は唯一の
 ユーザ定義可能な型であり，Juliaでもユーザ定義型としては最も一般的に使用されています．
@@ -400,10 +400,9 @@ true
 この議論は[Parametric Types](@ref)と [Methods](@ref)の両方に依存しており，それ自身のセクション
 [Constructors](@ref man-constructors)で説明するのに十分なほど重要です．
 
-## Mutable Composite Types
+## ミュータブルな複合型
 
-If a composite type is declared with `mutable struct` instead of `struct`, then instances of
-it can be modified:
+複合型が`struct`ではなく，`mutable struct`で宣言されている場合は，そのインスタンスを変更することができます:
 
 ```jldoctest bartype
 julia> mutable struct Bar
@@ -420,34 +419,23 @@ julia> bar.baz = 1//2
 1//2
 ```
 
-In order to support mutation, such objects are generally allocated on the heap, and have
-stable memory addresses.
-A mutable object is like a little container that might hold different values over time,
-and so can only be reliably identified with its address.
-In contrast, an instance of an immutable type is associated with specific field values ---
-the field values alone tell you everything about the object.
-In deciding whether to make a type mutable, ask whether two instances
-with the same field values would be considered identical, or if they might need to change independently
-over time. If they would be considered identical, the type should probably be immutable.
+変異をサポートするために，このようなオブジェクトは一般的にヒープ上に割り当てられ，
+安定したメモリアドレスを持ちます．変異可能なオブジェクトは小さな容器のようなもので，
+時間の経過とともに異なる値を保持する可能性があり，そのアドレスによってのみ確実に
+識別することができます．対照的に，不変型のインスタンスは特定のフィールド値に関連付けられて
+います．フィールドの値だけでそのオブジェクトについての全てを知ることができます．
+型を変異可能にするかを決めるには，同じフィールド値を持つ二つのインスタンスが同一と
+みなされるのか，それとも時間の経過とともに独立して変化する必要があるのかを尋ねてみましょう．
+もしそれらが同一とみなされるならば，その型はおそらく不変であるべきです．
 
-To recap, two essential properties define immutability in Julia:
+繰り返しになりますが，Juliaでは2つの本質的な性質が不変性を定義しています:
 
-  * It is not permitted to modify the value of an immutable type.
-    * For bits types this means that the bit pattern of a value once set will never change
-      and that value is the identity of a bits type.
-    * For composite  types, this means that the identity of the values of its fields will
-      never change. When the fields are bits types, that means their bits will never change,
-      for fields whose values are mutable types like arrays, that means the fields will
-      always refer to the same mutable value even though that mutable value's content may
-      itself be modified.
-  * An object with an immutable type may be copied freely by the compiler since its
-    immutability makes it impossible to programmatically distinguish between the original
-    object and a copy.
-    * In particular, this means that small enough immutable values like integers and floats
-      are typically passed to functions in registers (or stack allocated).
-    * Mutable values, on the other hand are heap-allocated and passed to
-      functions as pointers to heap-allocated values except in cases where the compiler
-      is sure that there's no way to tell that this is not what is happening.
+  * 不変型の値を変更することは許されない．
+    * ビット型の場合，これは一度設定された値のビットパターンは決して変化しないことを意味し，その値はビット型の同一性を表します．
+    * 複合型の場合，これはそのフィールドの値の同一性が変わることがないことを意味します．フィールドがビット型の場合は，そのビットが変更されないことを意味し，値が配列のような可変型であるフィールドの場合は，可変型の値が変更されても，フィールドは常に同じ可変型の値を参照することを意味します．
+  * 不変型を持つオブジェクトは，その不変性により，プログラム上で元のオブジェクトとコピーを区別することができないため，コンパイラによって自由にコピーすることができます．
+    * 特に，整数や浮動小数点数のような十分に小さい不変型の値は，一般的にレジスタ内の関数に渡されます（またはスタックに割り当てられます）．
+    * 一方，可変値は，ヒープ割り当てされており，コンパイラがこれが起こっていないことを伝える方法がないと確信している場合を除いて，ヒープ割り当てされた値へのポインタとして関数に渡されます．
 
 ## Declared Types
 

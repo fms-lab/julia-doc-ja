@@ -154,7 +154,7 @@ julia> 'A' + 1
 'B': ASCII/Unicode U+0042 (category Lu: Letter, uppercase)
 ```
 
-## String Basics
+## [String Basics](@id String Basics)
 
 String literals are delimited by double quotes or triple double quotes:
 
@@ -253,7 +253,7 @@ SubString{String}
 Several standard functions like [`chop`](@ref), [`chomp`](@ref) or [`strip`](@ref)
 return a [`SubString`](@ref).
 
-## Unicode and UTF-8
+## [Unicode and UTF-8](@id Unicode and UTF-8)
 
 Julia fully supports Unicode characters and strings. As [discussed above](@ref man-characters), in character
 literals, Unicode code points can be represented using Unicode `\u` and `\U` escape sequences,
@@ -576,7 +576,7 @@ julia> print("I have \$100 in my account.\n")
 I have $100 in my account.
 ```
 
-## Triple-Quoted String Literals
+## [Triple-Quoted String Literals](@id Triple-Quoted String Literals)
 
 When strings are created using triple-quotes (`"""..."""`) they have some special behavior that
 can be useful for creating longer blocks of text.
@@ -649,7 +649,7 @@ Note that line breaks in literal strings, whether single- or triple-quoted, resu
 combination to end lines. To include a CR in a string, use an explicit escape `\r`; for example,
 you can enter the literal string `"a CRLF line ending\r\n"`.
 
-## Common Operations
+## [Common Operations](@id Common Operations)
 
 You can lexicographically compare strings using the standard comparison operators:
 
@@ -746,7 +746,7 @@ quite like a normal string literal.  Regular expressions, byte array literals an
 literals, as described below, are some examples of non-standard string literals. Other examples
 are given in the [Metaprogramming](@ref) section.
 
-## Regular Expressions
+## [Regular Expressions](@id Regular Expressions)
 
 Julia has Perl-compatible regular expressions (regexes), as provided by the [PCRE](http://www.pcre.org/)
 library (a description of the syntax can be found [here](http://www.pcre.org/current/doc/html/pcre2syntax.html)). Regular expressions are related to strings in two ways: the obvious connection is that

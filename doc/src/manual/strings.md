@@ -1,44 +1,25 @@
 # [Strings](@id man-strings)
 
-Strings are finite sequences of characters. Of course, the real trouble comes when one asks what
-a character is. The characters that English speakers are familiar with are the letters `A`, `B`,
-`C`, etc., together with numerals and common punctuation symbols. These characters are standardized
-together with a mapping to integer values between 0 and 127 by the [ASCII](https://en.wikipedia.org/wiki/ASCII)
-standard. There are, of course, many other characters used in non-English languages, including
-variants of the ASCII characters with accents and other modifications, related scripts such as
-Cyrillic and Greek, and scripts completely unrelated to ASCII and English, including Arabic, Chinese,
-Hebrew, Hindi, Japanese, and Korean. The [Unicode](https://en.wikipedia.org/wiki/Unicode) standard
-tackles the complexities of what exactly a character is, and is generally accepted as the definitive
-standard addressing this problem. Depending on your needs, you can either ignore these complexities
-entirely and just pretend that only ASCII characters exist, or you can write code that can handle
-any of the characters or encodings that one may encounter when handling non-ASCII text. Julia
-makes dealing with plain ASCII text simple and efficient, and handling Unicode is as simple and
-efficient as possible. In particular, you can write C-style string code to process ASCII strings,
-and they will work as expected, both in terms of performance and semantics. If such code encounters
-non-ASCII text, it will gracefully fail with a clear error message, rather than silently introducing
-corrupt results. When this happens, modifying the code to handle non-ASCII data is straightforward.
+<!-- Strings are finite sequences of characters. Of course, the real trouble comes when one asks what a character is. The characters that English speakers are familiar with are the letters A, B, C, etc., together with numerals and common punctuation symbols. These characters are standardized together with a mapping to integer values between 0 and 127 by the ASCII standard. There are, of course, many other characters used in non-English languages, including variants of the ASCII characters with accents and other modifications, related scripts such as Cyrillic and Greek, and scripts completely unrelated to ASCII and English, including Arabic, Chinese, Hebrew, Hindi, Japanese, and Korean. The Unicode standard tackles the complexities of what exactly a character is, and is generally accepted as the definitive standard addressing this problem. Depending on your needs, you can either ignore these complexities entirely and just pretend that only ASCII characters exist, or you can write code that can handle any of the characters or encodings that one may encounter when handling non-ASCII text. Julia makes dealing with plain ASCII text simple and efficient, and handling Unicode is as simple and efficient as possible. In particular, you can write C-style string code to process ASCII strings, and they will work as expected, both in terms of performance and semantics. If such code encounters non-ASCII text, it will gracefully fail with a clear error message, rather than silently introducing corrupt results. When this happens, modifying the code to handle non-ASCII data is straightforward. -->
+Stringsとは有限の文字の列を意味します．当然ながら，ここで問題になるのは「文字とは何か」ということです．英語圏の人がよく知っている文字は，アルファベットの「A」「B」「C」などのほか，数字や一般的な句読点などであり，これらの文字は[ASCII](https://en.wikipedia.org/wiki/ASCII) 規格による0～127の整数値への写像に合わせて規格化されています．確かに，ASCII文字にアクセントなどの修飾を加えたものやキリル文字やギリシャ文字など英語に関連するscript，アラビア語，中国語，ヘブライ語，ヒンディー語，日本語，韓国語などのASCIIや英語とは全く関係のないscriptなど，英語以外の言語で使われている文字は他にもたくさんあります．[Unicode](https://en.wikipedia.org/wiki/Unicode) 規格は'文字とは何か'という複雑な問題に取り組んでおり，この問題を扱う決定的な規格として一般に受け入れられています．必要に応じて，これらの複雑さを完全に無視してASCII文字だけが存在すると考えることもできますし，非ASCIIテキストを扱う際に遭遇する可能性のある文字やエンコーディングを処理できるコードを書くこともできます．JuliaではプレーンなASCIIテキストをシンプルかつ効率的に扱うことができ，またUnicodeの取り扱いも可能な限りシンプルかつ効率的です．特に，Cスタイルの文字列コードを書いてASCII文字列を処理すると性能面でもセマンティクス面でも期待通りに動作します．そのようなコードは，非ASCIIテキストに遭遇した場合，誤った結果を黙って渡されるのではなく，明確なエラーメッセージを表示して潔く失敗するようになっています．このような場合には，非ASCIIデータを扱うようにコードを修正することが容易にできます．
 
-There are a few noteworthy high-level features about Julia's strings:
+<!-- There are a few noteworthy high-level features about Julia's strings: -->
+Juliaの文字列には，注目すべきハイレベルな特徴がいくつかあります:
 
-  * The built-in concrete type used for strings (and string literals) in Julia is [`String`](@ref).
-    This supports the full range of [Unicode](https://en.wikipedia.org/wiki/Unicode) characters via
+  <!-- * The built-in concrete type used for strings (and string literals) in Julia is [`String`](@ref). -->
+  * Juliaで文字列（および文字列リテラル）に使われる組み込みの具象型は，[`String`](@ref)です．
+    <!-- This supports the full range of [Unicode](https://en.wikipedia.org/wiki/Unicode) characters via
     the [UTF-8](https://en.wikipedia.org/wiki/UTF-8) encoding. (A [`transcode`](@ref) function is
-    provided to convert to/from other Unicode encodings.)
-  * All string types are subtypes of the abstract type `AbstractString`, and external packages define
-    additional `AbstractString` subtypes (e.g. for other encodings).  If you define a function expecting
-    a string argument, you should declare the type as `AbstractString` in order to accept any string
-    type.
-  * Like C and Java, but unlike most dynamic languages, Julia has a first-class type for representing
-    a single character, called [`AbstractChar`](@ref). The built-in [`Char`](@ref) subtype of `AbstractChar`
-    is a 32-bit primitive type that can represent any Unicode character (and which is based
-    on the UTF-8 encoding).
-  * As in Java, strings are immutable: the value of an `AbstractString` object cannot be changed.
-    To construct a different string value, you construct a new string from parts of other strings.
-  * Conceptually, a string is a *partial function* from indices to characters: for some index values,
-    no character value is returned, and instead an exception is thrown. This allows for efficient
-    indexing into strings by the byte index of an encoded representation rather than by a character
-    index, which cannot be implemented both efficiently and simply for variable-width encodings of
-    Unicode strings.
+    provided to convert to/from other Unicode encodings.) -->
+    これは，[UTF-8](https://en.wikipedia.org/wiki/UTF-8) エンコーディングによる[Unicode](https://en.wikipedia.org/wiki/Unicode) 文字の全範囲をサポートしています．(他のUnicodeエンコーディングとの間で変換するための[`transcode`](@ref)関数が提供されています．)
+  <!-- * All string types are subtypes of the abstract type `AbstractString`, and external packages define additional `AbstractString` subtypes (e.g. for other encodings).  If you define a function expecting a string argument, you should declare the type as `AbstractString` in order to accept any string type. -->
+  * すべての文字列型は抽象型である `AbstractString` のサブタイプであり，外部パッケージではさらに `AbstractString` サブタイプが定義されています (他のエンコーディング用など)．関数で文字列の引数を取る場合，任意の文字列型を受け付けるためにその型を `AbstractString` と宣言する必要があります．
+  <!-- * Like C and Java, but unlike most dynamic languages, Julia has a first-class type for representing a single character, called [`AbstractChar`](@ref). The built-in [`Char`](@ref) subtype of `AbstractChar` is a 32-bit primitive type that can represent any Unicode character (and which is based on the UTF-8 encoding). -->
+  * C言語やJavaのように，多くの動的型付け言語とは違い，Juliaは単一の文字を表す[`AbstractChar`](@ref)というファーストクラスの型があります．`AbstractChar`の組み込みのサブタイプである [`Char`](@ref) は任意のUnicode文字を表すことのできる32-bitのプリミティブな型です．(UTF-8エンコーディングに基づいています)
+  <!-- * As in Java, strings are immutable: the value of an `AbstractString` object cannot be changed. To construct a different string value, you construct a new string from parts of other strings. -->
+  * Javaのように文字列はイミュータブルです． `AbstractString` 型のオブジェクトは変更不可能です．異なる文字列の値を生成するには他の文字列から新たに生成します．
+  <!-- * Conceptually, a string is a *partial function* from indices to characters: for some index values,no character value is returned, and instead an exception is thrown. This allows for efficient indexing into strings by the byte index of an encoded representation rather than by a character index, which cannot be implemented both efficiently and simply for variable-width encodings of Unicode strings. -->
+  * 概念的に言えば，文字列はインデックスから文字への部分写像です．即ちインデックスの値によっては，文字の値が返されず，例外が発生してしまいます．これにより，Unicode文字列の可変幅エンコーディングを効率的かつシンプルに実装することができない文字インデックスではなく，エンコードされた表現のバイトインデックスで文字列を効率的にインデックスすることができます．
 
 ## [Characters](@id man-characters)
 

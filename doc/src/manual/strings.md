@@ -1,7 +1,7 @@
 # [Strings](@id man-strings)
 
 <!-- Strings are finite sequences of characters. Of course, the real trouble comes when one asks what a character is. The characters that English speakers are familiar with are the letters A, B, C, etc., together with numerals and common punctuation symbols. These characters are standardized together with a mapping to integer values between 0 and 127 by the ASCII standard. There are, of course, many other characters used in non-English languages, including variants of the ASCII characters with accents and other modifications, related scripts such as Cyrillic and Greek, and scripts completely unrelated to ASCII and English, including Arabic, Chinese, Hebrew, Hindi, Japanese, and Korean. The Unicode standard tackles the complexities of what exactly a character is, and is generally accepted as the definitive standard addressing this problem. Depending on your needs, you can either ignore these complexities entirely and just pretend that only ASCII characters exist, or you can write code that can handle any of the characters or encodings that one may encounter when handling non-ASCII text. Julia makes dealing with plain ASCII text simple and efficient, and handling Unicode is as simple and efficient as possible. In particular, you can write C-style string code to process ASCII strings, and they will work as expected, both in terms of performance and semantics. If such code encounters non-ASCII text, it will gracefully fail with a clear error message, rather than silently introducing corrupt results. When this happens, modifying the code to handle non-ASCII data is straightforward. -->
-Stringsとは有限の文字の列を意味します．当然ながら，ここで問題になるのは「文字とは何か」ということです．英語圏の人がよく知っている文字は，アルファベットの「A」「B」「C」などのほか，数字や一般的な句読点などであり，これらの文字は[ASCII](https://en.wikipedia.org/wiki/ASCII) 規格による0～127の整数値への写像に合わせて規格化されています．確かに，ASCII文字にアクセントなどの修飾を加えたものやキリル文字やギリシャ文字など英語に関連するscript，アラビア語，中国語，ヘブライ語，ヒンディー語，日本語，韓国語などのASCIIや英語とは全く関係のないscriptなど，英語以外の言語で使われている文字は他にもたくさんあります．[Unicode](https://en.wikipedia.org/wiki/Unicode) 規格は'文字とは何か'という複雑な問題に取り組んでおり，この問題を扱う決定的な規格として一般に受け入れられています．必要に応じて，これらの複雑さを完全に無視してASCII文字だけが存在すると考えることもできますし，非ASCIIテキストを扱う際に遭遇する可能性のある文字やエンコーディングを処理できるコードを書くこともできます．JuliaではプレーンなASCIIテキストをシンプルかつ効率的に扱うことができ，またUnicodeの取り扱いも可能な限りシンプルかつ効率的です．特に，Cスタイルの文字列コードを書いてASCII文字列を処理すると性能面でもセマンティクス面でも期待通りに動作します．そのようなコードは，非ASCIIテキストに遭遇した場合，誤った結果を黙って渡されるのではなく，明確なエラーメッセージを表示して潔く失敗するようになっています．このような場合には，非ASCIIデータを扱うようにコードを修正することが容易にできます．
+Stringsとは有限の文字列を意味します．当然ながら，ここで問題になるのは「文字とは何か」ということです．英語圏の人がよく知っている文字は，アルファベットの「A」「B」「C」などのほか，数字や一般的な句読点などであり，これらの文字は[ASCII](https://en.wikipedia.org/wiki/ASCII) 規格による0～127の整数値への写像に合わせて規格化されています．確かに，ASCII文字にアクセントなどの修飾を加えたものやキリル文字やギリシャ文字など英語に関連するscript，アラビア語，中国語，ヘブライ語，ヒンディー語，日本語，韓国語などのASCIIや英語とは全く関係のないscriptなど，英語以外の言語で使われている文字は他にもたくさんあります．[Unicode](https://en.wikipedia.org/wiki/Unicode) 規格は'文字とは何か'という複雑な問題に取り組んでおり，この問題を扱う決定的な規格として一般に受け入れられています．必要に応じて，これらの複雑さを完全に無視してASCII文字だけが存在すると考えることもできますし，非ASCIIテキストを扱う際に遭遇する可能性のある文字やエンコーディングを処理できるコードを書くこともできます．JuliaではプレーンなASCIIテキストをシンプルかつ効率的に扱うことができ，またUnicodeの取り扱いも可能な限りシンプルかつ効率的です．特に，Cスタイルの文字列コードを書いてASCII文字列を処理すると性能面でもセマンティクス面でも期待通りに動作します．そのようなコードは，非ASCIIテキストに遭遇した場合，誤った結果を黙って渡されるのではなく，明確なエラーメッセージを表示して潔く失敗するようになっています．このような場合には，非ASCIIデータを扱うようにコードを修正することが容易にできます．
 
 <!-- There are a few noteworthy high-level features about Julia's strings: -->
 Juliaの文字列には，注目すべきハイレベルな特徴がいくつかあります:
@@ -23,13 +23,16 @@ Juliaの文字列には，注目すべきハイレベルな特徴がいくつか
 
 ## [Characters](@id man-characters)
 
-A `Char` value represents a single character: it is just a 32-bit primitive type with a special literal
+<!-- A `Char` value represents a single character: it is just a 32-bit primitive type with a special literal
 representation and appropriate arithmetic behaviors, and which can be converted
 to a numeric value representing a
 [Unicode code point](https://en.wikipedia.org/wiki/Code_point).  (Julia packages may define
 other subtypes of `AbstractChar`, e.g. to optimize operations for other
-[text encodings](https://en.wikipedia.org/wiki/Character_encoding).) Here is how `Char` values are
-input and shown:
+[text encodings](https://en.wikipedia.org/wiki/Character_encoding).) Here is how `Char` values are -->
+`Char`は１つの文字を表します．これは，特別なリテラル表現と適切な算術動作を持つ32ビットのプリミティブ型であり，[Unicode code point](https://en.wikipedia.org/wiki/Code_point) を表す数値に変換することができます．(Juliaのパッケージでは他の [テキストエンコーディング](https://en.wikipedia.org/wiki/Character_encoding) に対する操作を最適化するために`AbstractChar`などの他のサブタイプを定義することができます．)
+以下は，`Char` の値がどのようなものかを示しています．
+<!-- input and shown: -->
+入力と表示: 
 
 ```jldoctest
 julia> 'x'
@@ -39,7 +42,8 @@ julia> typeof(ans)
 Char
 ```
 
-You can easily convert a `Char` to its integer value, i.e. code point:
+<!-- You can easily convert a `Char` to its integer value, i.e. code point: -->
+`Char`は整数値に容易に変換することができます．:
 
 ```jldoctest
 julia> Int('x')
@@ -49,17 +53,19 @@ julia> typeof(ans)
 Int64
 ```
 
-On 32-bit architectures, [`typeof(ans)`](@ref) will be [`Int32`](@ref). You can convert an
-integer value back to a `Char` just as easily:
+<!-- On 32-bit architectures, [`typeof(ans)`](@ref) will be [`Int32`](@ref). You can convert an
+integer value back to a `Char` just as easily: -->
+32-bitアーキテクチャでは[`typeof(ans)`](@ref)は[`Int32`](@ref)になります．整数値を`Char`に戻すことも容易です．:
 
 ```jldoctest
 julia> Char(120)
 'x': ASCII/Unicode U+0078 (category Ll: Letter, lowercase)
 ```
 
-Not all integer values are valid Unicode code points, but for performance, the `Char` conversion
+<!-- Not all integer values are valid Unicode code points, but for performance, the `Char` conversion
 does not check that every character value is valid. If you want to check that each converted value
-is a valid code point, use the [`isvalid`](@ref) function:
+is a valid code point, use the [`isvalid`](@ref) function: -->
+パフォーマンスのために，任意の整数値がUnicodeのコードポイントというわけではありませんが，`Char`変換では文字の値が有効であるかはチェックしません．変換された値が有効なコードポイントであるかチェックしたい場合は[`isvalid`](@ref)関数を使用します．:
 
 ```jldoctest
 julia> Char(0x110000)
@@ -68,14 +74,15 @@ julia> Char(0x110000)
 julia> isvalid(Char, 0x110000)
 false
 ```
-
+<!-- 
 As of this writing, the valid Unicode code points are `U+0000` through `U+D7FF` and `U+E000` through
 `U+10FFFF`. These have not all been assigned intelligible meanings yet, nor are they necessarily
-interpretable by applications, but all of these values are considered to be valid Unicode characters.
+interpretable by applications, but all of these values are considered to be valid Unicode characters. -->
+この記事を書いている時点で，有効な Unicode コードポイントは，`U+0000` から `U+D7FF` および `U+E000` から `U+10FFFF` です．これらのコードポイント全てに明瞭な意味が与えられたわけではなく，またそれらをアプリケーションが必ずしも解釈できるわけでもありません．しかし，これらの値は全て有効なUnicode文字であると考えられます．
 
-You can input any Unicode character in single quotes using `\u` followed by up to four hexadecimal
-digits or `\U` followed by up to eight hexadecimal digits (the longest valid value only requires
-six):
+<!-- You can input any Unicode character in single quotes using `\u` followed by up to four hexadecimal
+digits or `\U` followed by up to eight hexadecimal digits (the longest valid value only requires six): -->
+任意のUnicode文字を一重引用符で囲んで入力するには，`\u`に続けて4桁までの16進数を入力するか，`\U`に続けて8桁までの16進数を入力します（最長の有効値は6桁まで）．:
 
 ```jldoctest
 julia> '\u0'
@@ -90,11 +97,13 @@ julia> '\u2200'
 julia> '\U10ffff'
 '\U10ffff': Unicode U+10FFFF (category Cn: Other, not assigned)
 ```
-
+<!-- 
 Julia uses your system's locale and language settings to determine which characters can be printed
 as-is and which must be output using the generic, escaped `\u` or `\U` input forms. In addition
 to these Unicode escape forms, all of [C's traditional escaped input forms](https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes)
-can also be used:
+can also be used: -->
+Juliaはシステムのロケールと言語設定を用いてどの文字がそのまま表示可能で，どの文字が一般的なエスケープされた`\u`や`\U`を用いた入力形式を用いなければならないかを決定します．
+それに加え，全ての[Cの従来のエスケープされた入力フォーム](https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes)も使用することができます．：
 
 ```jldoctest
 julia> Int('\0')
@@ -116,7 +125,8 @@ julia> Int('\177')
 127
 ```
 
-You can do comparisons and a limited amount of arithmetic with `Char` values:
+<!-- You can do comparisons and a limited amount of arithmetic with `Char` values: -->
+`Char`の値で比較や限られた範囲の算術演算ををすることができます．:
 
 ```jldoctest
 julia> 'A' < 'a'
@@ -137,7 +147,8 @@ julia> 'A' + 1
 
 ## [String Basics](@id String Basics)
 
-String literals are delimited by double quotes or triple double quotes:
+<!-- String literals are delimited by double quotes or triple double quotes: -->
+文字列リテラルはタブルクォートやトリプルクォートで区切られます:
 
 ```jldoctest helloworldstring
 julia> str = "Hello, world.\n"
@@ -147,7 +158,8 @@ julia> """Contains "quote" characters"""
 "Contains \"quote\" characters"
 ```
 
-If you want to extract a character from a string, you index into it:
+<!-- If you want to extract a character from a string, you index into it: -->
+文字列から1文字を取り出したい場合はインデックスで取り出せます．
 
 ```jldoctest helloworldstring
 julia> str[begin]
@@ -163,16 +175,18 @@ julia> str[end]
 '\n': ASCII/Unicode U+000A (category Cc: Other, control)
 ```
 
-Many Julia objects, including strings, can be indexed with integers. The index of the first
+<!-- Many Julia objects, including strings, can be indexed with integers. The index of the first
 element (the first character of a string) is returned by [`firstindex(str)`](@ref), and the index of the last element (character)
 with [`lastindex(str)`](@ref). The keywords `begin` and `end` can be used inside an indexing
 operation as shorthand for the first and last indices, respectively, along the given dimension.
 String indexing, like most indexing in Julia, is 1-based: `firstindex` always returns `1` for any `AbstractString`.
 As we will see below, however, `lastindex(str)` is *not* in general the same as `length(str)` for a string,
-because some Unicode characters can occupy multiple "code units".
+because some Unicode characters can occupy multiple "code units". -->
+文字列を含む多くのJuliaのオブジェクトは整数でインデックスをつけることができます．最初の要素(文字列の最初の文字)のインデックスは[`firstindex(str)`](@ref)で最後の要素(文字)のインデックスは[`lastindex(str)`](@ref)で返されます． キーワード `begin` と `end` は，インデックス操作の中で，与えられた次元に沿ったそれぞれの最初と最後のインデックスを表す略語として使用できます．文字列インデックスのようなJuliaにおけるほとんどのインデックスは1から始まり，`firstindex`はどの`AbscractString`に対しても常に`1`を返します．しかしながら，後述するように，一般的には`lastindex(str)`は文字列の`length(str)`とは違うものです．なぜなら，Unicode文字は複数の「コードユニット」を占めることがあるからです．
 
-You can perform arithmetic and other operations with [`end`](@ref), just like
-a normal value:
+<!-- You can perform arithmetic and other operations with [`end`](@ref), just like
+a normal value: -->
+[`end`](@ref)では通常の値と同じように算術演算やその他の操作を行うことができます．:
 
 ```jldoctest helloworldstring
 julia> str[end-1]
@@ -182,7 +196,8 @@ julia> str[end÷2]
 ' ': ASCII/Unicode U+0020 (category Zs: Separator, space)
 ```
 
-Using an index less than `begin` (`1`) or greater than `end` raises an error:
+<!-- Using an index less than `begin` (`1`) or greater than `end` raises an error: -->
+インデックスが `begin` (`1`) より小さいか，`end` より大きいと，エラーになります．:
 
 ```jldoctest helloworldstring
 julia> str[begin-1]
@@ -196,14 +211,16 @@ ERROR: BoundsError: attempt to access String
 [...]
 ```
 
-You can also extract a substring using range indexing:
+<!-- You can also extract a substring using range indexing: -->
+レンジインデックスを用いて部分文字列を取り出すことができます．:
 
 ```jldoctest helloworldstring
 julia> str[4:9]
 "lo, wo"
 ```
 
-Notice that the expressions `str[k]` and `str[k:k]` do not give the same result:
+<!-- Notice that the expressions `str[k]` and `str[k:k]` do not give the same result: -->
+`str[k]` と `str[k:k]` は同じ結果にならないことに注意してください．:
 
 ```jldoctest helloworldstring
 julia> str[6]
@@ -213,12 +230,17 @@ julia> str[6:6]
 ","
 ```
 
-The former is a single character value of type `Char`, while the latter is a string value that
-happens to contain only a single character. In Julia these are very different things.
+<!-- The former is a single character value of type `Char`, while the latter is a string value that
+happens to contain only a single character. In Julia these are very different things. -->
+前者は `Char` 型の1文字の値で，後者は1文字しか含まない文字列の値です．
+後者は，たまたま1文字しか含まれていない文字列値です．Juliaではこれらは全く異なるものです．
 
-Range indexing makes a copy of the selected part of the original string.
+<!-- Range indexing makes a copy of the selected part of the original string.
 Alternatively, it is possible to create a view into a string using the type [`SubString`](@ref),
-for example:
+for example: -->
+範囲指定では下の文字列の選択された部分をコピーします．また，[`SubString`](@ref)型を使って文字列へのビューを作成することもできます．
+
+例:
 
 ```jldoctest
 julia> str = "long string"
@@ -230,9 +252,10 @@ julia> substr = SubString(str, 1, 4)
 julia> typeof(substr)
 SubString{String}
 ```
-
+<!-- 
 Several standard functions like [`chop`](@ref), [`chomp`](@ref) or [`strip`](@ref)
-return a [`SubString`](@ref).
+return a [`SubString`](@ref). -->
+[`chop`](@ref)，[`chomp`](@ref)，[`strip`](@ref)のようないくつかの標準的な関数は，[`SubString`](@ref)を返します．
 
 ## [Unicode and UTF-8](@id Unicode and UTF-8)
 

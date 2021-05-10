@@ -549,34 +549,39 @@ implies commutativity. -->
 より正確には，すべての有限長の文字列*S*と文字列連結演算子`*`の集合は、[自由モノイド](https://en.wikipedia.org/wiki/Free_monoid) (*S*, `*`)を形成します．この集合の恒等要素は空文字列 `""` です．自由モノイドが可換でない場合，その演算は通常 `+` ではなく``cdot`, `*`, または同様の記号で表されます．
 
 
-## [Interpolation](@id string-interpolation)
-
+## [補間](@id string-interpolation)
+<!-- 
 Constructing strings using concatenation can become a bit cumbersome, however. To reduce the need for these
 verbose calls to [`string`](@ref) or repeated multiplications, Julia allows interpolation into string literals
-using `$`, as in Perl:
+using `$`, as in Perl: -->
+連結で文字列を構築するのは少々面倒な作業です．そこで，[`string`](@ref)のくどい呼び出しや繰り返しの乗算を減らすために，JuliaではPerlのように，`$`を用いて文字列リテラルに補間することができます．:
 
 ```jldoctest stringconcat
 julia> "$greet, $whom.\n"
 "Hello, world.\n"
 ```
 
-This is more readable and convenient and equivalent to the above string concatenation -- the system
-rewrites this apparent single string literal into the call `string(greet, ", ", whom, ".\n")`.
+<!-- This is more readable and convenient and equivalent to the above string concatenation -- the system
+rewrites this apparent single string literal into the call `string(greet, ", ", whom, ".\n")`. -->
+こちらはより読みやすく便利で，上記の文字列連結と同値です．システムは，この見かけ上の単一の文字列リテラルを呼び出し`string(greet, ", ", whom, ".\n")`に書き換えます．
 
-The shortest complete expression after the `$` is taken as the expression whose value is to be
-interpolated into the string. Thus, you can interpolate any expression into a string using parentheses:
+<!-- The shortest complete expression after the `$` is taken as the expression whose value is to be
+interpolated into the string. Thus, you can interpolate any expression into a string using parentheses: -->
+$`の後の最も短い完全な式が，文字列に値を補うべき式とみなされます．このように，括弧を使えば，どんな式でも文字列に補間することができます．:
 
 ```jldoctest
 julia> "1 + 2 = $(1 + 2)"
 "1 + 2 = 3"
 ```
 
-Both concatenation and string interpolation call [`string`](@ref) to convert objects into string
+<!-- Both concatenation and string interpolation call [`string`](@ref) to convert objects into string
 form. However, `string` actually just returns the output of [`print`](@ref), so new types
-should add methods to [`print`](@ref) or [`show`](@ref) instead of `string`.
+should add methods to [`print`](@ref) or [`show`](@ref) instead of `string`. -->
+連結や文字列補間では，オブジェクトを文字列に変換するために [`string`](@ref) を呼び出します．しかし，`string`は実際には [`print`](@ref) の出力を返すだけなので，新しい型では`string`の代わりに [`print`](@ref) や [`show`](@ref) のメソッドを追加する必要があります．
 
-Most non-`AbstractString` objects are converted to strings closely corresponding to how
-they are entered as literal expressions:
+<!-- Most non-`AbstractString` objects are converted to strings closely corresponding to how
+they are entered as literal expressions: -->
+多くの`AbstractString`ではないオブジェクトは，リテラル式として入力された様式に近い形で文字列に変換されます．
 
 ```jldoctest
 julia> v = [1,2,3]
@@ -589,8 +594,9 @@ julia> "v: $v"
 "v: [1, 2, 3]"
 ```
 
-[`string`](@ref) is the identity for `AbstractString` and `AbstractChar` values, so these are interpolated
-into strings as themselves, unquoted and unescaped:
+<!-- [`string`](@ref) is the identity for `AbstractString` and `AbstractChar` values, so these are interpolated
+into strings as themselves, unquoted and unescaped: -->
+[`string`](@ref)は`AbstractString`や`AbstractChar`の値と恒等であり，これらは引用符やエスケープされずにそのまま文字列に補間されます．
 
 ```jldoctest
 julia> c = 'x'
@@ -600,7 +606,8 @@ julia> "hi, $c"
 "hi, x"
 ```
 
-To include a literal `$` in a string literal, escape it with a backslash:
+<!-- To include a literal `$` in a string literal, escape it with a backslash: -->
+リテラル `$` を文字列リテラルに含めるには，バックスラッシュでエスケープします．:
 
 ```jldoctest
 julia> print("I have \$100 in my account.\n")

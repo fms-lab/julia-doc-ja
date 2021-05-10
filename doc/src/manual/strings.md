@@ -475,6 +475,7 @@ JuliaはデフォルトではUTF-8エンコーディングを使用しますが�
 ## [Concatenation](@id man-concatenation)
 
 One of the most common and useful string operations is concatenation:
+最も一般的で便利な文字列操作の一つが連結です．
 
 ```jldoctest stringconcat
 julia> greet = "Hello"
@@ -487,10 +488,13 @@ julia> string(greet, ", ", whom, ".\n")
 "Hello, world.\n"
 ```
 
-It's important to be aware of potentially dangerous situations such as concatenation of invalid UTF-8 strings.
+<!-- It's important to be aware of potentially dangerous situations such as concatenation of invalid UTF-8 strings.
 The resulting string may contain different characters than the input strings,
 and its number of characters may be lower than sum of numbers of characters
-of the concatenated strings, e.g.:
+of the concatenated strings, e.g.: -->
+無効なUTF-8文字列の連結など，潜在的に危険な状況に注意することが重要です．結果として得られる文字列には，入力文字列とは異なる文字が含まれている可能性があり，その文字数は，連結された文字列の文字数の合計よりも少ない可能性があります．
+
+例:
 
 ```julia-repl
 julia> a, b = "\xe2\x88", "\x80"
@@ -512,32 +516,38 @@ julia> length.([a, b, c])
  1
 ```
 
-This situation can happen only for invalid UTF-8 strings. For valid UTF-8 strings
-concatenation preserves all characters in strings and additivity of string lengths.
+<!-- This situation can happen only for invalid UTF-8 strings. For valid UTF-8 strings
+concatenation preserves all characters in strings and additivity of string lengths. -->
+この状況は，無効なUTF-8文字列に対してのみ発生します．有効なUTF-8文字列の場合，連結は文字列内のすべての文字と文字列長の加法性を保持します．
 
-Julia also provides [`*`](@ref) for string concatenation:
+<!-- Julia also provides [`*`](@ref) for string concatenation: -->
+また，Juliaには文字列連結のための[`*`](@ref)が用意されています．:
 
 ```jldoctest stringconcat
 julia> greet * ", " * whom * ".\n"
 "Hello, world.\n"
 ```
 
-While `*` may seem like a surprising choice to users of languages that provide `+` for string
-concatenation, this use of `*` has precedent in mathematics, particularly in abstract algebra.
+<!-- While `*` may seem like a surprising choice to users of languages that provide `+` for string
+concatenation, this use of `*` has precedent in mathematics, particularly in abstract algebra. -->
+一方，文字列の連結に `+` を提供している言語のユーザーにとっては、`*` は意外な選択に思えるかもしれませんが，`*` の使用は，数学，特に抽象代数では前例があります．
 
-In mathematics, `+` usually denotes a *commutative* operation, where the order of the operands does
+<!-- In mathematics, `+` usually denotes a *commutative* operation, where the order of the operands does
 not matter. An example of this is matrix addition, where `A + B == B + A` for any matrices `A` and `B`
 that have the same shape. In contrast, `*` typically denotes a *noncommutative* operation, where the
 order of the operands *does* matter. An example of this is matrix multiplication, where in general
 `A * B != B * A`. As with matrix multiplication, string concatenation is noncommutative:
 `greet * whom != whom * greet`. As such, `*` is a more natural choice for an infix string concatenation
-operator, consistent with common mathematical use.
+operator, consistent with common mathematical use. -->
+数学では，`+`は通常、被演算子の順序が問題にならない，*可換*の演算を表します．この例として，行列の加算があります．同じ形の行列 `A` と `B` に対して，`A + B == B + A` となります．対照的に，`*` は一般的に *非可換* 演算を表し，演算子の順序が *重要になります．この例としては，行列の乗算があり，一般的には `A * B != B * A` となります．行列の乗算と同様に，文字列の連結も非可換です．例えば，`greet * whom != whom * greet`となります．このように， 中置記法の文字列連結演算子としては `*` がより自然な選択であり，一般的な数学的使用と一致しています．
 
-More precisely, the set of all finite-length strings *S* together with the string concatenation operator
+<!-- More precisely, the set of all finite-length strings *S* together with the string concatenation operator
 `*` forms a [free monoid](https://en.wikipedia.org/wiki/Free_monoid) (*S*, `*`). The identity element
 of this set is the empty string, `""`. Whenever a free monoid is not commutative, the operation is
 typically represented as `\cdot`, `*`, or a similar symbol, rather than `+`, which as stated usually
-implies commutativity.
+implies commutativity. -->
+より正確には，すべての有限長の文字列*S*と文字列連結演算子`*`の集合は、[自由モノイド](https://en.wikipedia.org/wiki/Free_monoid) (*S*, `*`)を形成します．この集合の恒等要素は空文字列 `""` です．自由モノイドが可換でない場合，その演算は通常 `+` ではなく``cdot`, `*`, または同様の記号で表されます．
+
 
 ## [Interpolation](@id string-interpolation)
 

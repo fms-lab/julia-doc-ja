@@ -705,9 +705,10 @@ you can enter the literal string `"a CRLF line ending\r\n"`.
 リテラル文字列の改行はリテラルがシングルクオーテーション，トリプルクオーテーションどちらで囲まれていても返り値の改行部分は改行（LF）文字`\n`が入ります．これはエディタがCR文字やCRLFの組み合わせで行を終わらせている場合でも同様です．文字列にCR文字を含めるには，明示的なエスケープを使用します，例えば/リテラル文字列 `"a CRLF line ending\r\n"` を入力します．
 
 
-## [Common Operations](@id Common Operations)
+## [よくある操作](@id Common Operations)
 
-You can lexicographically compare strings using the standard comparison operators:
+<!-- You can lexicographically compare strings using the standard comparison operators: -->
+標準的な比較演算子を使って，文字列を辞書的に比較することができます．
 
 ```jldoctest
 julia> "abracadabra" < "xylophone"
@@ -736,8 +737,9 @@ julia> findlast(isequal('o'), "xylophone")
 julia> findfirst(isequal('z'), "xylophone")
 ```
 
-You can start the search for a character at a given offset by using
-the functions [`findnext`](@ref) and [`findprev`](@ref):
+<!-- You can start the search for a character at a given offset by using
+the functions [`findnext`](@ref) and [`findprev`](@ref): -->
+[`findfirst`](@ref)および[`findlast`](@ref)関数を使って，特定の文字のインデックスを検索することができます．
 
 ```jldoctest
 julia> findnext(isequal('o'), "xylophone", 1)
@@ -752,7 +754,8 @@ julia> findprev(isequal('o'), "xylophone", 5)
 julia> findnext(isequal('o'), "xylophone", 8)
 ```
 
-You can use the [`occursin`](@ref) function to check if a substring is found within a string:
+<!-- You can use the [`occursin`](@ref) function to check if a substring is found within a string: -->
+文字列の中に部分文字列があるかどうかを調べるには[`occursin`](@ref)関数を使います．
 
 ```jldoctest
 julia> occursin("world", "Hello, world.")
@@ -768,9 +771,12 @@ julia> occursin('o', "Xylophon")
 true
 ```
 
-The last example shows that [`occursin`](@ref) can also look for a character literal.
+<!-- The last example shows that [`occursin`](@ref) can also look for a character literal. -->
+最後の例では，[`occursin`](@ref)が文字リテラルを探すこともできることを示しています．
 
-Two other handy string functions are [`repeat`](@ref) and [`join`](@ref):
+<!-- Two other handy string functions are [`repeat`](@ref) and [`join`](@ref): -->
+他にも便利な文字列関数として[`repeat`](@ref)や[`join`](@ref)があります．
+
 
 ```jldoctest
 julia> repeat(".:Z:.", 10)
@@ -780,17 +786,27 @@ julia> join(["apples", "bananas", "pineapples"], ", ", " and ")
 "apples, bananas and pineapples"
 ```
 
-Some other useful functions include:
+<!-- Some other useful functions include: -->
+他にも便利な関数があります: 
 
-  * [`firstindex(str)`](@ref) gives the minimal (byte) index that can be used to index into `str` (always 1 for strings, not necessarily true for other containers).
-  * [`lastindex(str)`](@ref) gives the maximal (byte) index that can be used to index into `str`.
-  * [`length(str)`](@ref) the number of characters in `str`.
-  * [`length(str, i, j)`](@ref) the number of valid character indices in `str` from `i` to `j`.
-  * [`ncodeunits(str)`](@ref) number of [code units](https://en.wikipedia.org/wiki/Character_encoding#Terminology) in a string.
-  * [`codeunit(str, i)`](@ref) gives the code unit value in the string `str` at index `i`.
-  * [`thisind(str, i)`](@ref) given an arbitrary index into a string find the first index of the character into which the index points.
-  * [`nextind(str, i, n=1)`](@ref) find the start of the `n`th character starting after index `i`.
-  * [`prevind(str, i, n=1)`](@ref) find the start of the `n`th character starting before index `i`.
+  <!-- * [`firstindex(str)`](@ref) gives the minimal (byte) index that can be used to index into `str` (always 1 for strings, not necessarily true for other containers). -->
+  * [`firstindex(str)`](@ref)は`str` へのインデックスに使用できる最小の（バイト）インデックスを返します（文字列の場合は常に1ですが，他のコンテナの場合は必ずしもそうではありません）．
+  <!-- * [`lastindex(str)`](@ref) gives the maximal (byte) index that can be used to index into `str`. -->
+  * [`lastindex(str)`](@ref)は，`str` のインデックスに使用できる最大の（バイト）インデックスを返します．
+  <!-- * [`length(str)`](@ref) the number of characters in `str`. -->
+  * [`length(str)`](@ref) は`str`の文字数です．
+  <!-- * [`length(str, i, j)`](@ref) the number of valid character indices in `str` from `i` to `j`. -->
+  * [`length(str, i, j)`](@ref) は`str` の中の `i` から `j` までの有効な文字インデックスの数です．
+  <!-- * [`ncodeunits(str)`](@ref) number of [code units](https://en.wikipedia.org/wiki/Character_encoding#Terminology) in a string. -->
+  * [`ncodeunits(str)`](@ref) は文字列中の[code units](https://en.wikipedia.org/wiki/Character_encoding#Terminology)の数です．
+  <!-- * [`codeunit(str, i)`](@ref) gives the code unit value in the string `str` at index `i`. -->
+  * [`codeunit(str, i)`](@ref) は文字列 `str` のインデックス `i` にコードユニットの値を返します．
+  <!-- * [`thisind(str, i)`](@ref) given an arbitrary index into a string find the first index of the character into which the index points. -->
+  * [`thisind(str, i)`](@ref) は文字列に任意のインデックスを与えると，そのインデックスが指し示す文字の最初のインデックスを返します．
+  <!-- * [`nextind(str, i, n=1)`](@ref) find the start of the `n`th character starting after index `i`. -->
+  * [`nextind(str, i, n=1)`](@ref) は添字 `i` から始まる `n` 番目の文字の先頭を見つけます．
+  <!-- * [`prevind(str, i, n=1)`](@ref) find the start of the `n`th character starting before index `i`. -->
+  * [`prevind(str, i, n=1)`](@ref) は添字 `i` より前の `n` 番目の文字の始まりを見つけます．
 
 ## [Non-Standard String Literals](@id non-standard-string-literals)
 

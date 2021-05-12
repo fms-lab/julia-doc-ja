@@ -78,7 +78,7 @@ false
 As of this writing, the valid Unicode code points are `U+0000` through `U+D7FF` and `U+E000` through
 `U+10FFFF`. These have not all been assigned intelligible meanings yet, nor are they necessarily
 interpretable by applications, but all of these values are considered to be valid Unicode characters. -->
-この記事を書いている時点で，有効な Unicode コードポイントは，`U+0000` から `U+D7FF` および `U+E000` から `U+10FFFF` です．これらのコードポイント全てに明瞭な意味が与えられたわけではなく，またそれらをアプリケーションが必ずしも解釈できるわけでもありません．しかし，これらの値は全て有効なUnicode文字であると考えられます．
+この記事を書いている時点で，有効なUnicodeコードポイントは，`U+0000`から`U+D7FF` および`U+E000`から`U+10FFFF`です．これらのコードポイント全てに明瞭な意味が与えられたわけではなく，またそれらをアプリケーションが必ずしも解釈できるわけでもありません．しかし，これらの値は全て有効なUnicode文字であると考えられます．
 
 <!-- You can input any Unicode character in single quotes using `\u` followed by up to four hexadecimal
 digits or `\U` followed by up to eight hexadecimal digits (the longest valid value only requires six): -->
@@ -182,7 +182,7 @@ operation as shorthand for the first and last indices, respectively, along the g
 String indexing, like most indexing in Julia, is 1-based: `firstindex` always returns `1` for any `AbstractString`.
 As we will see below, however, `lastindex(str)` is *not* in general the same as `length(str)` for a string,
 because some Unicode characters can occupy multiple "code units". -->
-文字列を含む多くのJuliaのオブジェクトは整数でインデックスをつけることができます．最初の要素(文字列の最初の文字)のインデックスは[`firstindex(str)`](@ref)で最後の要素(文字)のインデックスは[`lastindex(str)`](@ref)で返されます． キーワード `begin` と `end` は，インデックス操作の中で，与えられた次元に沿ったそれぞれの最初と最後のインデックスを表す略語として使用できます．文字列インデックスのようなJuliaにおけるほとんどのインデックスは1から始まり，`firstindex`はどの`AbscractString`に対しても常に`1`を返します．しかしながら，後述するように，一般的には`lastindex(str)`は文字列の`length(str)`とは違うものです．なぜなら，Unicode文字は複数の「符号」を占めることがあるからです．
+文字列を含む多くのJuliaのオブジェクトは整数でインデックスをつけることができます．最初の要素(文字列の最初の文字)のインデックスは[`firstindex(str)`](@ref)で最後の要素(文字)のインデックスは[`lastindex(str)`](@ref)で返されます．キーワード `begin`と`end`は，インデックス操作の中で，与えられた次元に沿ったそれぞれの最初と最後のインデックスを表す略語として使用できます．文字列インデックスのようなJuliaにおけるほとんどのインデックスは1から始まり，`firstindex`はどの`AbscractString`に対しても常に`1`を返します．しかしながら，後述するように，一般的には`lastindex(str)`は文字列の`length(str)`とは違うものです．なぜなら，Unicode文字は複数の「符号」を占めることがあるからです．
 
 <!-- You can perform arithmetic and other operations with [`end`](@ref), just like
 a normal value: -->
@@ -549,7 +549,7 @@ implies commutativity. -->
 より正確には，すべての有限長の文字列*S*と文字列連結演算子`*`の集合は、[自由モノイド](https://en.wikipedia.org/wiki/Free_monoid) (*S*, `*`)を形成します．この集合の恒等要素は空文字列 `""` です．自由モノイドが可換でない場合，その演算は通常 `+` ではなく``cdot`, `*`, または同様の記号で表されます．
 
 
-## [補間](@id string-interpolation)
+## [文字列補間](@id string-interpolation)
 <!-- 
 Constructing strings using concatenation can become a bit cumbersome, however. To reduce the need for these
 verbose calls to [`string`](@ref) or repeated multiplications, Julia allows interpolation into string literals
@@ -614,13 +614,16 @@ julia> print("I have \$100 in my account.\n")
 I have $100 in my account.
 ```
 
-## [Triple-Quoted String Literals](@id Triple-Quoted String Literals)
+## [トリプルクォーテーション付きの文字列リテラル](@id Triple-Quoted String Literals)
 
-When strings are created using triple-quotes (`"""..."""`) they have some special behavior that
-can be useful for creating longer blocks of text.
+<!-- When strings are created using triple-quotes (`"""..."""`) they have some special behavior that
+can be useful for creating longer blocks of text. -->
+トリプルクォーテーション（`"""...""`）を使って文字列を作成すると，長いテキストブロックを作成するのに便利ないくつかの特別な動作をします．
 
-First, triple-quoted strings are also dedented to the level of the least-indented line.
-This is useful for defining strings within code that is indented. For example:
+<!-- First, triple-quoted strings are also dedented to the level of the least-indented line.
+This is useful for defining strings within code that is indented. For example: -->
+まず，トリプルクォーテーションで囲まれた文字列も、インデントされていない行のレベルに合わせてディデントされます．これは，インデントされたコードの中で文字列を定義するのに便利です．例えば，以下のようになります．:
+
 
 ```jldoctest
 julia> str = """
@@ -630,14 +633,21 @@ julia> str = """
 "  Hello,\n  world.\n"
 ```
 
-In this case the final (empty) line before the closing `"""` sets the indentation level.
+<!-- In this case the final (empty) line before the closing `"""` sets the indentation level. -->
+この場合，閉じる側の`"""`の直前の(空白)行がインデントレベルを設定します．
 
-The dedentation level is determined as the longest common starting sequence of spaces or
+<!-- The dedentation level is determined as the longest common starting sequence of spaces or
 tabs in all lines, excluding the line following the opening `"""` and lines containing
 only spaces or tabs (the line containing the closing `"""` is always included).
 Then for all lines, excluding the text following the opening `"""`, the common starting
 sequence is removed (including lines containing only spaces and tabs if they start with
-this sequence), e.g.:
+this sequence), e.g.: -->
+冒頭の `"""` に続く行と，スペースまたはタブだけを含む行を除いた，すべての行のうち，最も長い先頭のスペースまたはタブ数によってディデンテーション レベルが決定されます（最後の `"""` を含む行は常に含まれます）．<!-- longestではなく,shortestでは？ -->
+次に，冒頭の `"""` に続く行を除いたすべての行について，各行先頭の空白やタブが削除されます（スペースとタブだけを含む行を含む），
+<!-- 難あり -->
+
+例:
+
 ```jldoctest
 julia> """    This
          is
@@ -645,21 +655,23 @@ julia> """    This
 "    This\nis\n  a test"
 ```
 
-Next, if the opening `"""` is followed by a newline,
-the newline is stripped from the resulting string.
+<!-- Next, if the opening `"""` is followed by a newline,
+the newline is stripped from the resulting string. -->
+次に，冒頭の `"""` の後に改行がある場合は結果の文字列から改行が取り除かれます．
 
 ```julia
 """hello"""
 ```
 
-is equivalent to
+<!-- is equivalent to -->
+これは以下と等価です．
 
 ```julia
 """
 hello"""
 ```
-
-but
+<!-- but -->
+しかし
 
 ```julia
 """
@@ -667,9 +679,11 @@ but
 hello"""
 ```
 
-will contain a literal newline at the beginning.
+<!-- will contain a literal newline at the beginning. -->
+は先頭に改行リテラルを含みます．
 
 Stripping of the newline is performed after the dedentation. For example:
+改行の除去は，ディテンデーションの後に行われます．例えば以下のようになります:
 
 ```jldoctest
 julia> """
@@ -679,13 +693,17 @@ julia> """
 ```
 
 Trailing whitespace is left unaltered.
+末尾のホワイトスペースはそのまま残されます.
 
 Triple-quoted string literals can contain `"` characters without escaping.
+トリプルクォーテーションで囲まれた文字列リテラルには、エスケープせずに `"` 文字を含めることができます．
 
 Note that line breaks in literal strings, whether single- or triple-quoted, result in a newline
 (LF) character `\n` in the string, even if your editor uses a carriage return `\r` (CR) or CRLF
 combination to end lines. To include a CR in a string, use an explicit escape `\r`; for example,
 you can enter the literal string `"a CRLF line ending\r\n"`.
+リテラル文字列の改行はリテラルがシングルクオーテーション，トリプルクオーテーションどちらで囲まれていても返り値の改行部分は改行（LF）文字`\n`が入ります．これはエディタがCR文字やCRLFの組み合わせで行を終わらせている場合でも同様です．文字列にCR文字を含めるには，明示的なエスケープを使用します，例えば/リテラル文字列 `"a CRLF line ending\r\n"` を入力します．
+
 
 ## [Common Operations](@id Common Operations)
 

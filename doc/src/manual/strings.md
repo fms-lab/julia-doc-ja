@@ -808,15 +808,21 @@ julia> join(["apples", "bananas", "pineapples"], ", ", " and ")
   <!-- * [`prevind(str, i, n=1)`](@ref) find the start of the `n`th character starting before index `i`. -->
   * [`prevind(str, i, n=1)`](@ref) は添字 `i` より前の `n` 番目の文字の始まりを見つけます．
 
-## [Non-Standard String Literals](@id non-standard-string-literals)
+## [非標準文字列リテラル](@id non-standard-string-literals)
 
-There are situations when you want to construct a string or use string semantics, but the behavior
+<!-- There are situations when you want to construct a string or use string semantics, but the behavior
 of the standard string construct is not quite what is needed. For these kinds of situations, Julia
 provides [non-standard string literals](@ref). A non-standard string literal looks like a regular
 double-quoted string literal, but is immediately prefixed by an identifier, and doesn't behave
 quite like a normal string literal.  Regular expressions, byte array literals and version number
 literals, as described below, are some examples of non-standard string literals. Other examples
-are given in the [Metaprogramming](@ref) section.
+are given in the [Metaprogramming](@ref) section. -->
+文字列を作成したり文字列セマンティクスを使用したりしたいが，標準的な文字列構築の動作が必要とされるものとは全く異なる場合があります．このような状況のために，Julia は[`非標準文字列リテラル`](@ref non-standard-string-literals)を提供しています．
+非標準文字列リテラルは通常のダブルクオーテーションで囲まれた文字列リテラルのように見えますが，識別子として接頭辞がつけられ，通常の文字列リテラルのようには動作しません．
+具体的には後述の正規表現，バイト配列リテラル，バージョン番号リテラルなどが非標準文字列リテラルなどが挙げられます．
+その他の例 は[`メタプログラミング`](@ref Metaprogramming)のセクションで説明しています。
+
+
 
 ## [Regular Expressions](@id Regular Expressions)
 

@@ -437,18 +437,18 @@ julia> bar.baz = 1//2
     * 特に，整数や浮動小数点数のような十分に小さい不変型の値は，一般的にレジスタ内の関数に渡されます（またはスタックに割り当てられます）．
     * 一方，可変値は，ヒープ割り当てされており，コンパイラがこれが起こっていないことを伝える方法がないと確信している場合を除いて，ヒープ割り当てされた値へのポインタとして関数に渡されます．
 
-## Declared Types
+## 宣言された型
 
-The three kinds of types (abstract, primitive, composite) discussed in the previous
-sections are actually all closely related. They share the same key properties:
+前のセクションで説明した3種類の型（抽象型，プリミティブ型，複合型）は，実は全て密接に
+関連しています．これらは同じ主要な特性を共有しています:
 
-  * They are explicitly declared.
-  * They have names.
-  * They have explicitly declared supertypes.
-  * They may have parameters.
+  * 明示的に宣言されている．
+  * 名前がある．
+  * 明示的に宣言されたスーパータイプを持つ．
+  * パラメータを持つことができる．
 
-Because of these shared properties, these types are internally represented as instances of the
-same concept, `DataType`, which is the type of any of these types:
+これらの共有プロパティのため，これらの型は内部的には同じ概念である`DataType`のインスタンス
+として表現されます:
 
 ```jldoctest
 julia> typeof(Real)
@@ -458,16 +458,17 @@ julia> typeof(Int)
 DataType
 ```
 
-A `DataType` may be abstract or concrete. If it is concrete, it has a specified size, storage
-layout, and (optionally) field names. Thus a primitive type is a `DataType` with nonzero size, but
-no field names. A composite type is a `DataType` that has field names or is empty (zero size).
+`DataType`には抽象型と具象型があります．具象型の場合は，指定されたサイズ，記憶レイアウト，
+および（オプションで）フィールド名を持ちます．したがって，プリミティブ型は，ゼロではない
+サイズを持つ`DataType`ですが，フィールド名はありません．複合型は，フィールド名を持つか，
+あるいは空（ゼロサイズ）である`DataType`です．
 
-Every concrete value in the system is an instance of some `DataType`.
+システム内の全ての具体的な値は，ある`DataType`のインスタンスです．
 
-## Type Unions
+## 型ユニオン
 
-A type union is a special abstract type which includes as objects all instances of any of its
-argument types, constructed using the special [`Union`](@ref) keyword:
+型ユニオンとは，特殊な抽象型で，その引数型のインスタンスを全てオブジェクトとして含むもので，
+特殊な[`Union`](@ref)キーワードを使って構築されます:
 
 ```jldoctest
 julia> IntOrString = Union{Int,AbstractString}
@@ -483,42 +484,42 @@ julia> 1.0 :: IntOrString
 ERROR: TypeError: in typeassert, expected Union{Int64, AbstractString}, got a value of type Float64
 ```
 
-The compilers for many languages have an internal union construct for reasoning about types; Julia
-simply exposes it to the programmer. The Julia compiler is able to generate efficient code in the
-presence of `Union` types with a small number of types [^1], by generating specialized code
-in separate branches for each possible type.
+多くの言語のコンパイラは型を推論するための内部的なユニオン構造を持っていますが，Juliaでは
+それをプログラマに公開しています．Juliaのコンパイラは，ありうる型ごとに別々のブランチで特化
+したコードを生成することで，少数のがたを持つ`Union`型が存在する場合でも効率的なコードを生成
+することができます[^1]．
 
-A particularly useful case of a `Union` type is `Union{T, Nothing}`, where `T` can be any type and
-[`Nothing`](@ref) is the singleton type whose only instance is the object [`nothing`](@ref). This pattern
-is the Julia equivalent of [`Nullable`, `Option` or `Maybe`](https://en.wikipedia.org/wiki/Nullable_type)
-types in other languages. Declaring a function argument or a field as `Union{T, Nothing}` allows
-setting it either to a value of type `T`, or to `nothing` to indicate that there is no value.
-See [this FAQ entry](@ref faq-nothing) for more information.
+`Union`型の特に有用なケースは，`Union{T, Nothing}`です．ここで`T`は任意の型であり，
+[`Nothing`](@ref)はその唯一のインスタンスがオブジェクト[`nothing`](@ref)であるシングルトン型
+です．このパターンは，他の言語の[`Nullable`, `Option` or `Maybe`](https://en.wikipedia.org/wiki/Nullable_type)
+に相当します．関数の引数やフィールドを`Union{T, Nothing}`として宣言すると，`T`型の値を設定
+するか，値をしないことを示す`nothing`を設定することができます．より詳しくは，
+この[FAQエントリ](@ref faq-nothing)を参照してください．
 
-## Parametric Types
+## パラメトリック型
 
-An important and powerful feature of Julia's type system is that it is parametric: types can take
-parameters, so that type declarations actually introduce a whole family of new types -- one for
-each possible combination of parameter values. There are many languages that support some version
-of [generic programming](https://en.wikipedia.org/wiki/Generic_programming), wherein data structures
-and algorithms to manipulate them may be specified without specifying the exact types involved.
-For example, some form of generic programming exists in ML, Haskell, Ada, Eiffel, C++, Java, C#,
-F#, and Scala, just to name a few. Some of these languages support true parametric polymorphism
-(e.g. ML, Haskell, Scala), while others support ad-hoc, template-based styles of generic programming
-(e.g. C++, Java). With so many different varieties of generic programming and parametric types
-in various languages, we won't even attempt to compare Julia's parametric types to other languages,
-but will instead focus on explaining Julia's system in its own right. We will note, however, that
-because Julia is a dynamically typed language and doesn't need to make all type decisions at compile
-time, many traditional difficulties encountered in static parametric type systems can be relatively
-easily handled.
+Juliaの型システムの重要かつ強力な特徴は，パラメトリック型であるということです．型は
+パラメータを取ることができるので，型宣言は実際に新しい型のファミリ全体を，パラメータ値
+の可能な組み合わせごとに一つずつ導入することになります．多くの言語が，
+[generic programming](https://en.wikipedia.org/wiki/Generic_programming)をサポートしており，
+データ構造やそれを操作するアルゴリズムを，正確な型を指定することなく指定することができます．
+例えば，ML，Haskell，Ada，Effel，C++，Java，C#，F#，Scalaなどがジェネリックプログラミング
+をサポートしています．これらの言語の中には，真のパラメトリックポリモーフィズムをサポート
+しているもの（例えば，ML，Haskell，Scala）もあれば，アドホックなテンプレートベースの
+ジェネリックプログラミングスタイルをサポートしているもの（例えば，C++，Java）もあります．
+このように，様々な言語でジェネリックプログラミングやパラメトリック型の種類があるため，
+ここではJuliaのパラメトリック型を他の言語と比較しようとはせず，Juliaのシステムを説明
+することに専念することとします．しかし，Juliaは動的型付け言語であり，コンパイル時に全ての
+型を決定する必要がないため，静的なパラメトリック型システムで遭遇する多くの伝統的な問題を
+比較的容易に処理できることに注意します．
 
-All declared types (the `DataType` variety) can be parameterized, with the same syntax in each
-case. We will discuss them in the following order: first, parametric composite types, then parametric
-abstract types, and finally parametric primitive types.
+全ての宣言された型（`DataType`の種類）は，同じ構文でパラメータ化することができます．
+ここでは，最初にパラメトリック複合型，次にパラメトリック抽象型，最後にパラメトリック
+プリミティブ型の順に説明します．
 
-### Parametric Composite Types
+### パラメトリック複合型
 
-Type parameters are introduced immediately after the type name, surrounded by curly braces:
+型パラメータは，型名の直後に中括弧で囲まれて導入されます:
 
 ```jldoctest pointtype
 julia> struct Point{T}
@@ -527,13 +528,13 @@ julia> struct Point{T}
        end
 ```
 
-This declaration defines a new parametric type, `Point{T}`, holding two "coordinates" of type
-`T`. What, one may ask, is `T`? Well, that's precisely the point of parametric types: it can be
-any type at all (or a value of any bits type, actually, although here it's clearly used as a type).
-`Point{Float64}` is a concrete type equivalent to the type defined by replacing `T` in the definition
-of `Point` with [`Float64`](@ref). Thus, this single declaration actually declares an unlimited
-number of types: `Point{Float64}`, `Point{AbstractString}`, `Point{Int64}`, etc. Each of these
-is now a usable concrete type:
+この宣言は，`T`型の「座標」を保持する新しいパラメトリック型である`Point{T}`を定義しています．
+`T`とは何なのかと聞かれるかもしれません．それこそがパラメトリック型のポイントです．
+Tはどのような型でも良いのです（ここでは明らかに型として使用されていますが，実際
+には，任意のビット型の値でも良いです）．`Point{Float64}`は，`Point`の定義の`T`を[`Float64`](@ref)
+に置き換えて定義した型と同等の具象型です．したがって，この1つの宣言は，実際には無制限の数の
+型を宣言しています．`Point{Float64}`, `Point{AbstractString}`, `Point{Int64}`などです．
+これらはそれぞれ使用可能な具象型となります．
 
 ```jldoctest pointtype
 julia> Point{Float64}
@@ -543,11 +544,11 @@ julia> Point{AbstractString}
 Point{AbstractString}
 ```
 
-The type `Point{Float64}` is a point whose coordinates are 64-bit floating-point values, while
-the type `Point{AbstractString}` is a "point" whose "coordinates" are string objects (see [Strings](@ref)).
+`Point{Float64}`は64ビット浮動小数点数値を座標とする点であり，`Point{AbstractString}`は
+文字列オブジェクトを「座標」とする「点」です（[Strings](@ref)を参照のこと）．
 
-`Point` itself is also a valid type object, containing all instances `Point{Float64}`, `Point{AbstractString}`,
-etc. as subtypes:
+`Point`自身も有効な型オブジェクトであり，全てのインスタンス`Point{Float64}`，`Point{AbstractString}`
+などをサブタイプとして含みます:
 
 ```jldoctest pointtype
 julia> Point{Float64} <: Point
@@ -557,7 +558,7 @@ julia> Point{AbstractString} <: Point
 true
 ```
 
-Other types, of course, are not subtypes of it:
+もちろん，他のタイプはそのサブタイプではありません:
 
 ```jldoctest pointtype
 julia> Float64 <: Point
@@ -567,7 +568,7 @@ julia> AbstractString <: Point
 false
 ```
 
-Concrete `Point` types with different values of `T` are never subtypes of each other:
+`T`の値が異なる具象型の`Point`型は，決してお互いのサブタイプではありません:
 
 ```jldoctest pointtype
 julia> Point{Float64} <: Point{Int64}
@@ -577,31 +578,25 @@ julia> Point{Float64} <: Point{Real}
 false
 ```
 
-!!! warning
-    This last point is *very* important: even though `Float64 <: Real` we **DO NOT** have `Point{Float64} <: Point{Real}`.
+!!! 警告
+    この最後の点は*非常に*重要です．`Float64 <: Real`であっても，`Point{Float64} <: Point{Real}`では*ありません*．
 
-In other words, in the parlance of type theory, Julia's type parameters are *invariant*, rather
-than being [covariant (or even contravariant)](https://en.wikipedia.org/wiki/Covariance_and_contravariance_%28computer_science%29). This is for practical reasons: while any instance
-of `Point{Float64}` may conceptually be like an instance of `Point{Real}` as well, the two types
-have different representations in memory:
+言い換えれば，型理論の用語では，Juliaのパラメータは，[covariant (or even contravariant)](https://en.wikipedia.org/wiki/Covariance_and_contravariance_%28computer_science%29)
+ではなく，*不変*です．これには実用的な理由があります．`Point{Float64}`のインスタンスは概念的
+には`Point{Real}`のインスタンスに似ていますが，この2つの型はメモリ上では異なる表現をします．
 
-  * An instance of `Point{Float64}` can be represented compactly and efficiently as an immediate pair
-    of 64-bit values;
-  * An instance of `Point{Real}` must be able to hold any pair of instances of [`Real`](@ref).
-    Since objects that are instances of `Real` can be of arbitrary size and structure, in
-    practice an instance of `Point{Real}` must be represented as a pair of pointers to
-    individually allocated `Real` objects.
+  * `Point{Float64}`のインスタンスは，コンパクトかつ効率的に64ビット値の即時ペアとして表現できます．
+  * `Point{Real}`は[`Real`](@ref)のインスタンスの任意のペアを保持できなければなりません．`Real`のインスタンスであるオブジェクトは，任意のサイズと構造を持つことができるため，実際には`Point{Real}`のインスタンスは，個別に割り当てられた`Real`オブジェクトへのポインタのペアとして表現する必要があります．
 
-The efficiency gained by being able to store `Point{Float64}` objects with immediate values is
-magnified enormously in the case of arrays: an `Array{Float64}` can be stored as a contiguous
-memory block of 64-bit floating-point values, whereas an `Array{Real}` must be an array of pointers
-to individually allocated [`Real`](@ref) objects -- which may well be
-[boxed](https://en.wikipedia.org/wiki/Object_type_%28object-oriented_programming%29#Boxing)
-64-bit floating-point values, but also might be arbitrarily large, complex objects, which are
-declared to be implementations of the `Real` abstract type.
+`Point{Float64}`オブジェクトを即時値で格納できることで得られる効率は，配列の場合には非常に
+大きくなります．`Array{Float64}`は，64ビット浮動小数点数値の連続したメモリブロックとして
+格納することができますが，`Array{Real}`は個別に割り当てられた[`Real`](@ref)オブジェクトへの
+ポインタ配列でなければなりません．これは[ボックス化された](https://en.wikipedia.org/wiki/Object_type_%28object-oriented_programming%29#Boxing)
+64ビットの浮動小数点数値である場合もありますが，`Real`抽象型の実装であると宣言された，
+任意の大きさの複雑なオブジェクトである場合もあります．
 
-Since `Point{Float64}` is not a subtype of `Point{Real}`, the following method can't be applied
-to arguments of type `Point{Float64}`:
+`Point{Float64}`は`Point{Real}`のサブタイプではないので，以下のメソッドでは`Point{Float64}`
+の引数には適用できません:
 
 ```julia
 function norm(p::Point{Real})
@@ -609,8 +604,8 @@ function norm(p::Point{Real})
 end
 ```
 
-A correct way to define a method that accepts all arguments of type `Point{T}` where `T` is
-a subtype of [`Real`](@ref) is:
+`T`が[`Real`](@ref)のサブタイプであるような`Point{T}`型の全ての引数を受け入れるメソッドを
+定義する正しい方法は，次の通りです:
 
 ```julia
 function norm(p::Point{<:Real})
@@ -618,19 +613,20 @@ function norm(p::Point{<:Real})
 end
 ```
 
-(Equivalently, one could define `function norm(p::Point{T} where T<:Real)` or
-`function norm(p::Point{T}) where T<:Real`; see [UnionAll Types](@ref).)
+（同様に， `function norm(p::Point{T} where T<:Real)`や
+`function norm(p::Point{T}) where T<:Real`と定義することもできます．[UnionAll Types](@ref)
+を参照してください．）
 
-More examples will be discussed later in [Methods](@ref).
+その他の例については，[Methods](@ref)で後述します．
 
-How does one construct a `Point` object? It is possible to define custom constructors for composite
-types, which will be discussed in detail in [Constructors](@ref man-constructors), but in the absence of any special
-constructor declarations, there are two default ways of creating new composite objects, one in
-which the type parameters are explicitly given and the other in which they are implied by the
-arguments to the object constructor.
+`Point`オブジェクトはどのようにして構築するのでしょうか？複合型に対するカスタムコンストラクタ
+を定義することは，[Constructors](@ref man-constructors)で詳述するように可能ですが，特別な
+コンストラクタが宣言されていない場合，新しい複合オブジェクトを作成するデフォルトの方法は
+2つ存在します．1つは型のパラメータが明示的に与えられる方法，もう一つはオブジェクト
+コンストラクタへの引数によって暗黙的に示される方法です．
 
-Since the type `Point{Float64}` is a concrete type equivalent to `Point` declared with [`Float64`](@ref)
-in place of `T`, it can be applied as a constructor accordingly:
+`Point{Float64}`は`T`の代わりに，[`Float64`](@ref)を用いて宣言された`Point`と同等の具象型
+であるため，これをコンストラクタとして適用することができます:
 
 ```jldoctest pointtype
 julia> Point{Float64}(1.0, 2.0)
@@ -640,7 +636,7 @@ julia> typeof(ans)
 Point{Float64}
 ```
 
-For the default constructor, exactly one argument must be supplied for each field:
+デフォルトのコンストラクタでは，各フィールドに対して1つだけ引数を指定する必要があります:
 
 ```jldoctest pointtype
 julia> Point{Float64}(1.0)
@@ -652,13 +648,13 @@ ERROR: MethodError: no method matching Point{Float64}(::Float64, ::Float64, ::Fl
 [...]
 ```
 
-Only one default constructor is generated for parametric types, since overriding it is not possible.
-This constructor accepts any arguments and converts them to the field types.
+デフォルトコンストラクタをオーバライドすることはできないので，パラメトリック型には1つだけ
+デフォルトコンストラクタが生成されます．このコンストラクタは，任意の引数を受け取り，それらを
+フィールドの型に変換します．
 
-In many cases, it is redundant to provide the type of `Point` object one wants to construct, since
-the types of arguments to the constructor call already implicitly provide type information. For
-that reason, you can also apply `Point` itself as a constructor, provided that the implied value
-of the parameter type `T` is unambiguous:
+多くの場合，コンストラクタ呼び出しの引数の型が既に暗黙的に型情報を提供しているので，構築
+したい`Point`オブジェクトの型を提供することは冗長です．そのため，パラメータ型`T`の暗黙の
+値が明確であれば，`Point`自身をコンストラクタとして適用することもできます:
 
 ```jldoctest pointtype
 julia> Point(1.0,2.0)
@@ -674,8 +670,8 @@ julia> typeof(ans)
 Point{Int64}
 ```
 
-In the case of `Point`, the type of `T` is unambiguously implied if and only if the two arguments
-to `Point` have the same type. When this isn't the case, the constructor will fail with a [`MethodError`](@ref):
+`Point`の場合，`T`の型は，`Point`の2つの引数が同じ型である場合に限り，曖昧さなく暗黙のもの
+とされます．そうでない場合，コンストラクタは，[`MethodError`](@ref)で失敗します:
 
 ```jldoctest pointtype
 julia> Point(1,2.5)
@@ -684,10 +680,10 @@ Closest candidates are:
   Point(::T, !Matched::T) where T at none:2
 ```
 
-Constructor methods to appropriately handle such mixed cases can be defined, but that will not
-be discussed until later on in [Constructors](@ref man-constructors).
+このような混在したケースを適切に処理するコンストラクタのメソッドを定義することもできますが，
+それについては[Constructors](@ref man-constructors)で後程説明します．
 
-### Parametric Abstract Types
+### パラメトリック抽象型
 
 Parametric abstract type declarations declare a collection of abstract types, in much the same
 way:

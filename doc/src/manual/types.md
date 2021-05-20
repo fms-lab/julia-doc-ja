@@ -1390,10 +1390,6 @@ julia> firstlast(Val(false))
 Julia全体の一貫性のために，呼び出し先は常に*型*を使うのではなく，`Val`*インスタンス*を渡す
 べきです．すなわち，`foo(Val{:bar})`ではなく，`foo(Val(:bar))`を使うべきです．
 
-It's worth noting that it's extremely easy to mis-use parametric "value" types, including `Val`;
-in unfavorable cases, you can easily end up making the performance of your code much *worse*.
- In particular, you would never want to write actual code as illustrated above.  For more information
-about the proper (and improper) uses of `Val`, please read [the more extensive discussion in the performance tips](@ref man-performance-value-type).
 注目すべきは，`Val`を含むパラメトリックな「値」の型を誤用が容易に起きるということです．
 好ましくないケースにおいては，コードのパフォーマンスを簡単に大きく*悪化*させてしまいます．
 特に，上の例のようなコードは絶対に書きたくないものです．`Val`の適切な（そして不適切な）

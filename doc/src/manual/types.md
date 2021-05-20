@@ -43,7 +43,7 @@ Juliaの型システムは，パワフルで表現力豊かでありながら，
 しかし，ある種のプログラミングでは，宣言された型を使うことで，より明確に，よりシンプルに，
 より早く，より堅牢になります．
 
-## 型宣言
+## [型宣言](@id Type-Declarations)
 
 `::`演算子を使用して，プログラム内の式や変数に型アノテーションを付けることができます．
 これには主に2つの理由があります:
@@ -288,7 +288,7 @@ primitive type «name» <: «supertype» «bits» end
 不可能でしょう．
 
 
-## 複合型
+## [複合型](@id Composite-Types)
 
 [Composite types（複合型）](https://en.wikipedia.org/wiki/Composite_data_type)は，様々な言語で，
 レコード，構造体，またはオブジェクトと呼ばれます．複合型は名前付きフィールドの集合で，
@@ -400,7 +400,7 @@ true
 この議論は[Parametric Types](@ref)と [Methods](@ref)の両方に依存しており，それ自身のセクション
 [Constructors](@ref man-constructors)で説明するのに十分なほど重要です．
 
-## ミュータブルな複合型
+## [ミュータブルな複合型](@id Mutable-Composite-Types)
 
 複合型が`struct`ではなく，`mutable struct`で宣言されている場合は，そのインスタンスを変更することができます:
 
@@ -496,7 +496,7 @@ ERROR: TypeError: in typeassert, expected Union{Int64, AbstractString}, got a va
 するか，値をしないことを示す`nothing`を設定することができます．より詳しくは，
 この[FAQエントリ](@ref faq-nothing)を参照してください．
 
-## パラメトリック型
+## [パラメトリック型](@id Parametric-Types)
 
 Juliaの型システムの重要かつ強力な特徴は，パラメトリック型であるということです．型は
 パラメータを取ることができるので，型宣言は実際に新しい型のファミリ全体を，パラメータ値
@@ -821,7 +821,7 @@ end
 制約されます．また，整数の比は実数線上の値を表すので，全ての[`Rational`](@ref)は，
 [`Real`](@ref)抽象型のインスタンスとなります．
 
-### タプル型
+### [タプル型](@id Tuple-Types)
 
 タプルは関数の引数を抽象化したもので，関数自体は含まれていません．関数の引数の重要な点は，
 その順序と型です．したがってタプル型は，パラメータ化された増えhん型に似ており，各パラメータ
@@ -1010,47 +1010,45 @@ julia> Ptr{Int64} <: Ptr
 true
 ```
 
-## UnionAll Types
+## [UnionAll型](@id UnionAll-Types)
 
-We have said that a parametric type like `Ptr` acts as a supertype of all its instances
-(`Ptr{Int64}` etc.). How does this work? `Ptr` itself cannot be a normal data type, since without
-knowing the type of the referenced data the type clearly cannot be used for memory operations.
-The answer is that `Ptr` (or other parametric types like `Array`) is a different kind of type called a
-[`UnionAll`](@ref) type. Such a type expresses the *iterated union* of types for all values of some parameter.
+ `Ptr`のようなパラメトリック型は，そのすべてのインスタンス（`Ptr{Int64}`など）の
+ スーパータイプとして機能すると言いました．これはどのように機能するのでしょうか？
+ `Ptr`自体は通常のデータ型ではありません．なぜなら，参照されるデータの型を知らなければ，
+ その型は明らかにメモリ操作に使えないからです．その答えは，`Ptr`（または`Array`などの
+ パラメトリック型）は，[`UnionAll`](@ref)型と呼ばれる別の種類の型であるということです．
+ このような型は，あるパラメータパラメータの全ての値に対する型の*反復された組み合わせ*
+ を表現します．
 
-`UnionAll` types are usually written using the keyword `where`. For example `Ptr` could be more
-accurately written as `Ptr{T} where T`, meaning all values whose type is `Ptr{T}` for some value
-of `T`. In this context, the parameter `T` is also often called a "type variable" since it is
-like a variable that ranges over types.
-Each `where` introduces a single type variable, so these expressions are nested for types with
-multiple parameters, for example `Array{T,N} where N where T`.
+`UnionAll`型は通常，キーワード`where`を使って記述します．例えば，`Ptr`は正確には`Ptr{T} where T`
+と書くことができ，ある`T`の値に対して`Ptr{T}`を型とする全ての値を意味します．この文脈では，
+パラメータ`T`は型の範囲を持つ変数のようなものなので，「型変数」とも呼ばれます．各`where`は
+1つの型変数を導入するので，複数のパラメータを持つ型では，`Array{T, N} where N where T`の
+ように，これらの式は入れ子になっています．
 
-The type application syntax `A{B,C}` requires `A` to be a `UnionAll` type, and first substitutes `B`
-for the outermost type variable in `A`.
-The result is expected to be another `UnionAll` type, into which `C` is then substituted.
-So `A{B,C}` is equivalent to `A{B}{C}`.
-This explains why it is possible to partially instantiate a type, as in `Array{Float64}`: the first
-parameter value has been fixed, but the second still ranges over all possible values.
-Using explicit `where` syntax, any subset of parameters can be fixed. For example, the type of all
-1-dimensional arrays can be written as `Array{T,1} where T`.
+型応用構文`A{B,C}`は，`A`が`UnionAll`型であることを要求し，まず`A`の一番外側の型変数に
+`B`を代入します．その結果，別の`UnionAll`型になり，そこに`C`が代入されます．つまり，
+`A{B,C}`は`A{B}{C}`と同等です．これは`Array{Float64}`のように，型を部分的にインスタンス化
+することが可能な理由を説明しています．つまり，最初のパラメータ値は固定されていますが，
+2番目のパラメータはまだ取りうる全ての値の範囲内にあります．明示的な`where`構文を使用すると，
+パラメータの任意のサブセットを固定できます．例えば，全ての1次元配列の型は，`Array{T, 1} where T`
+と書くことができます．
 
-Type variables can be restricted with subtype relations.
-`Array{T} where T<:Integer` refers to all arrays whose element type is some kind of
-[`Integer`](@ref).
-The syntax `Array{<:Integer}` is a convenient shorthand for `Array{T} where T<:Integer`.
-Type variables can have both lower and upper bounds.
-`Array{T} where Int<:T<:Number` refers to all arrays of [`Number`](@ref)s that are able to
-contain `Int`s (since `T` must be at least as big as `Int`).
-The syntax `where T>:Int` also works to specify only the lower bound of a type variable,
-and `Array{>:Int}` is equivalent to `Array{T} where T>:Int`.
+型変数はサブタイプの関係性で制限することができます．`Array{T} where T<:Integer`は，
+要素の型が[`Integer`](@ref)に含まれるものである全ての配列を指します．`Array{<:Integer}`
+は，`Array{T} where T<:Integer`の便利な省略形構文です．型変数は，下限値と上限値を両方
+持つことができます．`Array{T} where Int<:T<:Number`は，`Int`を含むことのできる，全ての
+[`Number`](@ref)の配列を指します（なぜなら，`T`は少なくとも，`Int`と同じ大きさでなければ
+ならないためです）．`where T>:Int`構文は，型変数の下限のみを指定する場合にも使用すること
+ができ，`Array{>:Int}`は`Array{T} where T>:Int`と同等のものになります．
 
-Since `where` expressions nest, type variable bounds can refer to outer type variables.
-For example `Tuple{T,Array{S}} where S<:AbstractArray{T} where T<:Real` refers to 2-tuples
-whose first element is some [`Real`](@ref), and whose second element is an `Array` of any
-kind of array whose element type contains the type of the first tuple element.
+`where`式はネストするので，型変数の境界は，外側の型変数を参照することができます．例えば，
+`Tuple{T,Array{S}} where S<:AbstractArray{T} where T<:Real`は，最初の要素が[`Real`](@ref)
+に含まれる何らかの型で，2番目の要素が最初のタプルの要素を含む任意の種類の配列である
+ような2-タプルを指します．
 
-The `where` keyword itself can be nested inside a more complex declaration. For example,
-consider the two types created by the following declarations:
+`where`キーワード自体は，より複雑な宣言の中にネストすることができます．例えば，次のような
+宣言で作られた2つの型を考えてみましょう:
 
 ```jldoctest
 julia> const T1 = Array{Array{T,1} where T, 1}
@@ -1060,32 +1058,30 @@ julia> const T2 = Array{Array{T,1}, 1} where T
 Array{Array{T,1},1} where T
 ```
 
-Type `T1` defines a 1-dimensional array of 1-dimensional arrays; each
-of the inner arrays consists of objects of the same type, but this type may vary from one inner array to the next.
-On the other hand, type `T2` defines a 1-dimensional array of 1-dimensional arrays all of whose inner arrays must have the
-same type.  Note that `T2` is an abstract type, e.g., `Array{Array{Int,1},1} <: T2`, whereas `T1` is a concrete type. As a consequence, `T1` can be constructed with a zero-argument constructor `a=T1()` but `T2` cannot.
+型`T1`は，1次元配列の1次元配列を定義しています．各内部配列は，同じ型のオブジェクトで構成
+されていますが，この方は内部配列ごとに異なる可能性があります．一方`T2`型は，内部配列が
+全て同じ型を持つような，1次元配列の1次元配列を定義します．`T2`型は抽象的な型であり，
+例えば`Array{Array{Int,1},1} <: T2`は抽象型ですが，`T1`は具象型であることに注意してください．
+そのため，`T1`はゼロ引数のコンストラクタ`a=T1()`で構築できますが，`T2`はできません．
 
-There is a convenient syntax for naming such types, similar to the short form of function
-definition syntax:
+このような型を命名するために，関数定義構文の短縮形に似た便利な構文があります:
 
 ```julia
 Vector{T} = Array{T,1}
 ```
 
-This is equivalent to `const Vector = Array{T,1} where T`.
-Writing `Vector{Float64}` is equivalent to writing `Array{Float64,1}`, and the umbrella type
-`Vector` has as instances all `Array` objects where the second parameter -- the number of array
-dimensions -- is 1, regardless of what the element type is. In languages where parametric types
-must always be specified in full, this is not especially helpful, but in Julia, this allows one
-to write just `Vector` for the abstract type including all one-dimensional dense arrays of any
-element type.
+これは，`const Vector = Array{T,1} where T`と書くのと同じです．
+`Vector{Float64}`と書くことは，`Array{Float64,1}`と書くことと同じで，`Vector`は，要素の
+型に関係なく，第二パラメータ（配列の次元数）が1である全ての`Array`オブジェクトを
+インスタンスとして持っています．パラメトリック型が常に完全に指定されなければならない言語
+では，これは特に有用ではありませんが，Juliaでは，あらゆる要素型の全ての1次元密な配列を
+含む抽象型に対して，`Vector`とだけ書けばよくなります．
 
-## Type Aliases
+## 型エイリアス
 
-Sometimes it is convenient to introduce a new name for an already expressible type.
-This can be done with a simple assignment statement.
-For example, `UInt` is aliased to either [`UInt32`](@ref) or [`UInt64`](@ref) as is
-appropriate for the size of pointers on the system:
+既に表現可能な型に，新しい名前を導入するのが便利な場合があります．これは簡単な代入文で
+行うことができます．例えば，`UInt`は，システム上のポインタのサイズに応じて，[`UInt32`](@ref)
+または[`UInt64`](@ref)のいずれかにエイリアスされます:
 
 ```julia-repl
 # 32-bit system:
@@ -1097,7 +1093,7 @@ julia> UInt
 UInt64
 ```
 
-This is accomplished via the following code in `base/boot.jl`:
+これは`base/boot.jl`の以下のコードで表現されています:
 
 ```julia
 if Int === Int64
@@ -1107,22 +1103,22 @@ else
 end
 ```
 
-Of course, this depends on what `Int` is aliased to -- but that is predefined to be the correct
-type -- either [`Int32`](@ref) or [`Int64`](@ref).
+もちろん，これは`Int`が何にエイリアスされているかに寄りますが，[`Int32`](@ref)または
+[`Int64`](@ref)のいずれかの正しい型になるように予め定義されています．
 
-(Note that unlike `Int`, `Float` does not exist as a type alias for a specific sized
-[`AbstractFloat`](@ref). Unlike with integer registers, where the size of `Int`
-reflects the size of a native pointer on that machine, the floating point register sizes
-are specified by the IEEE-754 standard.)
+（`Int`とは異なり，`Float`は特定のサイズの[`AbstractFloat`](@ref)のタイプエイリアスとしては
+存在しないことに注意してください．`Int`のサイズがそのマシンのネイティブポインタのサイズを
+反映している整数レジスタとは異なり，浮動小数点レジスタのサイズは，IEEE-754標準で規定
+されています．）
 
-## Operations on Types
+## 型に対する操作
 
-Since types in Julia are themselves objects, ordinary functions can operate on them. Some functions
-that are particularly useful for working with or exploring types have already been introduced,
-such as the `<:` operator, which indicates whether its left hand operand is a subtype of its right
-hand operand.
+Juliaの型はそれ自体がオブジェクトなので，通常の関数で型を操作することができます．左手の
+オペランドが右手のオペランドのサブタイプであるかどうかを示す`<:`オペレータなど，型の操作
+や探索に特に有用な関数はすでに紹介しました．
 
-The [`isa`](@ref) function tests if an object is of a given type and returns true or false:
+[`isa`](@ref)関数は，あるオブジェクトが指定された型であるかどうかをテストし，trueかfalse
+を返します．
 
 ```jldoctest
 julia> isa(1, Int)
@@ -1132,9 +1128,8 @@ julia> isa(1, AbstractFloat)
 false
 ```
 
-The [`typeof`](@ref) function, already used throughout the manual in examples, returns the type
-of its argument. Since, as noted above, types are objects, they also have types, and we can ask
-what their types are:
+[`typeof`](@ref)関数は，マニュアルの例にもあるように，その引数の型を返す関数です．先に
+述べたように，型はオブジェクトなので，それらも型を持ち，その型が何なのかを尋ねることができます:
 
 ```jldoctest
 julia> typeof(Rational{Int})
@@ -1144,8 +1139,8 @@ julia> typeof(Union{Real,String})
 Union
 ```
 
-What if we repeat the process? What is the type of a type of a type? As it happens, types are
-all composite values and thus all have a type of `DataType`:
+これを繰り返すとどうなるのでしょうか？型の型の型は何なのでしょうか？型は
+すべて複合値であるため，全て`DataType`の型を持っています:
 
 ```jldoctest
 julia> typeof(DataType)
@@ -1155,10 +1150,10 @@ julia> typeof(Union)
 DataType
 ```
 
-`DataType` is its own type.
+`DataType`はそれ自身の型となります．
 
-Another operation that applies to some types is [`supertype`](@ref), which reveals a type's
-supertype. Only declared types (`DataType`) have unambiguous supertypes:
+一部の型に適用されるもう一つの操作は[`supertype`](@ref)で，型のスーパータイプを明らかに
+します．宣言された型（`DataType`）だけが，曖昧さのないスーパータイプを持っています:
 
 ```jldoctest
 julia> supertype(Float64)
@@ -1173,8 +1168,8 @@ Any
 julia> supertype(Any)
 Any
 ```
-
-If you apply [`supertype`](@ref) to other type objects (or non-type objects), a [`MethodError`](@ref)
+[`supertype`](@ref)を他の型のオブジェクト（または型でないオブジェクト）に適用した場合，
+[`MethodError`](@ref)が発生します:
 is raised:
 
 ```jldoctest; filter = r"Closest candidates.*"s
@@ -1184,11 +1179,11 @@ Closest candidates are:
 [...]
 ```
 
-## [Custom pretty-printing](@id man-custom-pretty-printing)
+## [カスタムプリティプリンティング](@id man-custom-pretty-printing)
 
-Often, one wants to customize how instances of a type are displayed.  This is accomplished by
-overloading the [`show`](@ref) function.  For example, suppose we define a type to represent
-complex numbers in polar form:
+ある方のインスタンスをどのように表示するかをカスタマイズしたいことは良くあります．これを
+実現するには，[`show`](@ref)関数をオーバーロードします．例えば，複素数を極座標で表現する
+型を定義したとします:
 
 ```jldoctest polartype
 julia> struct Polar{T<:Real} <: Number
@@ -1200,36 +1195,36 @@ julia> Polar(r::Real,Θ::Real) = Polar(promote(r,Θ)...)
 Polar
 ```
 
-Here, we've added a custom constructor function so that it can take arguments of different
-[`Real`](@ref) types and promote them to a common type (see [Constructors](@ref man-constructors)
-and [Conversion and Promotion](@ref conversion-and-promotion)).
-(Of course, we would have to define lots of other methods, too, to make it act like a
-[`Number`](@ref), e.g. `+`, `*`, `one`, `zero`, promotion rules and so on.) By default,
-instances of this type display rather simply, with information about the type name and
-the field values, as e.g. `Polar{Float64}(3.0,4.0)`.
+ここでは，カスタムのコンストラクタ関数を追加して，異なる[`Real`](@ref)型の引数を取り，
+それらを共通の型に変換できるようにしています（[Constructors](@ref man-constructors)と
+[Conversion and Promotion](@ref conversion-and-promotion)を参照してください）．
+（もちろん，この型を[`Number`](@ref)のように動作させるためには，他にも多くのメソッドを
+定義する必要があります．）デフォルトでは，この型のインスタンスは，`Polar{Float64}(3.0,4.0)`
+のように，型名とフィールド値の情報を表示するだけのシンプルな表示になっています．
 
-If we want it to display instead as `3.0 * exp(4.0im)`, we would define the following method to
-print the object to a given output object `io` (representing a file, terminal, buffer, etcetera;
-see [Networking and Streams](@ref)):
+例えば`3.0 * exp(4.0im)`のように表示したい場合には，次のようなメソッドを定義して，
+与えられた出力オブジェクト`io`（ファイルやターミナル，バッファなどを表すもの
+；[Networking and Streams](@ref)を参照のこと）にオブジェクトをプリントします:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, z::Polar) = print(io, z.r, " * exp(", z.Θ, "im)")
 ```
 
-More fine-grained control over display of `Polar` objects is possible. In particular, sometimes
-one wants both a verbose multi-line printing format, used for displaying a single object in the
-REPL and other interactive environments, and also a more compact single-line format used for
-[`print`](@ref) or for displaying the object as part of another object (e.g. in an array). Although
-by default the `show(io, z)` function is called in both cases, you can define a *different* multi-line
-format for displaying an object by overloading a three-argument form of `show` that takes the
-`text/plain` MIME type as its second argument (see [Multimedia I/O](@ref)), for example:
+`Polar`オブジェクトの表示については，より細かい制御が可能です．特に，REPLやその他の
+インタラクティブ環境で1つのオブジェクトを表示するために使用される冗長な複数行のプリント
+形式と，[`print`](@ref)や他のオブジェクトの一部（配列など）としてオブジェクトを表示するため
+に使用される，よりコンパクトな1行の形式の両方が必要な場合があります．デフォルトではどちらも
+`show(io, z)`関数が呼ばれますが，例えば，`text/plain`MIMEタイプを第二引数に取るような
+3つの引数を持つ形式の`show`をオーバーロードすることにより，オブジェクトを表示するための
+*異なる*複数行形式を定義することができます（[Multimedia I/O](@ref)を参照のこと）．例えば:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, ::MIME"text/plain", z::Polar{T}) where{T} =
            print(io, "Polar{$T} complex number:\n   ", z)
 ```
 
-(Note that `print(..., z)` here will call the 2-argument `show(io, z)` method.) This results in:
+（ここでの`print(..., z)`は，2引数の`show(io, z)`メソッドを読みだすことに注意してください．）
+これは次のような結果になります:
 
 ```jldoctest polartype
 julia> Polar(3, 4.0)
@@ -1242,14 +1237,16 @@ julia> [Polar(3, 4.0), Polar(4.0,5.3)]
  4.0 * exp(5.3im)
 ```
 
-where the single-line `show(io, z)` form is still used for an array of `Polar` values.   Technically,
-the REPL calls `display(z)` to display the result of executing a line, which defaults to `show(stdout, MIME("text/plain"), z)`,
-which in turn defaults to `show(stdout, z)`, but you should *not* define new [`display`](@ref)
-methods unless you are defining a new multimedia display handler (see [Multimedia I/O](@ref)).
+ここでは`Polar`値の配列に対して1行の`show(io, z)`形式がまだ使用されています．技術的には，
+REPLは行を実行した結果を表示するために`display(z)`を呼び出し，デフォルトでは，
+`show(stdout, MIME("text/plain"), z)`となり，続いて`show(stdout, z)`となりますが，
+新しいマルチメディア表示ハンドラを定義する場合を除いて，新しい[`display`](@ref)メソッドを
+*定義すべきではありません*（[Multimedia I/O](@ref)を参照のこと）．
 
-Moreover, you can also define `show` methods for other MIME types in order to enable richer display
-(HTML, images, etcetera) of objects in environments that support this (e.g. IJulia).   For example,
-we can define formatted HTML display of `Polar` objects, with superscripts and italics, via:
+さらに他のMIMEタイプに対する`show`メソッドを定義することもできますこれはこれをサポートする
+環境（IJuliaなど）において，オブジェクトのよりリッチな表示（HTML，画像など）を可能にする
+ためです．例えば，上付き文字やイタリック文字を含む`Polar`オブジェクトのフォーマットされた
+HTML表示を，以下のようにして定義することができます:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, ::MIME"text/html", z::Polar{T}) where {T} =
@@ -1257,8 +1254,8 @@ julia> Base.show(io::IO, ::MIME"text/html", z::Polar{T}) where {T} =
                    z.r, " <i>e</i><sup>", z.Θ, " <i>i</i></sup>")
 ```
 
-A `Polar` object will then display automatically using HTML in an environment that supports HTML
-display, but you can call `show` manually to get HTML output if you want:
+`Polar`オブジェクトは，HTML表示をサポートする環境では，HTMLを使って自動的に表示されますが，
+必要に応じて手動で`show`を呼び出して，HTML出力を得ることができます:
 
 ```jldoctest polartype
 julia> show(stdout, "text/html", Polar(3.0,4.0))
@@ -1269,11 +1266,12 @@ julia> show(stdout, "text/html", Polar(3.0,4.0))
 <p>An HTML renderer would display this as: <code>Polar{Float64}</code> complex number: 3.0 <i>e</i><sup>4.0 <i>i</i></sup></p>
 ```
 
-As a rule of thumb, the single-line `show` method should print a valid Julia expression for creating
-the shown object.  When this `show` method contains infix operators, such as the multiplication
-operator (`*`) in our single-line `show` method for `Polar` above, it may not parse correctly when
-printed as part of another object.  To see this, consider the expression object (see [Program
-representation](@ref)) which takes the square of a specific instance of our `Polar` type:
+原則として単一行の`show`メソッドは，表示されるオブジェクトを作成するための有効なJulia式を
+出力する必要があります．この`show`メソッドに上記の`Polar`の単一行`show`メソッドの乗算
+演算子（`*`）のようなインフィックス演算子が含まれている場合，他のオブジェクトの一部として
+プリントされると，正しく解析されない可能性があります．これを確認するために，`Polar`型の
+特定のインスタンスの平方を取る，式オブジェクト（[Program representation](@ref)を参照）
+を考えてみましょう:
 
 ```jldoctest polartype
 julia> a = Polar(3, 4.0)
@@ -1284,11 +1282,11 @@ julia> print(:($a^2))
 3.0 * exp(4.0im) ^ 2
 ```
 
-Because the operator `^` has higher precedence than `*` (see [Operator Precedence and Associativity](@ref)), this
-output does not faithfully represent the expression `a ^ 2` which should be equal to `(3.0 *
-exp(4.0im)) ^ 2`.  To solve this issue, we must make a custom method for `Base.show_unquoted(io::IO,
-z::Polar, indent::Int, precedence::Int)`, which is called internally by the expression object when
-printing:
+演算子`^`は`*`よりも優先順位が高いため（[Operator Precedence and Associativity](@ref)を参照のこと），
+この出力は`(3.0 *exp(4.0im)) ^ 2`に等しいはずの式`a ^ 2`を忠実に表していません．この問題を
+解決するためには，`Base.show_unquoted(io::IO, z::Polar, indent::Int, precedence::Int)`の
+カスタムメソッドを作り，プリント時に式オブジェクトから内部的に呼び出されるようにする必要
+があります:
 
 ```jldoctest polartype
 julia> function Base.show_unquoted(io::IO, z::Polar, ::Int, precedence::Int)
@@ -1305,10 +1303,9 @@ julia> :($a^2)
 :((3.0 * exp(4.0im)) ^ 2)
 ```
 
-The method defined above adds parentheses around the call to `show` when the precedence of the
-calling operator is higher than or equal to the precedence of multiplication.  This check allows
-expressions which parse correctly without the parentheses (such as `:($a + 2)` and `:($a == 2)`) to
-omit them when printing:
+上で定義したメソッドは，呼び出し演算子の優先順位が乗算の優先順位よりも高いか等しい場合に，
+呼び出しを括弧で囲んで表示します．このチェックにより，括弧がなくても正しく解析される式
+（例えば`:($a + 2)`や`:($a == 2)`）は，プリント時に括弧を省略することができます:
 
 ```jldoctest polartype
 julia> :($a + 2)
@@ -1318,12 +1315,12 @@ julia> :($a == 2)
 :(3.0 * exp(4.0im) == 2)
 ```
 
-In some cases, it is useful to adjust the behavior of `show` methods depending
-on the context. This can be achieved via the [`IOContext`](@ref) type, which allows
-passing contextual properties together with a wrapped IO stream.
-For example, we can build a shorter representation in our `show` method
-when the `:compact` property is set to `true`, falling back to the long
-representation if the property is `false` or absent:
+場合によっては，コンテキストに応じて`show`メソッドの動作を調整することが有用な場合が
+あります．これは[`IOContext`](@ref)型を使用して実現できます．`IOContext`型では，
+コンテキストプロパティを，ラップされたIOストリームと一緒に渡すことができます．
+例えば，`:compact`プロパティが`true`に設定されている場合は，`show`メソッドで短い表現
+を構築し，当該プロパティが`false`または存在しない場合には，長い表現にフォールバックする
+ことができます:
 ```jldoctest polartype
 julia> function Base.show(io::IO, z::Polar)
            if get(io, :compact, false)
@@ -1334,9 +1331,9 @@ julia> function Base.show(io::IO, z::Polar)
        end
 ```
 
-This new compact representation will be used when the passed IO stream is an `IOContext`
-object with the `:compact` property set. In particular, this is the case when printing
-arrays with multiple columns (where horizontal space is limited):
+この新しいコンパクトな表現は，渡されたIOストリームが，`:compact`プロパティが設定された
+`IOContext`オブジェクトである場合に使用されます．特に複数の列を持つ配列をプリントする
+場合（水平方向のスペースが限られている場合）に使用されます:
 ```jldoctest polartype
 julia> show(IOContext(stdout, :compact=>true), Polar(3, 4.0))
 3.0ℯ4.0im
@@ -1346,22 +1343,23 @@ julia> [Polar(3, 4.0) Polar(4.0,5.3)]
  3.0ℯ4.0im  4.0ℯ5.3im
 ```
 
-See the [`IOContext`](@ref) documentation for a list of common properties which can be used
-to adjust printing.
+プリントを調整するために使用できる一般的なプロパティのリストについては，[`IOContext`](@ref)
+のドキュメントを参照してください．
 
-## "Value types"
+## ["値(Value)型"](@id "Value-types")
 
-In Julia, you can't dispatch on a *value* such as `true` or `false`. However, you can dispatch
-on parametric types, and Julia allows you to include "plain bits" values (Types, Symbols, Integers,
-floating-point numbers, tuples, etc.) as type parameters.  A common example is the dimensionality
-parameter in `Array{T,N}`, where `T` is a type (e.g., [`Float64`](@ref)) but `N` is just an `Int`.
+Juliaでは，`true`や`false`のような*値*にディスパッチすることはできません．しかし，
+パラメトリック型に対してはディスパッチすることができ，Juliaでは型パラメータとして
+「プレーンビット」の値（型，記号，整数，浮動小数点数，タプルなど）を含めることができます．
+よくある例は，`Array{T,N}`の次元パラメータで，`T`は型（[`Float64`](@ref)など）ですが，
+`N`は単なる`Int`です．
 
-You can create your own custom types that take values as parameters, and use them to control dispatch
-of custom types. By way of illustration of this idea, let's introduce a parametric type, `Val{x}`,
-and a constructor `Val(x) = Val{x}()`, which serves as a customary way to exploit this technique
-for cases where you don't need a more elaborate hierarchy.
+パラメータを値として受け取る独自のカスタムタイプを作成し，それを使ってカスタムタイプの
+ディスパッチを制御することができます．このアイデアを説明するために，パラメトリック型である
+`Val{x}`とコンストラクタ`Val(x) = Val{x}()`を紹介しましょう．これはより複雑な階層を必要と
+しない場合にこのテクニックを利用するための慣習的な方法です:
 
-[`Val`](@ref) is defined as:
+[`Val`](@ref)は次のように定義されます:
 
 ```jldoctest valtype
 julia> struct Val{x}
@@ -1371,9 +1369,9 @@ julia> Val(x) = Val{x}()
 Val
 ```
 
-There is no more to the implementation of `Val` than this.  Some functions in Julia's standard
-library accept `Val` instances as arguments, and you can also use it to write your own functions.
- For example:
+`Val`の実装には，これ以上のものはありません．Juliaの標準ライブラリのいくつかの関数は，
+引数として`Val`のインスタンスを受け取り，ユーザ自身の関数を書くためにそれを使用することも
+できます．例えば:
 
 ```jldoctest valtype
 julia> firstlast(::Val{true}) = "First"
@@ -1389,12 +1387,17 @@ julia> firstlast(Val(false))
 "Last"
 ```
 
-For consistency across Julia, the call site should always pass a `Val` *instance* rather than using
-a *type*, i.e., use `foo(Val(:bar))` rather than `foo(Val{:bar})`.
+Julia全体の一貫性のために，呼び出し先は常に*型*を使うのではなく，`Val`*インスタンス*を渡す
+べきです．すなわち，`foo(Val{:bar})`ではなく，`foo(Val(:bar))`を使うべきです．
 
 It's worth noting that it's extremely easy to mis-use parametric "value" types, including `Val`;
 in unfavorable cases, you can easily end up making the performance of your code much *worse*.
  In particular, you would never want to write actual code as illustrated above.  For more information
 about the proper (and improper) uses of `Val`, please read [the more extensive discussion in the performance tips](@ref man-performance-value-type).
+注目すべきは，`Val`を含むパラメトリックな「値」の型を誤用が容易に起きるということです．
+好ましくないケースにおいては，コードのパフォーマンスを簡単に大きく*悪化*させてしまいます．
+特に，上の例のようなコードは絶対に書きたくないものです．`Val`の適切な（そして不適切な）
+使い方についてより詳しくは，[パフォーマンスのチップスにおけるより広範な議論](@ref man-performance-value-type)
+を参照ください．
 
-[^1]: "Small" is defined by the `MAX_UNION_SPLITTING` constant, which is currently set to 4.
+[^1]: "Small"は`MAX_UNION_SPLITTING`定数で定義され，現在は4に設定されています．

@@ -1,72 +1,62 @@
-# [Types](@id man-types)
+# [型](@id man-types)
 
-Type systems have traditionally fallen into two quite different camps: static type systems, where
-every program expression must have a type computable before the execution of the program, and
-dynamic type systems, where nothing is known about types until run time, when the actual values
-manipulated by the program are available. Object orientation allows some flexibility in statically
-typed languages by letting code be written without the precise types of values being known at
-compile time. The ability to write code that can operate on different types is called polymorphism.
-All code in classic dynamically typed languages is polymorphic: only by explicitly checking types,
-or when objects fail to support operations at run-time, are the types of any values ever restricted.
+型システムは伝統的に2つの異なる陣営に分類されてきました．静的型システムでは，プログラム
+の実行前に全てのプログラム式が計算可能な型を持たねばならず，動的型システムでは，プログラム
+によって操作される実際の値が利用可能になる実行時まで型については何も知らされていません．
+オブジェクト指向は，コンパイル時に値の正確な値を知らなくてもコードを書けるようにすることで，
+静的型付け言語にある程度の柔軟性を持たせることができます．異なる型で動作するコードが書ける
+ことをポリモーフィズム（多態性）と呼びます．古典的な動的型付け言語のコードは全て多態性を
+持ちます．明示的に型をチェックするか，または実行時にオブジェクトが操作をサポートしていない
+場合にのみ，値の型が制限されることがあります．
 
-Julia's type system is dynamic, but gains some of the advantages of static type systems by making
-it possible to indicate that certain values are of specific types. This can be of great assistance
-in generating efficient code, but even more significantly, it allows method dispatch on the types
-of function arguments to be deeply integrated with the language. Method dispatch is explored in
-detail in [Methods](@ref), but is rooted in the type system presented here.
+Juliaの型システムは動的ですが，特定の値が特定の型であることを示すことを可能にすることで，
+静的型システムの利点をいくつか得ることができます．これは効率的なコードを生成する上で大きな
+助けとなりますが，それ以上に重要なことは，関数引数の型に対するメソッドディスパッチを言語に
+深く統合することができるということです．メソッドのディスパッチについては，[Methods](@ref)で
+詳しく説明されていますが，ここで紹介する型システムに根ざしています．
 
-The default behavior in Julia when types are omitted is to allow values to be of any type. Thus,
-one can write many useful Julia functions without ever explicitly using types. When additional
-expressiveness is needed, however, it is easy to gradually introduce explicit type annotations
-into previously "untyped" code. Adding annotations serves three primary purposes: to take advantage
-of Julia's powerful multiple-dispatch mechanism,  to improve human readability, and to catch
-programmer errors.
+型が省略された場合のJuliaのデフォルトの動作は，任意の型の値を許容することです．このため，
+明示的に型を指定しなくても，多くの有用なJuliaの関数を書くことができます．しかし，さらなる
+表現力が必要な場合には，以前に「型を使わない」で書いたコードに，明示的な型アノテーションを
+徐々に導入していくことが簡単にできます．アノテーションを追加することは，Juliaの強力な多重
+ディスパッチ機構を利用すること，人間の可読性を向上させること，そしてプログラマのエラーを
+検出することの3つの主要な目的に役立ちます．
 
-Describing Julia in the lingo of [type systems](https://en.wikipedia.org/wiki/Type_system), it
-is: dynamic, nominative and parametric. Generic types can be parameterized, and the hierarchical
-relationships between types are [explicitly declared](https://en.wikipedia.org/wiki/Nominal_type_system),
-rather than [implied by compatible structure](https://en.wikipedia.org/wiki/Structural_type_system).
-One particularly distinctive feature of Julia's type system is that concrete types may not subtype
-each other: all concrete types are final and may only have abstract types as their supertypes.
-While this might at first seem unduly restrictive, it has many beneficial consequences with surprisingly
-few drawbacks. It turns out that being able to inherit behavior is much more important than being
-able to inherit structure, and inheriting both causes significant difficulties in traditional
-object-oriented languages. Other high-level aspects of Julia's type system that should be mentioned
-up front are:
+Juliaを[型システム](https://en.wikipedia.org/wiki/Type_system)の専門用語で表現すると，
+動的な方，指名的な型，パラメトリックな型です．一般的な型はパラメータ化することができ，型間
+の階層的な関係は[互換性のある構造によって暗示される](https://en.wikipedia.org/wiki/Structural_type_system)のではなく，
+[明示的に宣言](https://en.wikipedia.org/wiki/Nominal_type_system)されます．
+Juliaの型システムの特に特徴的な点は，具象型が互いにサブタイプしてはならないということです．
+全ての具象型は最終型であり，抽象型のみをスーパータイプとして持つことができます．これは
+最初は過度に制限されているように見えるかもしれませんが，多くの有益な結果をもたらし，欠点は
+驚くほど少ないのです．構造を継承できることよりも，動作を継承できることの方がはるかに重要
+であり，両方を継承することは従来のオブジェクト指向言語では大きな問題を引き起こしています．
+Juliaの型システムの他の高レベルな側面としては，以下のようなものがあります:
 
-  * There is no division between object and non-object values: all values in Julia are true objects
-    having a type that belongs to a single, fully connected type graph, all nodes of which are equally
-    first-class as types.
-  * There is no meaningful concept of a "compile-time type": the only type a value has is its actual
-    type when the program is running. This is called a "run-time type" in object-oriented languages
-    where the combination of static compilation with polymorphism makes this distinction significant.
-  * Only values, not variables, have types -- variables are simply names bound to values.
-  * Both abstract and concrete types can be parameterized by other types. They can also be parameterized
-    by symbols, by values of any type for which [`isbits`](@ref) returns true (essentially, things
-    like numbers and bools that are stored like C types or `struct`s with no pointers to other objects),
-    and also by tuples thereof. Type parameters may be omitted when they do not need to be referenced
-    or restricted.
+  * オブジェクトと非オブジェクトの間には分け隔てがありません．Juliaの全ての値は，完全に接続された単一の型グラフに属する型を持つ真のオブジェクトであり，全てのノードは型として等しくファーストクラスのものです．
+  * 「コンパイル時の型」という意味のある概念はありません．値が持つ唯一の型は，プログラムが実行されている時の実際の型です．これはオブジェクト指向言語では「ランタイム型」と呼ばれ，静的コンパイルと多態性の組み合わせにより，この区別が重要になります．
+  * 変数ではなく，値だけが型をもちます．変数は単に値に結びつけられた名前です．
+  * 抽象型も具象型も，他の型によってパラメータ化することができます．また，シンボルや，[`isbits`](@ref)が真を返す任意の型の値（基本的には，Cの型や他のオブジェクトへのポインタを持たない`struct`のように格納されている数値やboolのようなもの），およびそれらのタプルによってもパラメータ化することができます．型のパラメータは，参照や制限が不要な場合には省略することができます．
 
-Julia's type system is designed to be powerful and expressive, yet clear, intuitive and unobtrusive.
-Many Julia programmers may never feel the need to write code that explicitly uses types. Some
-kinds of programming, however, become clearer, simpler, faster and more robust with declared types.
+Juliaの型システムは，パワフルで表現力豊かでありながら，明確で直観的で控えめな設計になっています．
+多くのJuliaプログラマは，明示的に型を使用するコードを書く必要性を感じないかもしれません．
+しかし，ある種のプログラミングでは，宣言された型を使うことで，より明確に，よりシンプルに，
+より早く，より堅牢になります．
 
-## Type Declarations
+## [型宣言](@id Type-Declarations)
 
-The `::` operator can be used to attach type annotations to expressions and variables in programs.
-There are two primary reasons to do this:
+`::`演算子を使用して，プログラム内の式や変数に型アノテーションを付けることができます．
+これには主に2つの理由があります:
 
-1. As an assertion to help confirm that your program works the way you expect,
-2. To provide extra type information to the compiler, which can then improve performance in some
-   cases
+1. プログラムが期待通りに動作することを確認するためのアサーション
+2. コンパイラに追加で型情報を提供することで，場合によってはパフォーマンスを向上させることができます
 
-When appended to an expression computing a value, the `::` operator is read as "is an instance
-of". It can be used anywhere to assert that the value of the expression on the left is an instance
-of the type on the right. When the type on the right is concrete, the value on the left must have
-that type as its implementation -- recall that all concrete types are final, so no implementation
-is a subtype of any other. When the type is abstract, it suffices for the value to be implemented
-by a concrete type that is a subtype of the abstract type. If the type assertion is not true,
-an exception is thrown, otherwise, the left-hand value is returned:
+値を計算する式に追加された場合，`::`演算子は"is a instance of"と読まれます．これは，左の
+式の値が右の型のインスタンスであることをアサートするために，どこでも使用できます．右側の
+型が具象型の場合，左側の値はその型の実装でなければなりません．具象型は全て最終型であり，
+実装は他の型のサブタイプではないことを思い出してください．型が抽象型の場合，値は抽象型の
+サブタイプである具象型によって実装されていれば十分です．型のアサーションが真でない場合には
+例外がスローされ，そうでない場合には左辺の値が返されます:
 
 ```jldoctest
 julia> (1+2)::AbstractFloat
@@ -76,12 +66,12 @@ julia> (1+2)::Int
 3
 ```
 
-This allows a type assertion to be attached to any expression in-place.
+これにより，任意の式に型のアサーションをその場でアタッチすることができます．
 
-When appended to a variable on the left-hand side of an assignment, or as part of a `local` declaration,
-the `::` operator means something a bit different: it declares the variable to always have the
-specified type, like a type declaration in a statically-typed language such as C. Every value
-assigned to the variable will be converted to the declared type using [`convert`](@ref):
+代入の左側にある変数に追加された場合，あるいはローカル宣言の一部として追加された場合には，
+`::`演算子は少し違った意味を持ちます．Cのような静的型付け言語の型宣言のように，変数が常に
+指定された型を持つことを宣言します．変数に代入された全ての値は，[`convert`](@ref)を使用して
+宣言された型に変換されます:
 
 ```jldoctest
 julia> function foo()
@@ -97,21 +87,21 @@ julia> typeof(ans)
 Int8
 ```
 
-This feature is useful for avoiding performance "gotchas" that could occur if one of the assignments
-to a variable changed its type unexpectedly.
+この機能は，変数への代入の1つが予期せず型を変更した場合に発生する可能性のある，
+パフォーマンスへの「瑕疵」を回避するのに便利です．
 
-This "declaration" behavior only occurs in specific contexts:
+この「宣言」動作は特定のコンテキストでのみ発生します:
 
 ```julia
 local x::Int8  # in a local declaration
 x::Int8 = 10   # as the left-hand side of an assignment
 ```
 
-and applies to the whole current scope, even before the declaration. Currently, type declarations
-cannot be used in global scope, e.g. in the REPL, since Julia does not yet have constant-type
-globals.
+またこの宣言動作は宣言が行われる前であっても現在のスコープ全体に適用されます．現在のところ，
+Juliaにはまだ定数型のグローバルがないため，REPLなどのグローバルスコープでは型宣言を使用する
+ことができません．
 
-Declarations can also be attached to function definitions:
+宣言は関数定義にも付けることができます:
 
 ```julia
 function sinc(x)::Float64
@@ -122,51 +112,51 @@ function sinc(x)::Float64
 end
 ```
 
-Returning from this function behaves just like an assignment to a variable with a declared type:
-the value is always converted to `Float64`.
+この関数からの戻り値は，宣言された型を持つ変数への代入と同じように動作します．値は常に，
+`Float64`に変換されます．
 
-## [Abstract Types](@id man-abstract-types)
+## [抽象型](@id man-abstract-types)
 
-Abstract types cannot be instantiated, and serve only as nodes in the type graph, thereby describing
-sets of related concrete types: those concrete types which are their descendants. We begin with
-abstract types even though they have no instantiation because they are the backbone of the type
-system: they form the conceptual hierarchy which makes Julia's type system more than just a collection
-of object implementations.
+抽象型はインスタンス化することができず，型グラフのノードとしてしか機能せず，それによって
+関連する具象型の集合，つまりそれらの子孫である具象型を記述します．抽象型は型システムの
+バックボーンであり，Juliaの型システムを単なるオブジェクト実装の集合以上のものにする
+概念的な階層を形成しているので，インスタンス化できないですが，抽象型から話を始めます．
 
-Recall that in [Integers and Floating-Point Numbers](@ref), we introduced a variety of concrete
-types of numeric values: [`Int8`](@ref), [`UInt8`](@ref), [`Int16`](@ref), [`UInt16`](@ref),
-[`Int32`](@ref), [`UInt32`](@ref), [`Int64`](@ref), [`UInt64`](@ref), [`Int128`](@ref),
-[`UInt128`](@ref), [`Float16`](@ref), [`Float32`](@ref), and [`Float64`](@ref). Although
-they have different representation sizes, `Int8`, `Int16`, `Int32`, `Int64` and `Int128`
-all have in common that they are signed integer types. Likewise `UInt8`, `UInt16`, `UInt32`,
-`UInt64` and `UInt128` are all unsigned integer types, while `Float16`, `Float32` and
-`Float64` are distinct in being floating-point types rather than integers. It is common for
-a piece of code to make sense, for example, only if its arguments are some kind of integer,
-but not really depend on what particular *kind* of integer. For example, the greatest common
-denominator algorithm works for all kinds of integers, but will not work for floating-point
-numbers. Abstract types allow the construction of a hierarchy of types, providing a context
-into which concrete types can fit. This allows you, for example, to easily program to any type
-that is an integer, without restricting an algorithm to a specific type of integer.
+[Integers and Floating-Point Numbers](@ref)で数値の様々な具象型を紹介したことを思い
+出してください．[`Int8`](@ref)， [`UInt8`](@ref)， [`Int16`](@ref)， [`UInt16`](@ref)，
+[`Int32`](@ref)， [`UInt32`](@ref)， [`Int64`](@ref)， [`UInt64`](@ref)， [`Int128`](@ref)，
+[`UInt128`](@ref)， [`Float16`](@ref)， [`Float32`](@ref)，[`Float64`](@ref)です．
+表現サイズは異なりますが，`Int8`， `Int16`， `Int32`， `Int64`，`Int128`は全て符号付き
+整数型であるという共通点があります．同様に，`UInt8`， `UInt16`， `UInt32`，`UInt64`，
+`UInt128`は全て符号なし整数型です．一方で，`Float16`，`Float32`，`Float64`は整数型
+ではなく浮動小数点型であるという点で区別されています．コードの一部が意味を持つのは，
+例えば，その引数がある種の整数である場合だけで，実際にはどのような特定の*種類*の整数
+であるかに依存しないのが一般的です．例えば，最大公約数アルゴリズムはあらゆる種類の整数
+に対して動作しますが，浮動小数点数に対しては動作しません．抽象型を使用すると，型の階層
+を構築することができ，具体的な型が収まるコンテキストを提供します．これにより，例えば，
+アルゴリズムを特定の整数型に制限することなく，任意の整数型に簡単にプログラムすることが
+できます．
 
-Abstract types are declared using the [`abstract type`](@ref) keyword. The general syntaxes for declaring an
-abstract type are:
+抽象型は，[`abstract type`](@ref)キーワードを使用して宣言されます．抽象型を宣言する
+ための一般的な構文は以下の通りです:
 
 ```
 abstract type «name» end
 abstract type «name» <: «supertype» end
 ```
 
-The `abstract type` keyword introduces a new abstract type, whose name is given by `«name»`. This
-name can be optionally followed by [`<:`](@ref) and an already-existing type, indicating that the newly
-declared abstract type is a subtype of this "parent" type.
+`abstract type`キーワードは，新しい抽象型を導入し，その名前は`«name»`で与えられます．
+この名前の後には，オプションで[`<:`](@ref)と既存の型を付けることができ，新しく宣言
+された抽象型がこの「親」型のサブタイプであることを示します．
 
-When no supertype is given, the default supertype is `Any` -- a predefined abstract type that
-all objects are instances of and all types are subtypes of. In type theory, `Any` is commonly
-called "top" because it is at the apex of the type graph. Julia also has a predefined abstract
-"bottom" type, at the nadir of the type graph, which is written as `Union{}`. It is the exact
-opposite of `Any`: no object is an instance of `Union{}` and all types are supertypes of `Union{}`.
+スーパータイプが与えられていない場合，デフォルトのスーパータイプは`Any`になります．
+`Any`は全てのオブジェクトがそのインスタンスであり，全ての型がそのサブタイプである
+ような，定義済みの抽象型です．型理論では，`Any`は型グラフの頂点にあるので，一般的に
+「トップ」と呼ばれています．また，Juliaには，型グラフの一番下にある定義済みの抽象的な
+「ボトム」型があり，`Union{}`と書かれています．これは`Any`とは正反対で，全ての
+オブジェクトは`Union{}`のインスタンスではなく，全ての型は`Union{}`のスーパータイプです．
 
-Let's consider some of the abstract types that make up Julia's numerical hierarchy:
+Juliaの数値階層を構成する抽象型のいくつかを考えてみましょう:
 
 ```julia
 abstract type Number end
@@ -177,19 +167,18 @@ abstract type Signed   <: Integer end
 abstract type Unsigned <: Integer end
 ```
 
-The [`Number`](@ref) type is a direct child type of `Any`, and [`Real`](@ref) is its child.
-In turn, `Real` has two children (it has more, but only two are shown here; we'll get to
-the others later): [`Integer`](@ref) and [`AbstractFloat`](@ref), separating the world into
-representations of integers and representations of real numbers. Representations of real
-numbers include, of course, floating-point types, but also include other types, such as
-rationals. Hence, `AbstractFloat` is a proper subtype of `Real`, including only
-floating-point representations of real numbers. Integers are further subdivided into
-[`Signed`](@ref) and [`Unsigned`](@ref) varieties.
+[`Number`](@ref)型は`Any`の直接の子孫であり，[`Real`](@ref)はその子です．また，
+`Real`には2つの子があります（もっとたくさんいますが，ここでは2つだけを示しています．
+他の者には後に触れます）．[`Integer`](@ref)と[`AbstractFloat`](@ref)で，世界を整数
+の表現と実数の表現に分けています．実数の世界にはもちろん浮動小数点型が含まれています
+が，それ以外にも有理数などの他の方も含まれています．したがって，`AbstractFloat`は
+`Real`の適切なサブタイプであり，実数の浮動小数点表現のみを含みます．整数は更に
+[`Signed`](@ref)と[`Unsigned`](@ref)に細分化されています．
 
-The `<:` operator in general means "is a subtype of", and, used in declarations like this, declares
-the right-hand type to be an immediate supertype of the newly declared type. It can also be used
-in expressions as a subtype operator which returns `true` when its left operand is a subtype of
-its right operand:
+一般的に`<:`演算子は，"is a subtype of"を意味し，このような宣言で使用すると，右手の
+型が，新しく宣言された型の直接のスーパータイプであることを宣言します．また左の
+オペランドが右のオペランドのサブタイプである場合に`true`を返すサブタイプ演算子として
+式の中で使用することもできます．
 
 ```jldoctest
 julia> Integer <: Number
@@ -199,8 +188,8 @@ julia> Integer <: AbstractFloat
 false
 ```
 
-An important use of abstract types is to provide default implementations for concrete types. To
-give a simple example, consider:
+抽象型の重要な使用法は，具象型のデフォルト実装を提供することです．簡単な例を挙げると，
+次のようになります:
 
 ```julia
 function myplus(x,y)
@@ -208,14 +197,14 @@ function myplus(x,y)
 end
 ```
 
-The first thing to note is that the above argument declarations are equivalent to `x::Any` and
-`y::Any`. When this function is invoked, say as `myplus(2,5)`, the dispatcher chooses the most
-specific method named `myplus` that matches the given arguments. (See [Methods](@ref) for more
-information on multiple dispatch.)
+まず注意すべき点は，上記の引数宣言が`x::Any`と`y::Any`と同等であるということです．
+この関数が`myplus(2,5)`のように呼び出されると，ディスパッチャは与えられた引数に
+マッチする`myplus`という名前の最も具体的なメソッドを選択します．（複数のディスパッチ
+についての詳細は[Methods](@ref)を参照してください．）
 
-Assuming no method more specific than the above is found, Julia next internally defines and compiles
-a method called `myplus` specifically for two `Int` arguments based on the generic function given
-above, i.e., it implicitly defines and compiles:
+上記よりも特定のメソッドが見つからないと仮定して，次にJuliaは上で与えられた汎用
+関数に基づいて，二つの`Int`引数に対して特別に`myplus`と呼ばれるメソッドを内部的に定義
+してコンパイルします．つまり暗黙的に定義してコンパイルするのです:
 
 ```julia
 function myplus(x::Int,y::Int)
@@ -223,31 +212,33 @@ function myplus(x::Int,y::Int)
 end
 ```
 
-and finally, it invokes this specific method.
+そして最後に，この特定のメソッドを呼び出します．
 
-Thus, abstract types allow programmers to write generic functions that can later be used as the
-default method by many combinations of concrete types. Thanks to multiple dispatch, the programmer
-has full control over whether the default or more specific method is used.
+このように，抽象型は，プログラマが後に具象型の多くの組み合わせによってデフォルト
+メソッドとして使用できる汎用関数を書くことを可能にします．複数ディスパッチのおかげで，
+プログラマはデフォルトのメソッドが使用されるか，より具体的なメソッドが使用されるかを
+完全に制御することができます．
 
-An important point to note is that there is no loss in performance if the programmer relies on
-a function whose arguments are abstract types, because it is recompiled for each tuple of argument
-concrete types with which it is invoked. (There may be a performance issue, however, in the case
-of function arguments that are containers of abstract types; see [Performance Tips](@ref man-performance-abstract-container).)
+注意すべき重要な点は，プログラマが，引数が抽象型である関数に依存していても，その関数が
+呼び出される引数の具象型のタプルごとに再コンパイルされるため，パフォーマンスが低下する
+ことはないということです（だたし関数の引数が抽象型のコンテナの場合には，パフォーマンス
+の問題がある場合があります．[Performance Tips](@ref man-performance-abstract-container)
+を参照してください．）
 
-## Primitive Types
+## プリミティブ型
 
-!!! warning
-    It is almost always preferable to wrap an existing primitive type in a new
-    composite type than to define your own primitive type.
+!!! 注意
+    ほとんどの場合，独自のプリミティブ型を定義するよりも，既存のプリミティブ型を
+    新しい複合型でラップする方が望ましいです．
 
-    This functionality exists to allow Julia to bootstrap the standard primitive
-    types that LLVM supports. Once they are defined, there is very little reason
-    to define more.
+    この機能は，LLVMがサポートする標準のプリミティブ型をJuliaがブートストラップする
+    できるようにするために存在します．一度定義されれば，それ以上定義する理由はほとんど
+    ありません．
 
-A primitive type is a concrete type whose data consists of plain old bits. Classic examples of primitive
-types are integers and floating-point values. Unlike most languages, Julia lets you declare your
-own primitive types, rather than providing only a fixed set of built-in ones. In fact, the standard
-primitive types are all defined in the language itself:
+プリミティブ型とは，データが古いビットで構成される具体的な型のことです．プリミティブ型の
+典型的な例は，整数と浮動小数点です．多くの言語とは異なり，Juliaでは，組み込みの固定された
+型のセットだけを提供するのではなく，独自のプリミティブ型を宣言することができます．実際，
+標準的なプリミティブ型は全てこの言語自身で定義されています:
 
 ```julia
 primitive type Float16 <: AbstractFloat 16 end
@@ -269,57 +260,56 @@ primitive type Int128  <: Signed   128 end
 primitive type UInt128 <: Unsigned 128 end
 ```
 
-The general syntaxes for declaring a primitive type are:
+プリミティブ型を宣言する一般的な構文は以下のようになります:
 
 ```
 primitive type «name» «bits» end
 primitive type «name» <: «supertype» «bits» end
 ```
 
-The number of bits indicates how much storage the type requires and the name gives the new type
-a name. A primitive type can optionally be declared to be a subtype of some supertype. If a supertype
-is omitted, then the type defaults to having `Any` as its immediate supertype. The declaration
-of [`Bool`](@ref) above therefore means that a boolean value takes eight bits to store, and has
-[`Integer`](@ref) as its immediate supertype. Currently, only sizes that are multiples of
-8 bits are supported and you are likely to experience LLVM bugs with sizes other than those used above.
-Therefore, boolean values, although they really need just a single bit, cannot be declared to be any
-smaller than eight bits.
+ビット数はその型が必要とするストレージの量を示し，nameは新しい方に名前を与えます．
+プリミティブ型は，オプションでスーパータイプのサブタイプであることを宣言することができます．
+スーパータイプが省略された場合，その型はデフォルトで`Any`をその直接のスーパータイプとして
+持つことになります．したがって，上記の[`Bool`](@ref)の宣言は，ブール値の格納に8ビットを
+必要とし，直接のスーパータイプとして[`Integer`](@ref)を持つことを意味します．現在のところ，
+8ビットの倍数のサイズのみがサポートされており，上記以外のサイズではLLVMのバグが発生する
+可能性があります．したがって，ブーリアン値は，実際には1ビットしか必要ありませんが，8ビット
+よりも小さいサイズを宣言することはできません．
 
-The types [`Bool`](@ref), [`Int8`](@ref) and [`UInt8`](@ref) all have identical representations:
-they are eight-bit chunks of memory. Since Julia's type system is nominative, however, they
-are not interchangeable despite having identical structure. A fundamental difference between
-them is that they have different supertypes: [`Bool`](@ref)'s direct supertype is [`Integer`](@ref),
-[`Int8`](@ref)'s is [`Signed`](@ref), and [`UInt8`](@ref)'s is [`Unsigned`](@ref). All other
-differences between [`Bool`](@ref), [`Int8`](@ref), and [`UInt8`](@ref) are matters of
-behavior -- the way functions are defined to act when given objects of these types as
-arguments. This is why a nominative type system is necessary: if structure determined type,
-which in turn dictates behavior, then it would be impossible to make [`Bool`](@ref) behave
-any differently than [`Int8`](@ref) or [`UInt8`](@ref).
+[`Bool`](@ref)，[`Int8`](@ref)，[`UInt8`](@ref)の型は全て同じ表現で，8ビットのメモリチャンク
+です．しかし，Juliaの型システムは命名型なので，同じ構造を持っているにも拘わらず，これらの
+型には互換性がありません．両社の根本的な違いは，スーパータイプが異なることです．
+[`Bool`](@ref)の直接のスーパータイプは[`Integer`](@ref)，[`Int8`](@ref)のスーパータイプは
+[`Signed`](@ref)，[`UInt8`](@ref)のスーパータイプは[`Unsigned`](@ref)です．
+[`Bool`](@ref)，[`Int8`](@ref)，[`UInt8`](@ref)の間のその他の違いは全て動作，すなわち
+これらの型のオブジェクトを引数として与えられた時に関数がどのように動作するかの定義の問題
+です．これが命名型システムが必要な理由です．もし構造体が型を決定し，それが動作を決定する
+のであれば，[`Bool`](@ref)に[`Int8`](@ref)や[`UInt8`](@ref)と異なる動作をさせることは
+不可能でしょう．
 
-## Composite Types
 
-[Composite types](https://en.wikipedia.org/wiki/Composite_data_type) are called records, structs,
-or objects in various languages. A composite type is a collection of named fields,
-an instance of which can be treated as a single value. In many languages, composite types are
-the only kind of user-definable type, and they are by far the most commonly used user-defined
-type in Julia as well.
+## [複合型](@id Composite-Types)
 
-In mainstream object oriented languages, such as C++, Java, Python and Ruby, composite types also
-have named functions associated with them, and the combination is called an "object". In purer
-object-oriented languages, such as Ruby or Smalltalk, all values are objects whether they are
-composites or not. In less pure object oriented languages, including C++ and Java, some values,
-such as integers and floating-point values, are not objects, while instances of user-defined composite
-types are true objects with associated methods. In Julia, all values are objects, but functions
-are not bundled with the objects they operate on. This is necessary since Julia chooses which
-method of a function to use by multiple dispatch, meaning that the types of *all* of a function's
-arguments are considered when selecting a method, rather than just the first one (see [Methods](@ref)
-for more information on methods and dispatch). Thus, it would be inappropriate for functions to
-"belong" to only their first argument. Organizing methods into function objects rather than having
-named bags of methods "inside" each object ends up being a highly beneficial aspect of the language
-design.
+[Composite types（複合型）](https://en.wikipedia.org/wiki/Composite_data_type)は，様々な言語で，
+レコード，構造体，またはオブジェクトと呼ばれます．複合型は名前付きフィールドの集合で，
+そのインスタンスは単一の値として扱うことができます．多くの言語では，複合型は唯一の
+ユーザ定義可能な型であり，Juliaでもユーザ定義型としては最も一般的に使用されています．
 
-Composite types are introduced with the [`struct`](@ref) keyword followed by a block of field names, optionally
-annotated with types using the `::` operator:
+C++，Java，Python，Rubyなどの主流のオブジェクト指向言語では，複合型に名前付き関数も含まれて
+おり，その組み合わせは「オブジェクト」と呼ばれます．RubyやSmalltalkのような純粋なオブジェクト
+指向言語では，複合型であるかどうかに関わらず，全ての値がオブジェクトになります．C++やJava
+などのやや純粋でないオブジェクト指向言語では，整数や浮動小数点数などの一部の値はオブジェクト
+ではありませんが，ユーザ定義の複合型のインスタンスは，関連するメソッドを持つ真のオブジェクト
+です．Juliaでは，全ての値はオブジェクトですが，関数は操作するオブジェクトにバンドルされて
+いません．これはJuliaが関数のどのメソッドを使用するかを，複数回のディスパッチによって選択
+するために必要なことで，つまりはメソッドを選択する際には，最初のメソッドだけではなく，関数
+の*全て*の引数の型が考慮されることを意味します（メソッドとディスパッチについての詳細は，
+[Methods](@ref)を参照してください）．このように，関数が最初の引数だけに「属する」のは不適切
+です．それぞれのオブジェクトの「中」にメソッドの名前付きの袋を持つのではなく，メソッドを
+関数オブジェクトに整理することは，最終的には言語設計の非常に有益な側面となります．
+
+複合型は，[`struct`](@ref)キーワードの後にフィールド名のブロックを付けて導入され，
+オプションで`::`オペレータを使用して，型のアノテーションを付けることができます:
 
 ```jldoctest footype
 julia> struct Foo
@@ -329,10 +319,10 @@ julia> struct Foo
        end
 ```
 
-Fields with no type annotation default to `Any`, and can accordingly hold any type of value.
+型のアノテーションがないフィールドのデフォルトは`Any`型なので，任意の型の値を保持することができます．
 
-New objects of type `Foo` are created by applying the `Foo` type object like a function
-to values for its fields:
+`Foo`型の新しいオブジェクトは，`Foo`型のオブジェクトを，関数のようにフィールドの値
+に適用することで作成されます:
 
 ```jldoctest footype
 julia> foo = Foo("Hello, world.", 23, 1.5)
@@ -342,14 +332,14 @@ julia> typeof(foo)
 Foo
 ```
 
-When a type is applied like a function it is called a *constructor*. Two constructors are generated
-automatically (these are called *default constructors*). One accepts any arguments and calls
-[`convert`](@ref) to convert them to the types of the fields, and the other accepts arguments
-that match the field types exactly. The reason both of these are generated is that this makes
-it easier to add new definitions without inadvertently replacing a default constructor.
+型が関数のように適用される場合，それは*コンストラクタ*と呼ばれます．2つのコンストラクタが
+自動的に生成されます（これらを*デフォルトコンストラクタ*と呼びます）．1つは任意の引数を
+受け取り，フィールドの値に変換するために[`convert`](@ref)を呼び出し，もう一つはフィールド
+の型に正確に一致する引数を受け取ります．これらの両方が生成される理由は，デフォルトの
+コンストラクタを何気なく置き換えることなく，新しい定義を簡単に追加できるようにするためです．
 
-Since the `bar` field is unconstrained in type, any value will do. However, the value for `baz`
-must be convertible to `Int`:
+`bar`フィールドは型に制約がないので，どのような型でも構いません．しかし，`baz`の値は，
+`Int`に変換可能でなければなりません:
 
 ```jldoctest footype
 julia> Foo((), 23.5, 1)
@@ -358,14 +348,14 @@ Stacktrace:
 [...]
 ```
 
-You may find a list of field names using the [`fieldnames`](@ref) function.
+[`fieldnames`](@ref)関数を使ってフィールド名のリストを参照できます．
 
 ```jldoctest footype
 julia> fieldnames(Foo)
 (:bar, :baz, :qux)
 ```
 
-You can access the field values of a composite object using the traditional `foo.bar` notation:
+複合オブジェクトのフィールド値には，伝統的な`foo.bar`記法を使ってアクセスすることができます:
 
 ```jldoctest footype
 julia> foo.bar
@@ -378,22 +368,21 @@ julia> foo.qux
 1.5
 ```
 
-Composite objects declared with `struct` are *immutable*; they cannot be modified
-after construction. This may seem odd at first, but it has several advantages:
+`struct`で作られた複合オブジェクトは*不変*です．つまり構築後に変更することはできません．
+これは最初は奇妙に思えるかもしれませんが，いくつか利点があります:
 
-  * It can be more efficient. Some structs can be packed efficiently into arrays, and
-    in some cases the compiler is able to avoid allocating immutable objects entirely.
-  * It is not possible to violate the invariants provided by the type's constructors.
-  * Code using immutable objects can be easier to reason about.
+  * より効率的になります．構造体の中には，効率的に配列にまとめることができるものもありますし，コンパイラによっては不変オブジェクトの割り当てを完全に回避できる場合もあります．
+  * 型のコンストラクタが提供する不変量に違反することができません．
+  * 不変オブジェクトを使用したコードは，推論が容易になります．
 
-An immutable object might contain mutable objects, such as arrays, as fields. Those contained
-objects will remain mutable; only the fields of the immutable object itself cannot be changed
-to point to different objects.
+不変オブジェクトには，フィールドとして，配列などの変異可能なオブジェクトが含まれているかも
+しれません．それらは変更可能なままであり，不変オブジェクトのフィールドだけが異なる
+オブジェクトを指すように変更されることはない，というものです．
 
-Where required, mutable composite objects can be declared with the keyword [`mutable struct`](@ref), to be
-discussed in the next section.
+必要に応じて，次のセクションで説明するように，キーワード[`mutable struct`](@ref)を使用して
+宣言することができます．
 
-Immutable composite types with no fields are singletons; there can be only one instance of such types:
+フィールドを持たない不変複合型はシングルトンです．このような型のインスタンスは1つだけ存在できます:
 
 ```jldoctest
 julia> struct NoFields
@@ -403,17 +392,17 @@ julia> NoFields() === NoFields()
 true
 ```
 
-The [`===`](@ref) function confirms that the "two" constructed instances of `NoFields` are actually one
-and the same. Singleton types are described in further detail [below](@ref man-singleton-types).
+ [`===`](@ref)関数は，構築された`NoFields`の「2つ」のインスタンスが，実際には1つだけで，
+ 同じものであることを確認します．シングルトン型に関しては，[下記](@ref man-singleton-types)
+ で更に詳しく説明していきます．
 
-There is much more to say about how instances of composite types are created, but that discussion
-depends on both [Parametric Types](@ref) and on [Methods](@ref), and is sufficiently important
-to be addressed in its own section: [Constructors](@ref man-constructors).
+複合型のインスタンスがどのようにして生成されるかについては，もっと多く書くことがありますが，
+この議論は[Parametric Types](@ref)と [Methods](@ref)の両方に依存しており，それ自身のセクション
+[Constructors](@ref man-constructors)で説明するのに十分なほど重要です．
 
-## Mutable Composite Types
+## [ミュータブルな複合型](@id Mutable-Composite-Types)
 
-If a composite type is declared with `mutable struct` instead of `struct`, then instances of
-it can be modified:
+複合型が`struct`ではなく，`mutable struct`で宣言されている場合は，そのインスタンスを変更することができます:
 
 ```jldoctest bartype
 julia> mutable struct Bar
@@ -430,47 +419,36 @@ julia> bar.baz = 1//2
 1//2
 ```
 
-In order to support mutation, such objects are generally allocated on the heap, and have
-stable memory addresses.
-A mutable object is like a little container that might hold different values over time,
-and so can only be reliably identified with its address.
-In contrast, an instance of an immutable type is associated with specific field values ---
-the field values alone tell you everything about the object.
-In deciding whether to make a type mutable, ask whether two instances
-with the same field values would be considered identical, or if they might need to change independently
-over time. If they would be considered identical, the type should probably be immutable.
+変異をサポートするために，このようなオブジェクトは一般的にヒープ上に割り当てられ，
+安定したメモリアドレスを持ちます．変異可能なオブジェクトは小さな容器のようなもので，
+時間の経過とともに異なる値を保持する可能性があり，そのアドレスによってのみ確実に
+識別することができます．対照的に，不変型のインスタンスは特定のフィールド値に関連付けられて
+います．フィールドの値だけでそのオブジェクトについての全てを知ることができます．
+型を変異可能にするかを決めるには，同じフィールド値を持つ二つのインスタンスが同一と
+みなされるのか，それとも時間の経過とともに独立して変化する必要があるのかを尋ねてみましょう．
+もしそれらが同一とみなされるならば，その型はおそらく不変であるべきです．
 
-To recap, two essential properties define immutability in Julia:
+繰り返しになりますが，Juliaでは2つの本質的な性質が不変性を定義しています:
 
-  * It is not permitted to modify the value of an immutable type.
-    * For bits types this means that the bit pattern of a value once set will never change
-      and that value is the identity of a bits type.
-    * For composite  types, this means that the identity of the values of its fields will
-      never change. When the fields are bits types, that means their bits will never change,
-      for fields whose values are mutable types like arrays, that means the fields will
-      always refer to the same mutable value even though that mutable value's content may
-      itself be modified.
-  * An object with an immutable type may be copied freely by the compiler since its
-    immutability makes it impossible to programmatically distinguish between the original
-    object and a copy.
-    * In particular, this means that small enough immutable values like integers and floats
-      are typically passed to functions in registers (or stack allocated).
-    * Mutable values, on the other hand are heap-allocated and passed to
-      functions as pointers to heap-allocated values except in cases where the compiler
-      is sure that there's no way to tell that this is not what is happening.
+  * 不変型の値を変更することは許されない．
+    * ビット型の場合，これは一度設定された値のビットパターンは決して変化しないことを意味し，その値はビット型の同一性を表します．
+    * 複合型の場合，これはそのフィールドの値の同一性が変わることがないことを意味します．フィールドがビット型の場合は，そのビットが変更されないことを意味し，値が配列のような可変型であるフィールドの場合は，可変型の値が変更されても，フィールドは常に同じ可変型の値を参照することを意味します．
+  * 不変型を持つオブジェクトは，その不変性により，プログラム上で元のオブジェクトとコピーを区別することができないため，コンパイラによって自由にコピーすることができます．
+    * 特に，整数や浮動小数点数のような十分に小さい不変型の値は，一般的にレジスタ内の関数に渡されます（またはスタックに割り当てられます）．
+    * 一方，可変値は，ヒープ割り当てされており，コンパイラがこれが起こっていないことを伝える方法がないと確信している場合を除いて，ヒープ割り当てされた値へのポインタとして関数に渡されます．
 
-## Declared Types
+## 宣言された型
 
-The three kinds of types (abstract, primitive, composite) discussed in the previous
-sections are actually all closely related. They share the same key properties:
+前のセクションで説明した3種類の型（抽象型，プリミティブ型，複合型）は，実は全て密接に
+関連しています．これらは同じ主要な特性を共有しています:
 
-  * They are explicitly declared.
-  * They have names.
-  * They have explicitly declared supertypes.
-  * They may have parameters.
+  * 明示的に宣言されている．
+  * 名前がある．
+  * 明示的に宣言されたスーパータイプを持つ．
+  * パラメータを持つことができる．
 
-Because of these shared properties, these types are internally represented as instances of the
-same concept, `DataType`, which is the type of any of these types:
+これらの共有プロパティのため，これらの型は内部的には同じ概念である`DataType`のインスタンス
+として表現されます:
 
 ```jldoctest
 julia> typeof(Real)
@@ -480,16 +458,17 @@ julia> typeof(Int)
 DataType
 ```
 
-A `DataType` may be abstract or concrete. If it is concrete, it has a specified size, storage
-layout, and (optionally) field names. Thus a primitive type is a `DataType` with nonzero size, but
-no field names. A composite type is a `DataType` that has field names or is empty (zero size).
+`DataType`には抽象型と具象型があります．具象型の場合は，指定されたサイズ，記憶レイアウト，
+および（オプションで）フィールド名を持ちます．したがって，プリミティブ型は，ゼロではない
+サイズを持つ`DataType`ですが，フィールド名はありません．複合型は，フィールド名を持つか，
+あるいは空（ゼロサイズ）である`DataType`です．
 
-Every concrete value in the system is an instance of some `DataType`.
+システム内の全ての具体的な値は，ある`DataType`のインスタンスです．
 
-## Type Unions
+## 型ユニオン
 
-A type union is a special abstract type which includes as objects all instances of any of its
-argument types, constructed using the special [`Union`](@ref) keyword:
+型ユニオンとは，特殊な抽象型で，その引数型のインスタンスを全てオブジェクトとして含むもので，
+特殊な[`Union`](@ref)キーワードを使って構築されます:
 
 ```jldoctest
 julia> IntOrString = Union{Int,AbstractString}
@@ -505,42 +484,42 @@ julia> 1.0 :: IntOrString
 ERROR: TypeError: in typeassert, expected Union{Int64, AbstractString}, got a value of type Float64
 ```
 
-The compilers for many languages have an internal union construct for reasoning about types; Julia
-simply exposes it to the programmer. The Julia compiler is able to generate efficient code in the
-presence of `Union` types with a small number of types [^1], by generating specialized code
-in separate branches for each possible type.
+多くの言語のコンパイラは型を推論するための内部的なユニオン構造を持っていますが，Juliaでは
+それをプログラマに公開しています．Juliaのコンパイラは，ありうる型ごとに別々のブランチで特化
+したコードを生成することで，少数のがたを持つ`Union`型が存在する場合でも効率的なコードを生成
+することができます[^1]．
 
-A particularly useful case of a `Union` type is `Union{T, Nothing}`, where `T` can be any type and
-[`Nothing`](@ref) is the singleton type whose only instance is the object [`nothing`](@ref). This pattern
-is the Julia equivalent of [`Nullable`, `Option` or `Maybe`](https://en.wikipedia.org/wiki/Nullable_type)
-types in other languages. Declaring a function argument or a field as `Union{T, Nothing}` allows
-setting it either to a value of type `T`, or to `nothing` to indicate that there is no value.
-See [this FAQ entry](@ref faq-nothing) for more information.
+`Union`型の特に有用なケースは，`Union{T, Nothing}`です．ここで`T`は任意の型であり，
+[`Nothing`](@ref)はその唯一のインスタンスがオブジェクト[`nothing`](@ref)であるシングルトン型
+です．このパターンは，他の言語の[`Nullable`, `Option` or `Maybe`](https://en.wikipedia.org/wiki/Nullable_type)
+に相当します．関数の引数やフィールドを`Union{T, Nothing}`として宣言すると，`T`型の値を設定
+するか，値をしないことを示す`nothing`を設定することができます．より詳しくは，
+この[FAQエントリ](@ref faq-nothing)を参照してください．
 
-## Parametric Types
+## [パラメトリック型](@id Parametric-Types)
 
-An important and powerful feature of Julia's type system is that it is parametric: types can take
-parameters, so that type declarations actually introduce a whole family of new types -- one for
-each possible combination of parameter values. There are many languages that support some version
-of [generic programming](https://en.wikipedia.org/wiki/Generic_programming), wherein data structures
-and algorithms to manipulate them may be specified without specifying the exact types involved.
-For example, some form of generic programming exists in ML, Haskell, Ada, Eiffel, C++, Java, C#,
-F#, and Scala, just to name a few. Some of these languages support true parametric polymorphism
-(e.g. ML, Haskell, Scala), while others support ad-hoc, template-based styles of generic programming
-(e.g. C++, Java). With so many different varieties of generic programming and parametric types
-in various languages, we won't even attempt to compare Julia's parametric types to other languages,
-but will instead focus on explaining Julia's system in its own right. We will note, however, that
-because Julia is a dynamically typed language and doesn't need to make all type decisions at compile
-time, many traditional difficulties encountered in static parametric type systems can be relatively
-easily handled.
+Juliaの型システムの重要かつ強力な特徴は，パラメトリック型であるということです．型は
+パラメータを取ることができるので，型宣言は実際に新しい型のファミリ全体を，パラメータ値
+の可能な組み合わせごとに一つずつ導入することになります．多くの言語が，
+[generic programming](https://en.wikipedia.org/wiki/Generic_programming)をサポートしており，
+データ構造やそれを操作するアルゴリズムを，正確な型を指定することなく指定することができます．
+例えば，ML，Haskell，Ada，Effel，C++，Java，C#，F#，Scalaなどがジェネリックプログラミング
+をサポートしています．これらの言語の中には，真のパラメトリックポリモーフィズムをサポート
+しているもの（例えば，ML，Haskell，Scala）もあれば，アドホックなテンプレートベースの
+ジェネリックプログラミングスタイルをサポートしているもの（例えば，C++，Java）もあります．
+このように，様々な言語でジェネリックプログラミングやパラメトリック型の種類があるため，
+ここではJuliaのパラメトリック型を他の言語と比較しようとはせず，Juliaのシステムを説明
+することに専念することとします．しかし，Juliaは動的型付け言語であり，コンパイル時に全ての
+型を決定する必要がないため，静的なパラメトリック型システムで遭遇する多くの伝統的な問題を
+比較的容易に処理できることに注意します．
 
-All declared types (the `DataType` variety) can be parameterized, with the same syntax in each
-case. We will discuss them in the following order: first, parametric composite types, then parametric
-abstract types, and finally parametric primitive types.
+全ての宣言された型（`DataType`の種類）は，同じ構文でパラメータ化することができます．
+ここでは，最初にパラメトリック複合型，次にパラメトリック抽象型，最後にパラメトリック
+プリミティブ型の順に説明します．
 
-### Parametric Composite Types
+### パラメトリック複合型
 
-Type parameters are introduced immediately after the type name, surrounded by curly braces:
+型パラメータは，型名の直後に中括弧で囲まれて導入されます:
 
 ```jldoctest pointtype
 julia> struct Point{T}
@@ -549,13 +528,13 @@ julia> struct Point{T}
        end
 ```
 
-This declaration defines a new parametric type, `Point{T}`, holding two "coordinates" of type
-`T`. What, one may ask, is `T`? Well, that's precisely the point of parametric types: it can be
-any type at all (or a value of any bits type, actually, although here it's clearly used as a type).
-`Point{Float64}` is a concrete type equivalent to the type defined by replacing `T` in the definition
-of `Point` with [`Float64`](@ref). Thus, this single declaration actually declares an unlimited
-number of types: `Point{Float64}`, `Point{AbstractString}`, `Point{Int64}`, etc. Each of these
-is now a usable concrete type:
+この宣言は，`T`型の「座標」を保持する新しいパラメトリック型である`Point{T}`を定義しています．
+`T`とは何なのかと聞かれるかもしれません．それこそがパラメトリック型のポイントです．
+Tはどのような型でも良いのです（ここでは明らかに型として使用されていますが，実際
+には，任意のビット型の値でも良いです）．`Point{Float64}`は，`Point`の定義の`T`を[`Float64`](@ref)
+に置き換えて定義した型と同等の具象型です．したがって，この1つの宣言は，実際には無制限の数の
+型を宣言しています．`Point{Float64}`, `Point{AbstractString}`, `Point{Int64}`などです．
+これらはそれぞれ使用可能な具象型となります．
 
 ```jldoctest pointtype
 julia> Point{Float64}
@@ -565,11 +544,11 @@ julia> Point{AbstractString}
 Point{AbstractString}
 ```
 
-The type `Point{Float64}` is a point whose coordinates are 64-bit floating-point values, while
-the type `Point{AbstractString}` is a "point" whose "coordinates" are string objects (see [Strings](@ref)).
+`Point{Float64}`は64ビット浮動小数点数値を座標とする点であり，`Point{AbstractString}`は
+文字列オブジェクトを「座標」とする「点」です（[Strings](@ref)を参照のこと）．
 
-`Point` itself is also a valid type object, containing all instances `Point{Float64}`, `Point{AbstractString}`,
-etc. as subtypes:
+`Point`自身も有効な型オブジェクトであり，全てのインスタンス`Point{Float64}`，`Point{AbstractString}`
+などをサブタイプとして含みます:
 
 ```jldoctest pointtype
 julia> Point{Float64} <: Point
@@ -579,7 +558,7 @@ julia> Point{AbstractString} <: Point
 true
 ```
 
-Other types, of course, are not subtypes of it:
+もちろん，他のタイプはそのサブタイプではありません:
 
 ```jldoctest pointtype
 julia> Float64 <: Point
@@ -589,7 +568,7 @@ julia> AbstractString <: Point
 false
 ```
 
-Concrete `Point` types with different values of `T` are never subtypes of each other:
+`T`の値が異なる具象型の`Point`型は，決してお互いのサブタイプではありません:
 
 ```jldoctest pointtype
 julia> Point{Float64} <: Point{Int64}
@@ -599,31 +578,25 @@ julia> Point{Float64} <: Point{Real}
 false
 ```
 
-!!! warning
-    This last point is *very* important: even though `Float64 <: Real` we **DO NOT** have `Point{Float64} <: Point{Real}`.
+!!! 警告
+    この最後の点は*非常に*重要です．`Float64 <: Real`であっても，`Point{Float64} <: Point{Real}`では*ありません*．
 
-In other words, in the parlance of type theory, Julia's type parameters are *invariant*, rather
-than being [covariant (or even contravariant)](https://en.wikipedia.org/wiki/Covariance_and_contravariance_%28computer_science%29). This is for practical reasons: while any instance
-of `Point{Float64}` may conceptually be like an instance of `Point{Real}` as well, the two types
-have different representations in memory:
+言い換えれば，型理論の用語では，Juliaのパラメータは，[covariant (or even contravariant)](https://en.wikipedia.org/wiki/Covariance_and_contravariance_%28computer_science%29)
+ではなく，*不変*です．これには実用的な理由があります．`Point{Float64}`のインスタンスは概念的
+には`Point{Real}`のインスタンスに似ていますが，この2つの型はメモリ上では異なる表現をします．
 
-  * An instance of `Point{Float64}` can be represented compactly and efficiently as an immediate pair
-    of 64-bit values;
-  * An instance of `Point{Real}` must be able to hold any pair of instances of [`Real`](@ref).
-    Since objects that are instances of `Real` can be of arbitrary size and structure, in
-    practice an instance of `Point{Real}` must be represented as a pair of pointers to
-    individually allocated `Real` objects.
+  * `Point{Float64}`のインスタンスは，コンパクトかつ効率的に64ビット値の即時ペアとして表現できます．
+  * `Point{Real}`は[`Real`](@ref)のインスタンスの任意のペアを保持できなければなりません．`Real`のインスタンスであるオブジェクトは，任意のサイズと構造を持つことができるため，実際には`Point{Real}`のインスタンスは，個別に割り当てられた`Real`オブジェクトへのポインタのペアとして表現する必要があります．
 
-The efficiency gained by being able to store `Point{Float64}` objects with immediate values is
-magnified enormously in the case of arrays: an `Array{Float64}` can be stored as a contiguous
-memory block of 64-bit floating-point values, whereas an `Array{Real}` must be an array of pointers
-to individually allocated [`Real`](@ref) objects -- which may well be
-[boxed](https://en.wikipedia.org/wiki/Object_type_%28object-oriented_programming%29#Boxing)
-64-bit floating-point values, but also might be arbitrarily large, complex objects, which are
-declared to be implementations of the `Real` abstract type.
+`Point{Float64}`オブジェクトを即時値で格納できることで得られる効率は，配列の場合には非常に
+大きくなります．`Array{Float64}`は，64ビット浮動小数点数値の連続したメモリブロックとして
+格納することができますが，`Array{Real}`は個別に割り当てられた[`Real`](@ref)オブジェクトへの
+ポインタ配列でなければなりません．これは[ボックス化された](https://en.wikipedia.org/wiki/Object_type_%28object-oriented_programming%29#Boxing)
+64ビットの浮動小数点数値である場合もありますが，`Real`抽象型の実装であると宣言された，
+任意の大きさの複雑なオブジェクトである場合もあります．
 
-Since `Point{Float64}` is not a subtype of `Point{Real}`, the following method can't be applied
-to arguments of type `Point{Float64}`:
+`Point{Float64}`は`Point{Real}`のサブタイプではないので，以下のメソッドでは`Point{Float64}`
+の引数には適用できません:
 
 ```julia
 function norm(p::Point{Real})
@@ -631,8 +604,8 @@ function norm(p::Point{Real})
 end
 ```
 
-A correct way to define a method that accepts all arguments of type `Point{T}` where `T` is
-a subtype of [`Real`](@ref) is:
+`T`が[`Real`](@ref)のサブタイプであるような`Point{T}`型の全ての引数を受け入れるメソッドを
+定義する正しい方法は，次の通りです:
 
 ```julia
 function norm(p::Point{<:Real})
@@ -640,19 +613,20 @@ function norm(p::Point{<:Real})
 end
 ```
 
-(Equivalently, one could define `function norm(p::Point{T} where T<:Real)` or
-`function norm(p::Point{T}) where T<:Real`; see [UnionAll Types](@ref).)
+（同様に， `function norm(p::Point{T} where T<:Real)`や
+`function norm(p::Point{T}) where T<:Real`と定義することもできます．[UnionAll Types](@ref)
+を参照してください．）
 
-More examples will be discussed later in [Methods](@ref).
+その他の例については，[Methods](@ref)で後述します．
 
-How does one construct a `Point` object? It is possible to define custom constructors for composite
-types, which will be discussed in detail in [Constructors](@ref man-constructors), but in the absence of any special
-constructor declarations, there are two default ways of creating new composite objects, one in
-which the type parameters are explicitly given and the other in which they are implied by the
-arguments to the object constructor.
+`Point`オブジェクトはどのようにして構築するのでしょうか？複合型に対するカスタムコンストラクタ
+を定義することは，[Constructors](@ref man-constructors)で詳述するように可能ですが，特別な
+コンストラクタが宣言されていない場合，新しい複合オブジェクトを作成するデフォルトの方法は
+2つ存在します．1つは型のパラメータが明示的に与えられる方法，もう一つはオブジェクト
+コンストラクタへの引数によって暗黙的に示される方法です．
 
-Since the type `Point{Float64}` is a concrete type equivalent to `Point` declared with [`Float64`](@ref)
-in place of `T`, it can be applied as a constructor accordingly:
+`Point{Float64}`は`T`の代わりに，[`Float64`](@ref)を用いて宣言された`Point`と同等の具象型
+であるため，これをコンストラクタとして適用することができます:
 
 ```jldoctest pointtype
 julia> Point{Float64}(1.0, 2.0)
@@ -662,7 +636,7 @@ julia> typeof(ans)
 Point{Float64}
 ```
 
-For the default constructor, exactly one argument must be supplied for each field:
+デフォルトのコンストラクタでは，各フィールドに対して1つだけ引数を指定する必要があります:
 
 ```jldoctest pointtype
 julia> Point{Float64}(1.0)
@@ -674,13 +648,13 @@ ERROR: MethodError: no method matching Point{Float64}(::Float64, ::Float64, ::Fl
 [...]
 ```
 
-Only one default constructor is generated for parametric types, since overriding it is not possible.
-This constructor accepts any arguments and converts them to the field types.
+デフォルトコンストラクタをオーバライドすることはできないので，パラメトリック型には1つだけ
+デフォルトコンストラクタが生成されます．このコンストラクタは，任意の引数を受け取り，それらを
+フィールドの型に変換します．
 
-In many cases, it is redundant to provide the type of `Point` object one wants to construct, since
-the types of arguments to the constructor call already implicitly provide type information. For
-that reason, you can also apply `Point` itself as a constructor, provided that the implied value
-of the parameter type `T` is unambiguous:
+多くの場合，コンストラクタ呼び出しの引数の型が既に暗黙的に型情報を提供しているので，構築
+したい`Point`オブジェクトの型を提供することは冗長です．そのため，パラメータ型`T`の暗黙の
+値が明確であれば，`Point`自身をコンストラクタとして適用することもできます:
 
 ```jldoctest pointtype
 julia> Point(1.0,2.0)
@@ -696,8 +670,8 @@ julia> typeof(ans)
 Point{Int64}
 ```
 
-In the case of `Point`, the type of `T` is unambiguously implied if and only if the two arguments
-to `Point` have the same type. When this isn't the case, the constructor will fail with a [`MethodError`](@ref):
+`Point`の場合，`T`の型は，`Point`の2つの引数が同じ型である場合に限り，曖昧さなく暗黙のもの
+とされます．そうでない場合，コンストラクタは，[`MethodError`](@ref)で失敗します:
 
 ```jldoctest pointtype
 julia> Point(1,2.5)
@@ -706,20 +680,19 @@ Closest candidates are:
   Point(::T, !Matched::T) where T at none:2
 ```
 
-Constructor methods to appropriately handle such mixed cases can be defined, but that will not
-be discussed until later on in [Constructors](@ref man-constructors).
+このような混在したケースを適切に処理するコンストラクタのメソッドを定義することもできますが，
+それについては[Constructors](@ref man-constructors)で後程説明します．
 
-### Parametric Abstract Types
+### パラメトリック抽象型
 
-Parametric abstract type declarations declare a collection of abstract types, in much the same
-way:
+パラメトリック抽象型宣言は，ほとんど同じ方法で抽象型の集まりを宣言します:
 
 ```jldoctest pointytype
 julia> abstract type Pointy{T} end
 ```
 
-With this declaration, `Pointy{T}` is a distinct abstract type for each type or integer value
-of `T`. As with parametric composite types, each such instance is a subtype of `Pointy`:
+この宣言により，`Pointy{T}`は，`T`の型や整数値ごとに，異なる抽象型となります．
+パラメトリック合成型と同様に，このようなインスタンスは，それぞれ`Pointy`のサブタイプとなります:
 
 ```jldoctest pointytype
 julia> Pointy{Int64} <: Pointy
@@ -729,7 +702,7 @@ julia> Pointy{1} <: Pointy
 true
 ```
 
-Parametric abstract types are invariant, much as parametric composite types are:
+パラメトリック抽象型は，パラメトリックな複合型と同様に不変です:
 
 ```jldoctest pointytype
 julia> Pointy{Float64} <: Pointy{Real}
@@ -739,9 +712,9 @@ julia> Pointy{Real} <: Pointy{Float64}
 false
 ```
 
-The notation `Pointy{<:Real}` can be used to express the Julia analogue of a
-*covariant* type, while `Pointy{>:Int}` the analogue of a *contravariant* type,
-but technically these represent *sets* of types (see [UnionAll Types](@ref)).
+`Pointy{<:Real}`という表記は，Juliaの*共変*型の類似性を表現するために使われ，
+`Pointy{>:Int}`は*逆変*型の類似性を表現されるために使われますが，技術的には
+これらは型の*集合*を表します（[UnionAll Types](@ref)を参照してください）．
 ```jldoctest pointytype
 julia> Pointy{Float64} <: Pointy{<:Real}
 true
@@ -750,9 +723,9 @@ julia> Pointy{Real} <: Pointy{>:Int}
 true
 ```
 
-Much as plain old abstract types serve to create a useful hierarchy of types over concrete types,
-parametric abstract types serve the same purpose with respect to parametric composite types. We
-could, for example, have declared `Point{T}` to be a subtype of `Pointy{T}` as follows:
+従来の抽象型が具象型の上に便利な型階層を作る役割を果たしていたように，パラメトリック抽象型
+はパラメトリック複合型に関しても同じ役割を果たします．例えば次のように，`Point{T}`を
+`Pointy{T}`のサブタイプであると宣言することができました:
 
 ```jldoctest pointytype
 julia> struct Point{T} <: Pointy{T}
@@ -761,7 +734,7 @@ julia> struct Point{T} <: Pointy{T}
        end
 ```
 
-Given such a declaration, for each choice of `T`, we have `Point{T}` as a subtype of `Pointy{T}`:
+このような宣言があれば，`T`の各選択に対して，`Point{T}`を`Pointy{T}`のサブタイプとすることができます:
 
 ```jldoctest pointytype
 julia> Point{Float64} <: Pointy{Float64}
@@ -774,7 +747,7 @@ julia> Point{AbstractString} <: Pointy{AbstractString}
 true
 ```
 
-This relationship is also invariant:
+この関係性も不変です:
 
 ```jldoctest pointytype
 julia> Point{Float64} <: Pointy{Real}
@@ -784,9 +757,9 @@ julia> Point{Float64} <: Pointy{<:Real}
 true
 ```
 
-What purpose do parametric abstract types like `Pointy` serve? Consider if we create a point-like
-implementation that only requires a single coordinate because the point is on the diagonal line
-*x = y*:
+`Pointy`のようなパラメトリックな抽象型はどのような目的で使われるのでしょうか？
+ここでは，点が対角線*x = y*上にあり，単一の座標値のみを必要とする点のようなものの実装を
+作成した場合をい考えてみましょう:
 
 ```jldoctest pointytype
 julia> struct DiagPoint{T} <: Pointy{T}
@@ -794,21 +767,21 @@ julia> struct DiagPoint{T} <: Pointy{T}
        end
 ```
 
-Now both `Point{Float64}` and `DiagPoint{Float64}` are implementations of the `Pointy{Float64}`
-abstraction, and similarly for every other possible choice of type `T`. This allows programming
-to a common interface shared by all `Pointy` objects, implemented for both `Point` and `DiagPoint`.
-This cannot be fully demonstrated, however, until we have introduced methods and dispatch in the
-next section, [Methods](@ref).
+これにより，`Point{Float64}`も`DiagPoint{Float64}`も共に`Pointy{Float64}`抽象型の実装となり
+，他の可能な型`T`の選択についても同様になります．これにより，`Point`と`DiagPoint`の両方で
+実装された，全ての`Pointy`オブジェクトで共有される共通のインタフェースへのプログラミングが
+可能になります．ただしこのことは，次のセクション[Methods](@ref)で，メソッドとディスパッチを
+紹介するまでは，完全には実証できません．
 
-There are situations where it may not make sense for type parameters to range freely over all
-possible types. In such situations, one can constrain the range of `T` like so:
+型のパラメータが可能なすべての型の間を自由に行き来することに意味がない場合があります．
+このような場合には，`T`の範囲を次のように制限することができます:
 
 ```jldoctest realpointytype
 julia> abstract type Pointy{T<:Real} end
 ```
 
-With such a declaration, it is acceptable to use any type that is a subtype of
-[`Real`](@ref) in place of `T`, but not types that are not subtypes of `Real`:
+このように宣言すると，`T`の代わりに[`Real`](@ref)のサブタイプである型を使用することが
+できますが，`Real`のサブタイプでない型は使用できません:
 
 ```jldoctest realpointytype
 julia> Pointy{Float64}
@@ -824,7 +797,7 @@ julia> Pointy{1}
 ERROR: TypeError: in Pointy, in T, expected T<:Real, got a value of type Int64
 ```
 
-Type parameters for parametric composite types can be restricted in the same manner:
+パラメトリック複合型の型パラメータも，同様に制限することができます:
 
 ```julia
 struct Point{T<:Real} <: Pointy{T}
@@ -833,9 +806,9 @@ struct Point{T<:Real} <: Pointy{T}
 end
 ```
 
-To give a real-world example of how all this parametric type machinery can be useful, here is
-the actual definition of Julia's [`Rational`](@ref) immutable type (except that we omit the
-constructor here for simplicity), representing an exact ratio of integers:
+このようなパメトリック型の仕組みがどのように役立つのかを示す実例として，Juliaの
+[`Rational`](@ref)不変型の実際の定義（整数の正確な比を表すもの）を以下に示します
+（ただし，ここでは簡単のために，コンストラクタを省略しています）:
 
 ```julia
 struct Rational{T<:Integer} <: Real
@@ -844,16 +817,15 @@ struct Rational{T<:Integer} <: Real
 end
 ```
 
-It only makes sense to take ratios of integer values, so the parameter type `T` is restricted
-to being a subtype of [`Integer`](@ref), and a ratio of integers represents a value on the
-real number line, so any [`Rational`](@ref) is an instance of the [`Real`](@ref) abstraction.
+整数値の比を取ることには意味があるので，パラメータ型`T`は[`Integer`](@ref)のサブタイプに
+制約されます．また，整数の比は実数線上の値を表すので，全ての[`Rational`](@ref)は，
+[`Real`](@ref)抽象型のインスタンスとなります．
 
-### Tuple Types
+### [タプル型](@id Tuple-Types)
 
-Tuples are an abstraction of the arguments of a function -- without the function itself. The salient
-aspects of a function's arguments are their order and their types. Therefore a tuple type is similar
-to a parameterized immutable type where each parameter is the type of one field. For example,
-a 2-element tuple type resembles the following immutable type:
+タプルは関数の引数を抽象化したもので，関数自体は含まれていません．関数の引数の重要な点は，
+その順序と型です．したがってタプル型は，パラメータ化された増えhん型に似ており，各パラメータ
+は1つのフィールドの型となります．例えば，2要素のタプル型は以下のような不変型に似ています:
 
 ```julia
 struct Tuple2{A,B}
@@ -862,23 +834,20 @@ struct Tuple2{A,B}
 end
 ```
 
-However, there are three key differences:
+しかし，3つの重要な違いがあります:
 
-  * Tuple types may have any number of parameters.
-  * Tuple types are *covariant* in their parameters: `Tuple{Int}` is a subtype of `Tuple{Any}`. Therefore
-    `Tuple{Any}` is considered an abstract type, and tuple types are only concrete if their parameters
-    are.
-  * Tuples do not have field names; fields are only accessed by index.
+  * タプル型は任意の数のパラメータを持つことができます．
+  * タプル型はパラメータが*共変*します．`Tuple{Int}`は`Tuple{Any}`のサブタイプです．したがって，`Tuple{Any}`は抽象型と見なされ，タプル型はパラメータが具体型である場合にのみ具体型になります．
+  * タプルはフィールド名を持たず，フィールドにはインデックスによってのみアクセスされます．
 
-Tuple values are written with parentheses and commas. When a tuple is constructed, an appropriate
-tuple type is generated on demand:
+タプルの値は括弧とコンマで記述されます．タプルが構築されると，必要に応じて適切なタプル型が生成されます:
 
 ```jldoctest
 julia> typeof((1,"foo",2.5))
 Tuple{Int64,String,Float64}
 ```
 
-Note the implications of covariance:
+*共変*の意味合いに注意してください:
 
 ```jldoctest
 julia> Tuple{Int,AbstractString} <: Tuple{Real,Any}
@@ -891,13 +860,11 @@ julia> Tuple{Int,AbstractString} <: Tuple{Real,}
 false
 ```
 
-Intuitively, this corresponds to the type of a function's arguments being a subtype of the function's
-signature (when the signature matches).
+直感的には，これは関数の引数の型が関数のシグネチャのサブタイプであることに対応します（シグネチャが一致する場合）．
 
-### Vararg Tuple Types
+### Vararg(可変長引数の）タプル型
 
-The last parameter of a tuple type can be the special type [`Vararg`](@ref), which denotes any number
-of trailing elements:
+タプル型の最後のパラメータは，特殊な型である[`Vararg`](@ref)にすることができ，これは任意の数の末尾の要素を規定します:
 
 ```jldoctest
 julia> mytupletype = Tuple{AbstractString,Vararg{Int}}
@@ -916,24 +883,23 @@ julia> isa(("1",1,2,3.0), mytupletype)
 false
 ```
 
-Notice that `Vararg{T}` corresponds to zero or more elements of type `T`. Vararg tuple types are
-used to represent the arguments accepted by varargs methods (see [Varargs Functions](@ref)).
+`Vararg{T}`型は`T`型の0個以上の要素に対応することに注意してください．Varargタプル型は，
+varargsメソッドが受け取る引数を表すのに使われます（[Varargs Functions](@ref)を参照してください）．
 
-The type `Vararg{T,N}` corresponds to exactly `N` elements of type `T`.  `NTuple{N,T}` is a convenient
-alias for `Tuple{Vararg{T,N}}`, i.e. a tuple type containing exactly `N` elements of type `T`.
+`Vararg{T,N}`型は，`T`型のちょうど`N`個の要素に対応します．`NTuple{N,T}`は`Tuple{Vararg{T,N}}`
+の便利なエイリアスで，`T`型のちょうど`N`個の要素を含むタプル型です．
 
-### Named Tuple Types
+### 名前付きタプル型
 
-Named tuples are instances of the [`NamedTuple`](@ref) type, which has two parameters: a tuple of
-symbols giving the field names, and a tuple type giving the field types.
+名前付きタプルは[`NamedTuple`](@ref)型のインスタンスで，2つのパラメータを持ちます．
+1つはフィールド名を表すシンボルのタプルで，もう一つはフィールドタイプを表すタプルタイプです．
 
 ```jldoctest
 julia> typeof((a=1,b="hello"))
 NamedTuple{(:a, :b),Tuple{Int64,String}}
 ```
 
-The [`@NamedTuple`](@ref) macro provides a more convenient `struct`-like syntax for declaring
-`NamedTuple` types via `key::Type` declarations, where an omitted `::Type` corresponds to `::Any`.
+[`@NamedTuple`](@ref)マクロは，`NamedTuple`型を`key::Type`宣言を介して宣言するための`構造体`のような便利な構文を提供しており，ここでは`::Type`を省略することは，`::Any`を付けることにに対応します．
 
 ```jldoctest
 julia> @NamedTuple{a::Int, b::String}
@@ -946,9 +912,9 @@ julia> @NamedTuple begin
 NamedTuple{(:a, :b),Tuple{Int64,String}}
 ```
 
-A `NamedTuple` type can be used as a constructor, accepting a single tuple argument.
-The constructed `NamedTuple` type can be either a concrete type, with both parameters specified,
-or a type that specifies only field names:
+`NamedTuple`型は，1つのタプル引数を受け付けるコンストラクタとして使用できます．
+構築された`NamedTuple`型は，両方のパラメータを指定した具象型か，フィールド名のみを指定した
+型のいずれかになります:
 
 ```jldoctest
 julia> @NamedTuple{a::Float32,b::String}((1,""))
@@ -958,14 +924,14 @@ julia> NamedTuple{(:a, :b)}((1,""))
 (a = 1, b = "")
 ```
 
-If field types are specified, the arguments are converted. Otherwise the types of the arguments
-are used directly.
+フィールドの型が指定されている場合は，引数は変換されます．そうでない場合は，引数の型が
+そのまま使用されます．
 
-### [Singleton Types](@id man-singleton-types)
+### [シングルトン型](@id man-singleton-types)
 
-There is a special kind of abstract parametric type that must be mentioned here: singleton types.
-For each type, `T`, the "singleton type" `Type{T}` is an abstract type whose only instance is
-the object `T`. Since the definition is a little difficult to parse, let's look at some examples:
+ここで言及しなければならない特別な種類の抽象パラメトリック型があります．シングルトン型です．
+各型`T`に対して，「シングルトン型」`Type{T}`は唯一のインスタンスがオブジェクト`T`である
+ような抽象型でｋす．定義は少し難しいので，いくつか例を見てみましょう:
 
 ```jldoctest
 julia> isa(Float64, Type{Float64})
@@ -981,9 +947,9 @@ julia> isa(Float64, Type{Real})
 false
 ```
 
-In other words, [`isa(A,Type{B})`](@ref) is true if and only if `A` and `B` are the same object
-and that object is a type. Without the parameter, `Type` is simply an abstract type which has
-all type objects as its instances, including, of course, singleton types:
+言い換えれば[`isa(A,Type{B})`](@ref)は，`A`と`B`が同じオブジェクトであり，そのオブジェクト
+が型である場合に限り真になります．パラメータがない場合，`Type`は単なる抽象型で，
+シングルトン型を含むすべての型オブジェクトをそのインスタンスとして持ちます:
 
 ```jldoctest
 julia> isa(Type{Float64}, Type)
@@ -996,7 +962,7 @@ julia> isa(Real, Type)
 true
 ```
 
-Any object that is not a type is not an instance of `Type`:
+型でないオブジェクトは，`Type`のインスタンスではありません:
 
 ```jldoctest
 julia> isa(1, Type)
@@ -1006,21 +972,21 @@ julia> isa("foo", Type)
 false
 ```
 
-Until we discuss [Parametric Methods](@ref) and [conversions](@ref conversion-and-promotion), it is difficult to explain
-the utility of the singleton type construct, but in short, it allows one to specialize function
-behavior on specific type *values*. This is useful for writing methods (especially parametric
-ones) whose behavior depends on a type that is given as an explicit argument rather than implied
-by the type of one of its arguments.
+[Parametric Methods](@ref)や，[conversions](@ref conversion-and-promotion)について説明
+するまでは，シングルトン型の構造の有用性を説明するのは難しいのですが，簡単に言うと，
+特定の型の*値*に対して関数の動作を特殊化することができます．これは，メソッド（特に
+パラメトリックなもの）を書く際に，その動作が，引数の型に暗示されるのではなく，明示的な
+引数として与えられる型に依存する場合に有用です．
 
-A few popular languages have singleton types, including Haskell, Scala and Ruby. In general usage,
-the term "singleton type" refers to a type whose only instance is a single value. This meaning
-applies to Julia's singleton types, but with that caveat that only type objects have singleton
-types.
+Haskell，Scala，Rubyなど，シングルトン型を持つ人気の高い言語がいくつかあります．
+一般的な用法では，「シングルトン型」という言葉は，唯一のインスタンスが1つの値である型を
+指します．この意味は，Juliaのシングルトン型にも当てはまりますが，シングルトン型を持つのは
+型オブジェクトだけであるという注意点があります．
 
-### Parametric Primitive Types
+### パラメトリックプリミティブ型
 
-Primitive types can also be declared parametrically. For example, pointers are represented as
-primitive types which would be declared in Julia like this:
+プリミティブ型はパラメトリックに宣言することもできます．例えば，ポインタはプリミティブ型
+として表現され，Juliaでは次のように宣言されます:
 
 ```julia
 # 32-bit system:
@@ -1030,12 +996,11 @@ primitive type Ptr{T} 32 end
 primitive type Ptr{T} 64 end
 ```
 
-The slightly odd feature of these declarations as compared to typical parametric composite types,
-is that the type parameter `T` is not used in the definition of the type itself -- it is just
-an abstract tag, essentially defining an entire family of types with identical structure, differentiated
-only by their type parameter. Thus, `Ptr{Float64}` and `Ptr{Int64}` are distinct types, even though
-they have identical representations. And of course, all specific pointer types are subtypes of
-the umbrella [`Ptr`](@ref) type:
+典型的なパラメトリック複合型と比較して，これらの宣言の少し変わった特徴は，型パラメータ`T`
+が型自体の定義に使用されていないことです．これは単なる抽象的なタグであり，本質的に，
+型パラメータによってのみ区別される，同一の構造を持つ型ファミリ全体を定義します．ゆえに，
+`Ptr{Float64}`と`Ptr{Int64}`は，表現が同じであっても，別の型です．そしてもちろん，
+全ての特定のポインタ型は，[`Ptr`](@ref)型のサブタイプです:
 
 ```jldoctest
 julia> Ptr{Float64} <: Ptr
@@ -1045,47 +1010,45 @@ julia> Ptr{Int64} <: Ptr
 true
 ```
 
-## UnionAll Types
+## [UnionAll型](@id UnionAll-Types)
 
-We have said that a parametric type like `Ptr` acts as a supertype of all its instances
-(`Ptr{Int64}` etc.). How does this work? `Ptr` itself cannot be a normal data type, since without
-knowing the type of the referenced data the type clearly cannot be used for memory operations.
-The answer is that `Ptr` (or other parametric types like `Array`) is a different kind of type called a
-[`UnionAll`](@ref) type. Such a type expresses the *iterated union* of types for all values of some parameter.
+ `Ptr`のようなパラメトリック型は，そのすべてのインスタンス（`Ptr{Int64}`など）の
+ スーパータイプとして機能すると言いました．これはどのように機能するのでしょうか？
+ `Ptr`自体は通常のデータ型ではありません．なぜなら，参照されるデータの型を知らなければ，
+ その型は明らかにメモリ操作に使えないからです．その答えは，`Ptr`（または`Array`などの
+ パラメトリック型）は，[`UnionAll`](@ref)型と呼ばれる別の種類の型であるということです．
+ このような型は，あるパラメータパラメータの全ての値に対する型の*反復された組み合わせ*
+ を表現します．
 
-`UnionAll` types are usually written using the keyword `where`. For example `Ptr` could be more
-accurately written as `Ptr{T} where T`, meaning all values whose type is `Ptr{T}` for some value
-of `T`. In this context, the parameter `T` is also often called a "type variable" since it is
-like a variable that ranges over types.
-Each `where` introduces a single type variable, so these expressions are nested for types with
-multiple parameters, for example `Array{T,N} where N where T`.
+`UnionAll`型は通常，キーワード`where`を使って記述します．例えば，`Ptr`は正確には`Ptr{T} where T`
+と書くことができ，ある`T`の値に対して`Ptr{T}`を型とする全ての値を意味します．この文脈では，
+パラメータ`T`は型の範囲を持つ変数のようなものなので，「型変数」とも呼ばれます．各`where`は
+1つの型変数を導入するので，複数のパラメータを持つ型では，`Array{T, N} where N where T`の
+ように，これらの式は入れ子になっています．
 
-The type application syntax `A{B,C}` requires `A` to be a `UnionAll` type, and first substitutes `B`
-for the outermost type variable in `A`.
-The result is expected to be another `UnionAll` type, into which `C` is then substituted.
-So `A{B,C}` is equivalent to `A{B}{C}`.
-This explains why it is possible to partially instantiate a type, as in `Array{Float64}`: the first
-parameter value has been fixed, but the second still ranges over all possible values.
-Using explicit `where` syntax, any subset of parameters can be fixed. For example, the type of all
-1-dimensional arrays can be written as `Array{T,1} where T`.
+型応用構文`A{B,C}`は，`A`が`UnionAll`型であることを要求し，まず`A`の一番外側の型変数に
+`B`を代入します．その結果，別の`UnionAll`型になり，そこに`C`が代入されます．つまり，
+`A{B,C}`は`A{B}{C}`と同等です．これは`Array{Float64}`のように，型を部分的にインスタンス化
+することが可能な理由を説明しています．つまり，最初のパラメータ値は固定されていますが，
+2番目のパラメータはまだ取りうる全ての値の範囲内にあります．明示的な`where`構文を使用すると，
+パラメータの任意のサブセットを固定できます．例えば，全ての1次元配列の型は，`Array{T, 1} where T`
+と書くことができます．
 
-Type variables can be restricted with subtype relations.
-`Array{T} where T<:Integer` refers to all arrays whose element type is some kind of
-[`Integer`](@ref).
-The syntax `Array{<:Integer}` is a convenient shorthand for `Array{T} where T<:Integer`.
-Type variables can have both lower and upper bounds.
-`Array{T} where Int<:T<:Number` refers to all arrays of [`Number`](@ref)s that are able to
-contain `Int`s (since `T` must be at least as big as `Int`).
-The syntax `where T>:Int` also works to specify only the lower bound of a type variable,
-and `Array{>:Int}` is equivalent to `Array{T} where T>:Int`.
+型変数はサブタイプの関係性で制限することができます．`Array{T} where T<:Integer`は，
+要素の型が[`Integer`](@ref)に含まれるものである全ての配列を指します．`Array{<:Integer}`
+は，`Array{T} where T<:Integer`の便利な省略形構文です．型変数は，下限値と上限値を両方
+持つことができます．`Array{T} where Int<:T<:Number`は，`Int`を含むことのできる，全ての
+[`Number`](@ref)の配列を指します（なぜなら，`T`は少なくとも，`Int`と同じ大きさでなければ
+ならないためです）．`where T>:Int`構文は，型変数の下限のみを指定する場合にも使用すること
+ができ，`Array{>:Int}`は`Array{T} where T>:Int`と同等のものになります．
 
-Since `where` expressions nest, type variable bounds can refer to outer type variables.
-For example `Tuple{T,Array{S}} where S<:AbstractArray{T} where T<:Real` refers to 2-tuples
-whose first element is some [`Real`](@ref), and whose second element is an `Array` of any
-kind of array whose element type contains the type of the first tuple element.
+`where`式はネストするので，型変数の境界は，外側の型変数を参照することができます．例えば，
+`Tuple{T,Array{S}} where S<:AbstractArray{T} where T<:Real`は，最初の要素が[`Real`](@ref)
+に含まれる何らかの型で，2番目の要素が最初のタプルの要素を含む任意の種類の配列である
+ような2-タプルを指します．
 
-The `where` keyword itself can be nested inside a more complex declaration. For example,
-consider the two types created by the following declarations:
+`where`キーワード自体は，より複雑な宣言の中にネストすることができます．例えば，次のような
+宣言で作られた2つの型を考えてみましょう:
 
 ```jldoctest
 julia> const T1 = Array{Array{T,1} where T, 1}
@@ -1095,32 +1058,30 @@ julia> const T2 = Array{Array{T,1}, 1} where T
 Array{Array{T,1},1} where T
 ```
 
-Type `T1` defines a 1-dimensional array of 1-dimensional arrays; each
-of the inner arrays consists of objects of the same type, but this type may vary from one inner array to the next.
-On the other hand, type `T2` defines a 1-dimensional array of 1-dimensional arrays all of whose inner arrays must have the
-same type.  Note that `T2` is an abstract type, e.g., `Array{Array{Int,1},1} <: T2`, whereas `T1` is a concrete type. As a consequence, `T1` can be constructed with a zero-argument constructor `a=T1()` but `T2` cannot.
+型`T1`は，1次元配列の1次元配列を定義しています．各内部配列は，同じ型のオブジェクトで構成
+されていますが，この方は内部配列ごとに異なる可能性があります．一方`T2`型は，内部配列が
+全て同じ型を持つような，1次元配列の1次元配列を定義します．`T2`型は抽象的な型であり，
+例えば`Array{Array{Int,1},1} <: T2`は抽象型ですが，`T1`は具象型であることに注意してください．
+そのため，`T1`はゼロ引数のコンストラクタ`a=T1()`で構築できますが，`T2`はできません．
 
-There is a convenient syntax for naming such types, similar to the short form of function
-definition syntax:
+このような型を命名するために，関数定義構文の短縮形に似た便利な構文があります:
 
 ```julia
 Vector{T} = Array{T,1}
 ```
 
-This is equivalent to `const Vector = Array{T,1} where T`.
-Writing `Vector{Float64}` is equivalent to writing `Array{Float64,1}`, and the umbrella type
-`Vector` has as instances all `Array` objects where the second parameter -- the number of array
-dimensions -- is 1, regardless of what the element type is. In languages where parametric types
-must always be specified in full, this is not especially helpful, but in Julia, this allows one
-to write just `Vector` for the abstract type including all one-dimensional dense arrays of any
-element type.
+これは，`const Vector = Array{T,1} where T`と書くのと同じです．
+`Vector{Float64}`と書くことは，`Array{Float64,1}`と書くことと同じで，`Vector`は，要素の
+型に関係なく，第二パラメータ（配列の次元数）が1である全ての`Array`オブジェクトを
+インスタンスとして持っています．パラメトリック型が常に完全に指定されなければならない言語
+では，これは特に有用ではありませんが，Juliaでは，あらゆる要素型の全ての1次元密な配列を
+含む抽象型に対して，`Vector`とだけ書けばよくなります．
 
-## Type Aliases
+## 型エイリアス
 
-Sometimes it is convenient to introduce a new name for an already expressible type.
-This can be done with a simple assignment statement.
-For example, `UInt` is aliased to either [`UInt32`](@ref) or [`UInt64`](@ref) as is
-appropriate for the size of pointers on the system:
+既に表現可能な型に，新しい名前を導入するのが便利な場合があります．これは簡単な代入文で
+行うことができます．例えば，`UInt`は，システム上のポインタのサイズに応じて，[`UInt32`](@ref)
+または[`UInt64`](@ref)のいずれかにエイリアスされます:
 
 ```julia-repl
 # 32-bit system:
@@ -1132,7 +1093,7 @@ julia> UInt
 UInt64
 ```
 
-This is accomplished via the following code in `base/boot.jl`:
+これは`base/boot.jl`の以下のコードで表現されています:
 
 ```julia
 if Int === Int64
@@ -1142,22 +1103,22 @@ else
 end
 ```
 
-Of course, this depends on what `Int` is aliased to -- but that is predefined to be the correct
-type -- either [`Int32`](@ref) or [`Int64`](@ref).
+もちろん，これは`Int`が何にエイリアスされているかに寄りますが，[`Int32`](@ref)または
+[`Int64`](@ref)のいずれかの正しい型になるように予め定義されています．
 
-(Note that unlike `Int`, `Float` does not exist as a type alias for a specific sized
-[`AbstractFloat`](@ref). Unlike with integer registers, where the size of `Int`
-reflects the size of a native pointer on that machine, the floating point register sizes
-are specified by the IEEE-754 standard.)
+（`Int`とは異なり，`Float`は特定のサイズの[`AbstractFloat`](@ref)のタイプエイリアスとしては
+存在しないことに注意してください．`Int`のサイズがそのマシンのネイティブポインタのサイズを
+反映している整数レジスタとは異なり，浮動小数点レジスタのサイズは，IEEE-754標準で規定
+されています．）
 
-## Operations on Types
+## 型に対する操作
 
-Since types in Julia are themselves objects, ordinary functions can operate on them. Some functions
-that are particularly useful for working with or exploring types have already been introduced,
-such as the `<:` operator, which indicates whether its left hand operand is a subtype of its right
-hand operand.
+Juliaの型はそれ自体がオブジェクトなので，通常の関数で型を操作することができます．左手の
+オペランドが右手のオペランドのサブタイプであるかどうかを示す`<:`オペレータなど，型の操作
+や探索に特に有用な関数はすでに紹介しました．
 
-The [`isa`](@ref) function tests if an object is of a given type and returns true or false:
+[`isa`](@ref)関数は，あるオブジェクトが指定された型であるかどうかをテストし，trueかfalse
+を返します．
 
 ```jldoctest
 julia> isa(1, Int)
@@ -1167,9 +1128,8 @@ julia> isa(1, AbstractFloat)
 false
 ```
 
-The [`typeof`](@ref) function, already used throughout the manual in examples, returns the type
-of its argument. Since, as noted above, types are objects, they also have types, and we can ask
-what their types are:
+[`typeof`](@ref)関数は，マニュアルの例にもあるように，その引数の型を返す関数です．先に
+述べたように，型はオブジェクトなので，それらも型を持ち，その型が何なのかを尋ねることができます:
 
 ```jldoctest
 julia> typeof(Rational{Int})
@@ -1179,8 +1139,8 @@ julia> typeof(Union{Real,String})
 Union
 ```
 
-What if we repeat the process? What is the type of a type of a type? As it happens, types are
-all composite values and thus all have a type of `DataType`:
+これを繰り返すとどうなるのでしょうか？型の型の型は何なのでしょうか？型は
+すべて複合値であるため，全て`DataType`の型を持っています:
 
 ```jldoctest
 julia> typeof(DataType)
@@ -1190,10 +1150,10 @@ julia> typeof(Union)
 DataType
 ```
 
-`DataType` is its own type.
+`DataType`はそれ自身の型となります．
 
-Another operation that applies to some types is [`supertype`](@ref), which reveals a type's
-supertype. Only declared types (`DataType`) have unambiguous supertypes:
+一部の型に適用されるもう一つの操作は[`supertype`](@ref)で，型のスーパータイプを明らかに
+します．宣言された型（`DataType`）だけが，曖昧さのないスーパータイプを持っています:
 
 ```jldoctest
 julia> supertype(Float64)
@@ -1208,8 +1168,8 @@ Any
 julia> supertype(Any)
 Any
 ```
-
-If you apply [`supertype`](@ref) to other type objects (or non-type objects), a [`MethodError`](@ref)
+[`supertype`](@ref)を他の型のオブジェクト（または型でないオブジェクト）に適用した場合，
+[`MethodError`](@ref)が発生します:
 is raised:
 
 ```jldoctest; filter = r"Closest candidates.*"s
@@ -1219,11 +1179,11 @@ Closest candidates are:
 [...]
 ```
 
-## [Custom pretty-printing](@id man-custom-pretty-printing)
+## [カスタムプリティプリンティング](@id man-custom-pretty-printing)
 
-Often, one wants to customize how instances of a type are displayed.  This is accomplished by
-overloading the [`show`](@ref) function.  For example, suppose we define a type to represent
-complex numbers in polar form:
+ある方のインスタンスをどのように表示するかをカスタマイズしたいことは良くあります．これを
+実現するには，[`show`](@ref)関数をオーバーロードします．例えば，複素数を極座標で表現する
+型を定義したとします:
 
 ```jldoctest polartype
 julia> struct Polar{T<:Real} <: Number
@@ -1235,36 +1195,36 @@ julia> Polar(r::Real,Θ::Real) = Polar(promote(r,Θ)...)
 Polar
 ```
 
-Here, we've added a custom constructor function so that it can take arguments of different
-[`Real`](@ref) types and promote them to a common type (see [Constructors](@ref man-constructors)
-and [Conversion and Promotion](@ref conversion-and-promotion)).
-(Of course, we would have to define lots of other methods, too, to make it act like a
-[`Number`](@ref), e.g. `+`, `*`, `one`, `zero`, promotion rules and so on.) By default,
-instances of this type display rather simply, with information about the type name and
-the field values, as e.g. `Polar{Float64}(3.0,4.0)`.
+ここでは，カスタムのコンストラクタ関数を追加して，異なる[`Real`](@ref)型の引数を取り，
+それらを共通の型に変換できるようにしています（[Constructors](@ref man-constructors)と
+[Conversion and Promotion](@ref conversion-and-promotion)を参照してください）．
+（もちろん，この型を[`Number`](@ref)のように動作させるためには，他にも多くのメソッドを
+定義する必要があります．）デフォルトでは，この型のインスタンスは，`Polar{Float64}(3.0,4.0)`
+のように，型名とフィールド値の情報を表示するだけのシンプルな表示になっています．
 
-If we want it to display instead as `3.0 * exp(4.0im)`, we would define the following method to
-print the object to a given output object `io` (representing a file, terminal, buffer, etcetera;
-see [Networking and Streams](@ref)):
+例えば`3.0 * exp(4.0im)`のように表示したい場合には，次のようなメソッドを定義して，
+与えられた出力オブジェクト`io`（ファイルやターミナル，バッファなどを表すもの
+；[Networking and Streams](@ref)を参照のこと）にオブジェクトをプリントします:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, z::Polar) = print(io, z.r, " * exp(", z.Θ, "im)")
 ```
 
-More fine-grained control over display of `Polar` objects is possible. In particular, sometimes
-one wants both a verbose multi-line printing format, used for displaying a single object in the
-REPL and other interactive environments, and also a more compact single-line format used for
-[`print`](@ref) or for displaying the object as part of another object (e.g. in an array). Although
-by default the `show(io, z)` function is called in both cases, you can define a *different* multi-line
-format for displaying an object by overloading a three-argument form of `show` that takes the
-`text/plain` MIME type as its second argument (see [Multimedia I/O](@ref)), for example:
+`Polar`オブジェクトの表示については，より細かい制御が可能です．特に，REPLやその他の
+インタラクティブ環境で1つのオブジェクトを表示するために使用される冗長な複数行のプリント
+形式と，[`print`](@ref)や他のオブジェクトの一部（配列など）としてオブジェクトを表示するため
+に使用される，よりコンパクトな1行の形式の両方が必要な場合があります．デフォルトではどちらも
+`show(io, z)`関数が呼ばれますが，例えば，`text/plain`MIMEタイプを第二引数に取るような
+3つの引数を持つ形式の`show`をオーバーロードすることにより，オブジェクトを表示するための
+*異なる*複数行形式を定義することができます（[Multimedia I/O](@ref)を参照のこと）．例えば:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, ::MIME"text/plain", z::Polar{T}) where{T} =
            print(io, "Polar{$T} complex number:\n   ", z)
 ```
 
-(Note that `print(..., z)` here will call the 2-argument `show(io, z)` method.) This results in:
+（ここでの`print(..., z)`は，2引数の`show(io, z)`メソッドを読みだすことに注意してください．）
+これは次のような結果になります:
 
 ```jldoctest polartype
 julia> Polar(3, 4.0)
@@ -1277,14 +1237,16 @@ julia> [Polar(3, 4.0), Polar(4.0,5.3)]
  4.0 * exp(5.3im)
 ```
 
-where the single-line `show(io, z)` form is still used for an array of `Polar` values.   Technically,
-the REPL calls `display(z)` to display the result of executing a line, which defaults to `show(stdout, MIME("text/plain"), z)`,
-which in turn defaults to `show(stdout, z)`, but you should *not* define new [`display`](@ref)
-methods unless you are defining a new multimedia display handler (see [Multimedia I/O](@ref)).
+ここでは`Polar`値の配列に対して1行の`show(io, z)`形式がまだ使用されています．技術的には，
+REPLは行を実行した結果を表示するために`display(z)`を呼び出し，デフォルトでは，
+`show(stdout, MIME("text/plain"), z)`となり，続いて`show(stdout, z)`となりますが，
+新しいマルチメディア表示ハンドラを定義する場合を除いて，新しい[`display`](@ref)メソッドを
+*定義すべきではありません*（[Multimedia I/O](@ref)を参照のこと）．
 
-Moreover, you can also define `show` methods for other MIME types in order to enable richer display
-(HTML, images, etcetera) of objects in environments that support this (e.g. IJulia).   For example,
-we can define formatted HTML display of `Polar` objects, with superscripts and italics, via:
+さらに他のMIMEタイプに対する`show`メソッドを定義することもできますこれはこれをサポートする
+環境（IJuliaなど）において，オブジェクトのよりリッチな表示（HTML，画像など）を可能にする
+ためです．例えば，上付き文字やイタリック文字を含む`Polar`オブジェクトのフォーマットされた
+HTML表示を，以下のようにして定義することができます:
 
 ```jldoctest polartype
 julia> Base.show(io::IO, ::MIME"text/html", z::Polar{T}) where {T} =
@@ -1292,8 +1254,8 @@ julia> Base.show(io::IO, ::MIME"text/html", z::Polar{T}) where {T} =
                    z.r, " <i>e</i><sup>", z.Θ, " <i>i</i></sup>")
 ```
 
-A `Polar` object will then display automatically using HTML in an environment that supports HTML
-display, but you can call `show` manually to get HTML output if you want:
+`Polar`オブジェクトは，HTML表示をサポートする環境では，HTMLを使って自動的に表示されますが，
+必要に応じて手動で`show`を呼び出して，HTML出力を得ることができます:
 
 ```jldoctest polartype
 julia> show(stdout, "text/html", Polar(3.0,4.0))
@@ -1304,11 +1266,12 @@ julia> show(stdout, "text/html", Polar(3.0,4.0))
 <p>An HTML renderer would display this as: <code>Polar{Float64}</code> complex number: 3.0 <i>e</i><sup>4.0 <i>i</i></sup></p>
 ```
 
-As a rule of thumb, the single-line `show` method should print a valid Julia expression for creating
-the shown object.  When this `show` method contains infix operators, such as the multiplication
-operator (`*`) in our single-line `show` method for `Polar` above, it may not parse correctly when
-printed as part of another object.  To see this, consider the expression object (see [Program
-representation](@ref)) which takes the square of a specific instance of our `Polar` type:
+原則として単一行の`show`メソッドは，表示されるオブジェクトを作成するための有効なJulia式を
+出力する必要があります．この`show`メソッドに上記の`Polar`の単一行`show`メソッドの乗算
+演算子（`*`）のようなインフィックス演算子が含まれている場合，他のオブジェクトの一部として
+プリントされると，正しく解析されない可能性があります．これを確認するために，`Polar`型の
+特定のインスタンスの平方を取る，式オブジェクト（[Program representation](@ref)を参照）
+を考えてみましょう:
 
 ```jldoctest polartype
 julia> a = Polar(3, 4.0)
@@ -1319,11 +1282,11 @@ julia> print(:($a^2))
 3.0 * exp(4.0im) ^ 2
 ```
 
-Because the operator `^` has higher precedence than `*` (see [Operator Precedence and Associativity](@ref)), this
-output does not faithfully represent the expression `a ^ 2` which should be equal to `(3.0 *
-exp(4.0im)) ^ 2`.  To solve this issue, we must make a custom method for `Base.show_unquoted(io::IO,
-z::Polar, indent::Int, precedence::Int)`, which is called internally by the expression object when
-printing:
+演算子`^`は`*`よりも優先順位が高いため（[Operator Precedence and Associativity](@ref)を参照のこと），
+この出力は`(3.0 *exp(4.0im)) ^ 2`に等しいはずの式`a ^ 2`を忠実に表していません．この問題を
+解決するためには，`Base.show_unquoted(io::IO, z::Polar, indent::Int, precedence::Int)`の
+カスタムメソッドを作り，プリント時に式オブジェクトから内部的に呼び出されるようにする必要
+があります:
 
 ```jldoctest polartype
 julia> function Base.show_unquoted(io::IO, z::Polar, ::Int, precedence::Int)
@@ -1340,10 +1303,9 @@ julia> :($a^2)
 :((3.0 * exp(4.0im)) ^ 2)
 ```
 
-The method defined above adds parentheses around the call to `show` when the precedence of the
-calling operator is higher than or equal to the precedence of multiplication.  This check allows
-expressions which parse correctly without the parentheses (such as `:($a + 2)` and `:($a == 2)`) to
-omit them when printing:
+上で定義したメソッドは，呼び出し演算子の優先順位が乗算の優先順位よりも高いか等しい場合に，
+呼び出しを括弧で囲んで表示します．このチェックにより，括弧がなくても正しく解析される式
+（例えば`:($a + 2)`や`:($a == 2)`）は，プリント時に括弧を省略することができます:
 
 ```jldoctest polartype
 julia> :($a + 2)
@@ -1353,12 +1315,12 @@ julia> :($a == 2)
 :(3.0 * exp(4.0im) == 2)
 ```
 
-In some cases, it is useful to adjust the behavior of `show` methods depending
-on the context. This can be achieved via the [`IOContext`](@ref) type, which allows
-passing contextual properties together with a wrapped IO stream.
-For example, we can build a shorter representation in our `show` method
-when the `:compact` property is set to `true`, falling back to the long
-representation if the property is `false` or absent:
+場合によっては，コンテキストに応じて`show`メソッドの動作を調整することが有用な場合が
+あります．これは[`IOContext`](@ref)型を使用して実現できます．`IOContext`型では，
+コンテキストプロパティを，ラップされたIOストリームと一緒に渡すことができます．
+例えば，`:compact`プロパティが`true`に設定されている場合は，`show`メソッドで短い表現
+を構築し，当該プロパティが`false`または存在しない場合には，長い表現にフォールバックする
+ことができます:
 ```jldoctest polartype
 julia> function Base.show(io::IO, z::Polar)
            if get(io, :compact, false)
@@ -1369,9 +1331,9 @@ julia> function Base.show(io::IO, z::Polar)
        end
 ```
 
-This new compact representation will be used when the passed IO stream is an `IOContext`
-object with the `:compact` property set. In particular, this is the case when printing
-arrays with multiple columns (where horizontal space is limited):
+この新しいコンパクトな表現は，渡されたIOストリームが，`:compact`プロパティが設定された
+`IOContext`オブジェクトである場合に使用されます．特に複数の列を持つ配列をプリントする
+場合（水平方向のスペースが限られている場合）に使用されます:
 ```jldoctest polartype
 julia> show(IOContext(stdout, :compact=>true), Polar(3, 4.0))
 3.0ℯ4.0im
@@ -1381,22 +1343,23 @@ julia> [Polar(3, 4.0) Polar(4.0,5.3)]
  3.0ℯ4.0im  4.0ℯ5.3im
 ```
 
-See the [`IOContext`](@ref) documentation for a list of common properties which can be used
-to adjust printing.
+プリントを調整するために使用できる一般的なプロパティのリストについては，[`IOContext`](@ref)
+のドキュメントを参照してください．
 
-## "Value types"
+## ["値(Value)型"](@id "Value-types")
 
-In Julia, you can't dispatch on a *value* such as `true` or `false`. However, you can dispatch
-on parametric types, and Julia allows you to include "plain bits" values (Types, Symbols, Integers,
-floating-point numbers, tuples, etc.) as type parameters.  A common example is the dimensionality
-parameter in `Array{T,N}`, where `T` is a type (e.g., [`Float64`](@ref)) but `N` is just an `Int`.
+Juliaでは，`true`や`false`のような*値*にディスパッチすることはできません．しかし，
+パラメトリック型に対してはディスパッチすることができ，Juliaでは型パラメータとして
+「プレーンビット」の値（型，記号，整数，浮動小数点数，タプルなど）を含めることができます．
+よくある例は，`Array{T,N}`の次元パラメータで，`T`は型（[`Float64`](@ref)など）ですが，
+`N`は単なる`Int`です．
 
-You can create your own custom types that take values as parameters, and use them to control dispatch
-of custom types. By way of illustration of this idea, let's introduce a parametric type, `Val{x}`,
-and a constructor `Val(x) = Val{x}()`, which serves as a customary way to exploit this technique
-for cases where you don't need a more elaborate hierarchy.
+パラメータを値として受け取る独自のカスタムタイプを作成し，それを使ってカスタムタイプの
+ディスパッチを制御することができます．このアイデアを説明するために，パラメトリック型である
+`Val{x}`とコンストラクタ`Val(x) = Val{x}()`を紹介しましょう．これはより複雑な階層を必要と
+しない場合にこのテクニックを利用するための慣習的な方法です:
 
-[`Val`](@ref) is defined as:
+[`Val`](@ref)は次のように定義されます:
 
 ```jldoctest valtype
 julia> struct Val{x}
@@ -1406,9 +1369,9 @@ julia> Val(x) = Val{x}()
 Val
 ```
 
-There is no more to the implementation of `Val` than this.  Some functions in Julia's standard
-library accept `Val` instances as arguments, and you can also use it to write your own functions.
- For example:
+`Val`の実装には，これ以上のものはありません．Juliaの標準ライブラリのいくつかの関数は，
+引数として`Val`のインスタンスを受け取り，ユーザ自身の関数を書くためにそれを使用することも
+できます．例えば:
 
 ```jldoctest valtype
 julia> firstlast(::Val{true}) = "First"
@@ -1424,12 +1387,13 @@ julia> firstlast(Val(false))
 "Last"
 ```
 
-For consistency across Julia, the call site should always pass a `Val` *instance* rather than using
-a *type*, i.e., use `foo(Val(:bar))` rather than `foo(Val{:bar})`.
+Julia全体の一貫性のために，呼び出し先は常に*型*を使うのではなく，`Val`*インスタンス*を渡す
+べきです．すなわち，`foo(Val{:bar})`ではなく，`foo(Val(:bar))`を使うべきです．
 
-It's worth noting that it's extremely easy to mis-use parametric "value" types, including `Val`;
-in unfavorable cases, you can easily end up making the performance of your code much *worse*.
- In particular, you would never want to write actual code as illustrated above.  For more information
-about the proper (and improper) uses of `Val`, please read [the more extensive discussion in the performance tips](@ref man-performance-value-type).
+注目すべきは，`Val`を含むパラメトリックな「値」の型を誤用が容易に起きるということです．
+好ましくないケースにおいては，コードのパフォーマンスを簡単に大きく*悪化*させてしまいます．
+特に，上の例のようなコードは絶対に書きたくないものです．`Val`の適切な（そして不適切な）
+使い方についてより詳しくは，[パフォーマンスのチップスにおけるより広範な議論](@ref man-performance-value-type)
+を参照ください．
 
-[^1]: "Small" is defined by the `MAX_UNION_SPLITTING` constant, which is currently set to 4.
+[^1]: "Small"は`MAX_UNION_SPLITTING`定数で定義され，現在は4に設定されています．

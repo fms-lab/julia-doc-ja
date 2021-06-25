@@ -919,21 +919,13 @@ julia> b"\uff"
 これだけではよくわからないという方は，["The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets”](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/)を読んでみてください．
 これは Unicode と UTF-8 に関する優れた入門書で，この問題に役立つかもしれません．
 
-## [Version Number Literals](@id man-version-number-literals)
+## [バージョン番号リテラル](@id man-version-number-literals)
 
-Version numbers can easily be expressed with non-standard string literals of the form [`v"..."`](@ref @v_str).
-Version number literals create [`VersionNumber`](@ref) objects which follow the
-specifications of [semantic versioning](https://semver.org/),
-and therefore are composed of major, minor and patch numeric values, followed by pre-release and
-build alpha-numeric annotations. For example, `v"0.2.1-rc1+win64"` is broken into major version
-`0`, minor version `2`, patch version `1`, pre-release `rc1` and build `win64`. When entering
-a version literal, everything except the major version number is optional, therefore e.g. `v"0.2"`
-is equivalent to `v"0.2.0"` (with empty pre-release/build annotations), `v"2"` is equivalent to
-`v"2.0.0"`, and so on.
+バージョン番号は、[`v"..."`](@ref @v_str)のような非標準の文字列リテラルで簡単に表現できます．バージョン番号リテラルは[semantic versioning](https://semver.org/)の仕様に従った [`VersionNumber`](@ref) オブジェクトを生成します．これは，メジャー・マイナー・パッチの数値から構成され，プレリリースやビルドの英数字による注釈が続きます．例えば，`v "0.2.1-rc1+win64"`はメジャーバージョン`0`，マイナーバージョン`2`，パッチバージョン`1`，プレリリース`rc1`，ビルド`win64`に分けられます．
 
-`VersionNumber` objects are mostly useful to easily and correctly compare two (or more) versions.
-For example, the constant [`VERSION`](@ref) holds Julia version number as a `VersionNumber` object, and
-therefore one can define some version-specific behavior using simple statements as:
+バージョンリテラルを入力する際，メジャーバージョン番号以外はすべて省略可能です．そのため，例えば `v "0.2"` は `v "0.2.0"` (pre-release/build のアノテーションは空)，`v "2"` は `v "2.0.0"` などとなります．
+
+`VersionNumber` オブジェクトは，主に 2 つの（あるいはそれ以上の）バージョンを簡単かつ正確に比較するのに役立ちます．例えば，定数 [`VERSION`](@ref) は Julia のバージョン番号を `VersionNumber` オブジェクトとして保持しています．そのため，以下のような簡単な記述でバージョン固有の動作を定義することができます:
 
 ```julia
 if v"0.2" <= VERSION < v"0.3-"
@@ -941,25 +933,15 @@ if v"0.2" <= VERSION < v"0.3-"
 end
 ```
 
-Note that in the above example the non-standard version number `v"0.3-"` is used, with a trailing
-`-`: this notation is a Julia extension of the standard, and it's used to indicate a version which
-is lower than any `0.3` release, including all of its pre-releases. So in the above example the
-code would only run with stable `0.2` versions, and exclude such versions as `v"0.3.0-rc1"`. In
-order to also allow for unstable (i.e. pre-release) `0.2` versions, the lower bound check should
-be modified like this: `v"0.2-" <= VERSION`.
+上記では非標準のバージョン番号 `v "0.3-"` が使われており，最後に `-` が付いていることに注意してください．この表記法は標準の Julia 拡張で，プレリリースを含めたあらゆる`0.3`のリリースよりも下位のバージョンを示しています．したがって上記のコードは安定した `0.2` バージョンでのみ動作し， `v "0.3.0-rc1"` などのバージョンは除外されます．
+不安定な（つまりプレリリースの）`0.2`バージョンも許容するための下限チェックは，次のようにできます: `v"0.2-" <= VERSION`
 
-Another non-standard version specification extension allows one to use a trailing `+` to express
-an upper limit on build versions, e.g. `VERSION > v"0.2-rc1+"` can be used to mean any version
-above `0.2-rc1` and any of its builds: it will return `false` for version `v"0.2-rc1+win64"` and
-`true` for `v"0.2-rc2"`.
+もうひとつの非標準的なバージョン指定の拡張機能として，末尾を`+` とすることでビルドバージョンの上限を表すことができます．
+例えば，`VERSION > v"0.2-rc1+"`とすると`0.2-rc1`よりも上のバージョンを有効なビルドバージョンとして示しており，`v"0.2-rc1+win64"`では`false`，`v"0.2-rc2"`では`true`を返します．
 
-It is good practice to use such special versions in comparisons (particularly, the trailing `-`
-should always be used on upper bounds unless there's a good reason not to), but they must not
-be used as the actual version number of anything, as they are invalid in the semantic versioning
-scheme.
+特別なバージョンを上のような比較で用いることは良いプラクティスです（特に，末尾の`-`は正当な理由がない限りは常に使用されるべきです）が，それらは実際のセマンティックバージョニングスキームではないので，実際のバージョン番号として使用するべきではありません．
 
-Besides being used for the [`VERSION`](@ref) constant, `VersionNumber` objects are widely used
-in the `Pkg` module, to specify packages versions and their dependencies.
+さらに[`VERSION`](@ref)は定数として使われている他，`Pkg`モジュールではパッケージのバージョンとその依存関係を指定するために`VersionNumber`オブジェクトが広く使われています．
 
 ## [Raw String Literals](@id man-raw-string-literals)
 

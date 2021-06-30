@@ -1,54 +1,21 @@
-# [Strings](@id man-strings)
+# [文字列](@id man-strings)
 
-Strings are finite sequences of characters. Of course, the real trouble comes when one asks what
-a character is. The characters that English speakers are familiar with are the letters `A`, `B`,
-`C`, etc., together with numerals and common punctuation symbols. These characters are standardized
-together with a mapping to integer values between 0 and 127 by the [ASCII](https://en.wikipedia.org/wiki/ASCII)
-standard. There are, of course, many other characters used in non-English languages, including
-variants of the ASCII characters with accents and other modifications, related scripts such as
-Cyrillic and Greek, and scripts completely unrelated to ASCII and English, including Arabic, Chinese,
-Hebrew, Hindi, Japanese, and Korean. The [Unicode](https://en.wikipedia.org/wiki/Unicode) standard
-tackles the complexities of what exactly a character is, and is generally accepted as the definitive
-standard addressing this problem. Depending on your needs, you can either ignore these complexities
-entirely and just pretend that only ASCII characters exist, or you can write code that can handle
-any of the characters or encodings that one may encounter when handling non-ASCII text. Julia
-makes dealing with plain ASCII text simple and efficient, and handling Unicode is as simple and
-efficient as possible. In particular, you can write C-style string code to process ASCII strings,
-and they will work as expected, both in terms of performance and semantics. If such code encounters
-non-ASCII text, it will gracefully fail with a clear error message, rather than silently introducing
-corrupt results. When this happens, modifying the code to handle non-ASCII data is straightforward.
+文字列とは有限の文字列を意味します．当然ながら，ここで問題になるのは「文字とは何か」ということです．英語圏の人がよく知っている文字は，アルファベットの「A」「B」「C」などのほか，数字や一般的な句読点などであり，これらの文字は[ASCII](https://en.wikipedia.org/wiki/ASCII) 規格による 0 ～ 127 の整数値への写像に合わせて規格化されています．確かに，ASCII 文字にアクセントなどの修飾を加えたものやキリル文字やギリシャ文字など英語に関連する script，アラビア語，中国語，ヘブライ語，ヒンディー語，日本語，韓国語などの ASCII や英語とは全く関係のない script など，英語以外の言語で使われている文字は他にもたくさんあります．[Unicode](https://en.wikipedia.org/wiki/Unicode) 規格は'文字とは何か'という複雑な問題に取り組んでおり，この問題を扱う決定的な規格として一般に受け入れられています．必要に応じて，これらの複雑さを完全に無視して ASCII 文字だけが存在すると考えることもできますし，非 ASCII テキストを扱う際に遭遇する可能性のある文字やエンコーディングを処理できるコードを書くこともできます．Julia ではプレーンな ASCII テキストをシンプルかつ効率的に扱うことができ，また Unicode の取り扱いも可能な限りシンプルかつ効率的です．特に，C スタイルの文字列コードを書いて ASCII 文字列を処理すると性能面でもセマンティクス面でも期待通りに動作します．そのようなコードは，非 ASCII テキストに遭遇した場合，誤った結果を黙って渡されるのではなく，明確なエラーメッセージを表示して潔く失敗するようになっています．このような場合には，非 ASCII データを扱うようにコードを修正することが容易にできます．
 
-There are a few noteworthy high-level features about Julia's strings:
+Julia の文字列には，注目すべきハイレベルな特徴がいくつかあります:
 
-  * The built-in concrete type used for strings (and string literals) in Julia is [`String`](@ref).
-    This supports the full range of [Unicode](https://en.wikipedia.org/wiki/Unicode) characters via
-    the [UTF-8](https://en.wikipedia.org/wiki/UTF-8) encoding. (A [`transcode`](@ref) function is
-    provided to convert to/from other Unicode encodings.)
-  * All string types are subtypes of the abstract type `AbstractString`, and external packages define
-    additional `AbstractString` subtypes (e.g. for other encodings).  If you define a function expecting
-    a string argument, you should declare the type as `AbstractString` in order to accept any string
-    type.
-  * Like C and Java, but unlike most dynamic languages, Julia has a first-class type for representing
-    a single character, called [`AbstractChar`](@ref). The built-in [`Char`](@ref) subtype of `AbstractChar`
-    is a 32-bit primitive type that can represent any Unicode character (and which is based
-    on the UTF-8 encoding).
-  * As in Java, strings are immutable: the value of an `AbstractString` object cannot be changed.
-    To construct a different string value, you construct a new string from parts of other strings.
-  * Conceptually, a string is a *partial function* from indices to characters: for some index values,
-    no character value is returned, and instead an exception is thrown. This allows for efficient
-    indexing into strings by the byte index of an encoded representation rather than by a character
-    index, which cannot be implemented both efficiently and simply for variable-width encodings of
-    Unicode strings.
+- Julia で文字列（および文字列リテラル）に使われる組み込みの具体的な型は，[`String`](@ref)です．これは，[UTF-8](https://en.wikipedia.org/wiki/UTF-8) エンコーディングによる[Unicode](https://en.wikipedia.org/wiki/Unicode) 文字の全範囲をサポートしています(他の Unicode エンコーディングとの間で変換するための[`transcode`](@ref)関数が提供されています)．
+- すべての文字列型は抽象型である `AbstractString` のサブタイプであり，外部パッケージではさらに `AbstractString` サブタイプが定義されています (他のエンコーディング用など)．関数で文字列の引数を取る場合，任意の文字列型を受け付けるためにその型を `AbstractString` と宣言する必要があります．
+- C 言語や Java のように，多くの動的型付け言語とは違い，Julia は単一の文字を表す[`AbstractChar`](@ref)というファーストクラスの型があります．`AbstractChar`の組み込みのサブタイプである [`Char`](@ref) は任意の Unicode 文字を表すことのできる 32-bit のプリミティブな型です(UTF-8 エンコーディングに基づいています)．
+- Java のように文字列はイミュータブルです． `AbstractString` 型のオブジェクトは変更不可能です．異なる文字列の値を生成するには他の文字列から新たに生成します．
+- 概念的に言えば，文字列はインデックスから文字への _部分写像_ です．即ちインデックスの値によっては，文字の値が返されず，例外が発生してしまいます．このためエンコード表現のバイトインデックスも利用でき，効率的な文字列のインデックス呼び出しが可能になります． 文字によるインデックスだと，ユニコード文字列はエンコーディングの変数の幅が変わるので，効率的かつ単純とはならないのです．
 
-## [Characters](@id man-characters)
+## [文字](@id man-characters)
 
-A `Char` value represents a single character: it is just a 32-bit primitive type with a special literal
-representation and appropriate arithmetic behaviors, and which can be converted
-to a numeric value representing a
-[Unicode code point](https://en.wikipedia.org/wiki/Code_point).  (Julia packages may define
-other subtypes of `AbstractChar`, e.g. to optimize operations for other
-[text encodings](https://en.wikipedia.org/wiki/Character_encoding).) Here is how `Char` values are
-input and shown:
+`Char`は１つの文字を表します．これは，特別なリテラル表現と適切な算術動作を持つ 32 ビットのプリミティブ型であり，[Unicode code point](https://en.wikipedia.org/wiki/Code_point) を表す数値に変換することができます（Julia のパッケージでは他の [テキストエンコーディング](https://en.wikipedia.org/wiki/Character_encoding) に対する操作を最適化するために`AbstractChar`などの他のサブタイプを定義することができます)．
+以下は，`Char` の値がどのようなものかを示しています．
+
+入力と表示:
 
 ```jldoctest
 julia> 'x'
@@ -58,7 +25,7 @@ julia> typeof(ans)
 Char
 ```
 
-You can easily convert a `Char` to its integer value, i.e. code point:
+`Char`は整数値に容易に変換することができます:
 
 ```jldoctest
 julia> Int('x')
@@ -68,17 +35,14 @@ julia> typeof(ans)
 Int64
 ```
 
-On 32-bit architectures, [`typeof(ans)`](@ref) will be [`Int32`](@ref). You can convert an
-integer value back to a `Char` just as easily:
+32-bit アーキテクチャでは[`typeof(ans)`](@ref)は[`Int32`](@ref)になります．整数値を`Char`に戻すことも容易です:
 
 ```jldoctest
 julia> Char(120)
 'x': ASCII/Unicode U+0078 (category Ll: Letter, lowercase)
 ```
 
-Not all integer values are valid Unicode code points, but for performance, the `Char` conversion
-does not check that every character value is valid. If you want to check that each converted value
-is a valid code point, use the [`isvalid`](@ref) function:
+パフォーマンスのために，任意の整数値が Unicode の符号位置というわけではありませんが，`Char`変換では文字の値が有効であるかはチェックしません．変換された値が有効な符号位置であるかチェックしたい場合は[`isvalid`](@ref)関数を使用します:
 
 ```jldoctest
 julia> Char(0x110000)
@@ -88,13 +52,9 @@ julia> isvalid(Char, 0x110000)
 false
 ```
 
-As of this writing, the valid Unicode code points are `U+0000` through `U+D7FF` and `U+E000` through
-`U+10FFFF`. These have not all been assigned intelligible meanings yet, nor are they necessarily
-interpretable by applications, but all of these values are considered to be valid Unicode characters.
+この記事を書いている時点で，有効な Unicode 符号位置は，`U+0000`から`U+D7FF` および`U+E000`から`U+10FFFF`です．これらの符号位置全てに明瞭な意味が与えられたわけではなく，またそれらをアプリケーションが必ずしも解釈できるわけでもありません．しかし，これらの値は全て有効な Unicode 文字であると考えられます．
 
-You can input any Unicode character in single quotes using `\u` followed by up to four hexadecimal
-digits or `\U` followed by up to eight hexadecimal digits (the longest valid value only requires
-six):
+任意の Unicode 文字を一重引用符で囲んで入力するには，`\u`に続けて 4 桁までの 16 進数を入力するか，`\U`に続けて 8 桁までの 16 進数を入力します（最長の有効値は 6 桁まで）:
 
 ```jldoctest
 julia> '\u0'
@@ -110,10 +70,8 @@ julia> '\U10ffff'
 '\U10ffff': Unicode U+10FFFF (category Cn: Other, not assigned)
 ```
 
-Julia uses your system's locale and language settings to determine which characters can be printed
-as-is and which must be output using the generic, escaped `\u` or `\U` input forms. In addition
-to these Unicode escape forms, all of [C's traditional escaped input forms](https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes)
-can also be used:
+Julia はシステムのロケールと言語設定を用いてどの文字がそのまま表示可能で，どの文字が一般的なエスケープされた`\u`や`\U`を用いた入力形式を用いなければならないかを決定します．
+それに加え，全ての[C の従来のエスケープされた入力フォーム](https://en.wikipedia.org/wiki/C_syntax#Backslash_escapes)も使用することができます．：
 
 ```jldoctest
 julia> Int('\0')
@@ -135,7 +93,7 @@ julia> Int('\177')
 127
 ```
 
-You can do comparisons and a limited amount of arithmetic with `Char` values:
+`Char`の値で比較や限られた範囲の算術演算ができます:
 
 ```jldoctest
 julia> 'A' < 'a'
@@ -154,9 +112,9 @@ julia> 'A' + 1
 'B': ASCII/Unicode U+0042 (category Lu: Letter, uppercase)
 ```
 
-## String Basics
+## [文字列の基本](@id String Basics)
 
-String literals are delimited by double quotes or triple double quotes:
+文字列リテラルはタブルクォートやトリプルクォートで区切られます:
 
 ```jldoctest helloworldstring
 julia> str = "Hello, world.\n"
@@ -166,7 +124,7 @@ julia> """Contains "quote" characters"""
 "Contains \"quote\" characters"
 ```
 
-If you want to extract a character from a string, you index into it:
+文字列から 1 文字を取り出したい場合はインデックスで取り出せます．
 
 ```jldoctest helloworldstring
 julia> str[begin]
@@ -182,16 +140,9 @@ julia> str[end]
 '\n': ASCII/Unicode U+000A (category Cc: Other, control)
 ```
 
-Many Julia objects, including strings, can be indexed with integers. The index of the first
-element (the first character of a string) is returned by [`firstindex(str)`](@ref), and the index of the last element (character)
-with [`lastindex(str)`](@ref). The keywords `begin` and `end` can be used inside an indexing
-operation as shorthand for the first and last indices, respectively, along the given dimension.
-String indexing, like most indexing in Julia, is 1-based: `firstindex` always returns `1` for any `AbstractString`.
-As we will see below, however, `lastindex(str)` is *not* in general the same as `length(str)` for a string,
-because some Unicode characters can occupy multiple "code units".
+文字列を含む多くの Julia のオブジェクトは整数でインデックスをつけることができます．最初の要素(文字列の最初の文字)のインデックスは[`firstindex(str)`](@ref)で最後の要素(文字)のインデックスは[`lastindex(str)`](@ref)で返されます．キーワード `begin`と`end`は，インデックス操作の中で，与えられた次元に沿ったそれぞれの最初と最後のインデックスを表す略語として使用できます．文字列インデックスのような Julia におけるほとんどのインデックスは 1 から始まり，`firstindex`はどの`AbscractString`に対しても常に`1`を返します．しかしながら，後述するように，一般的には`lastindex(str)`は文字列の`length(str)`とは違うものです．なぜなら，Unicode 文字は複数の「符号」を占めることがあるからです．
 
-You can perform arithmetic and other operations with [`end`](@ref), just like
-a normal value:
+[`end`](@ref)では通常の値と同じように算術演算やその他の操作を行うことができます:
 
 ```jldoctest helloworldstring
 julia> str[end-1]
@@ -201,7 +152,7 @@ julia> str[end÷2]
 ' ': ASCII/Unicode U+0020 (category Zs: Separator, space)
 ```
 
-Using an index less than `begin` (`1`) or greater than `end` raises an error:
+インデックスが `begin` (`1`) より小さいか，`end` より大きいと，エラーになります:
 
 ```jldoctest helloworldstring
 julia> str[begin-1]
@@ -215,14 +166,14 @@ ERROR: BoundsError: attempt to access String
 [...]
 ```
 
-You can also extract a substring using range indexing:
+レンジインデックスを用いて部分文字列を取り出すことができます:
 
 ```jldoctest helloworldstring
 julia> str[4:9]
 "lo, wo"
 ```
 
-Notice that the expressions `str[k]` and `str[k:k]` do not give the same result:
+`str[k]` と `str[k:k]` は同じ結果にならないことに注意してください:
 
 ```jldoctest helloworldstring
 julia> str[6]
@@ -232,12 +183,12 @@ julia> str[6:6]
 ","
 ```
 
-The former is a single character value of type `Char`, while the latter is a string value that
-happens to contain only a single character. In Julia these are very different things.
+前者は `Char` 型の 1 文字の値で，後者は 1 文字しか含まない文字列の値です．
+後者は，たまたま 1 文字しか含まれていない文字列値です．Julia ではこれらは全く異なるものです．
 
-Range indexing makes a copy of the selected part of the original string.
-Alternatively, it is possible to create a view into a string using the type [`SubString`](@ref),
-for example:
+範囲指定では下の文字列の選択された部分をコピーします．また，[`SubString`](@ref)型を使って文字列へのビューを作成することもできます．
+
+例:
 
 ```jldoctest
 julia> str = "long string"
@@ -250,31 +201,20 @@ julia> typeof(substr)
 SubString{String}
 ```
 
-Several standard functions like [`chop`](@ref), [`chomp`](@ref) or [`strip`](@ref)
-return a [`SubString`](@ref).
+[`chop`](@ref)，[`chomp`](@ref)，[`strip`](@ref)のようないくつかの標準的な関数は，[`SubString`](@ref)を返します．
 
-## Unicode and UTF-8
+## [Unicode と UTF-8](@id Unicode and UTF-8)
 
-Julia fully supports Unicode characters and strings. As [discussed above](@ref man-characters), in character
-literals, Unicode code points can be represented using Unicode `\u` and `\U` escape sequences,
-as well as all the standard C escape sequences. These can likewise be used to write string literals:
+Julia は Unicode 文字とその文字列に完全に対応しています．[`上述`](@ref man-characters)のように，文字リテラルでは，Unicode の符号位置は，Unicode の`\u`と`\U`のエスケープシーケンスや，C 標準のエスケープシーケンスを使って表現することができます．これらは，文字列リテラルを記述する際にも同様に使用できます:
 
 ```jldoctest unicodestring
 julia> s = "\u2200 x \u2203 y"
 "∀ x ∃ y"
 ```
 
-Whether these Unicode characters are displayed as escapes or shown as special characters depends
-on your terminal's locale settings and its support for Unicode. String literals are encoded using
-the UTF-8 encoding. UTF-8 is a variable-width encoding, meaning that not all characters are encoded
-in the same number of bytes ("code units"). In UTF-8, ASCII characters — i.e. those with code points less than
-0x80 (128) -- are encoded as they are in ASCII, using a single byte, while code points 0x80 and
-above are encoded using multiple bytes — up to four per character.
+これらの Unicode 文字がエスケープされて表示されるか，特殊文字として表示されるかは，ターミナルのロケール設定と Unicode の対応状況に依存します．文字列リテラルのエンコードには UTF-8 エンコーディングを使用してエンコードされます．UTF-8 は可変幅のエンコーディングなので，つまりすべての文字が同じバイト数（「符号」）でエンコードされるわけではありません．UTF-8 では，ASCII 文字，つまり符号位置が 0x80（128）未満の文字は，ASCII と同じように 1 バイトでエンコードされますが，符号位置が 0x80 以上の文字は 1 文字あたり最大 4 バイトまでの複数バイトでエンコードされます.
 
-String indices in Julia refer to code units (= bytes for UTF-8), the fixed-width building blocks that
-are used to encode arbitrary characters (code points). This means that not every
-index into a `String` is necessarily a valid index for a character. If you index into
-a string at such an invalid byte index, an error is thrown:
+Julia の文字列インデックスは，任意の文字（符号位置）をエンコードするための固定幅の構成要素である符号（＝ UTF-8 ではバイト）を指します．つまり，`String`へのすべてのインデックスが，必ずしも文字に対して有効なインデックスではないということです．このような無効なバイトインデックスで文字列を入力した場合，エラーが発生します:
 
 ```jldoctest unicodestring
 julia> s[1]
@@ -293,12 +233,9 @@ julia> s[4]
 ' ': ASCII/Unicode U+0020 (category Zs: Separator, space)
 ```
 
-In this case, the character `∀` is a three-byte character, so the indices 2 and 3 are invalid
-and the next character's index is 4; this next valid index can be computed by [`nextind(s,1)`](@ref),
-and the next index after that by `nextind(s,4)` and so on.
+この場合，文字`∀`は 3 バイト文字なので，インデックス 2 と 3 は無効で，次の文字のインデックスは 4 となります．この次の有効なインデックスは[`nextind(s,1)`](@ref)で計算でき，その次のインデックスは`nextind(s,4)`となります．
 
-Since `end` is always the last valid index into a collection, `end-1` references an invalid
-byte index if the second-to-last character is multibyte.
+`end`は常にコレクションの最後の有効なインデックスなので，最後から 2 番目の文字がマルチバイトの場合，`end-1`は無効なバイトインデックスを参照します．
 
 ```jldoctest unicodestring
 julia> s[end-1]
@@ -313,12 +250,10 @@ julia> s[prevind(s, end, 2)]
 '∃': Unicode U+2203 (category Sm: Symbol, math)
 ```
 
-The first case works, because the last character `y` and the space are one-byte characters,
-whereas `end-2` indexes into the middle of the `∃` multibyte representation. The correct
-way for this case is using `prevind(s, lastindex(s), 2)` or, if you're using that value to index
-into `s` you can write `s[prevind(s, end, 2)]` and `end` expands to `lastindex(s)`.
+最初のケースは，最後の文字 `y` とスペースが 1 バイト文字であるので動作するのに対し，インデックス`end-2` は `∃` のマルチバイト表現の中央にインデックスを置くので，動作しません．
+この場合の正しい方法は，`prevind(s, lastindex(s), 2)`を使うか，`s`へのインデックスにその値を使うのであれば`s[prevind(s, end, 2)]`と書き，`end`は`lastindex(s)`に展開されます．
 
-Extraction of a substring using range indexing also expects valid byte indices or an error is thrown:
+レンジインデックスを使用した部分文字列の抽出でも有効なバイトインデックスは必要であり，そうでない場合はエラーが発生します:
 
 ```jldoctest unicodestring
 julia> s[1:1]
@@ -333,12 +268,7 @@ julia> s[1:4]
 "∀ "
 ```
 
-Because of variable-length encodings, the number of characters in a string (given by [`length(s)`](@ref))
-is not always the same as the last index. If you iterate through the indices 1 through [`lastindex(s)`](@ref)
-and index into `s`, the sequence of characters returned when errors aren't thrown is the sequence
-of characters comprising the string `s`. Thus we have the identity that `length(s) <= lastindex(s)`,
-since each character in a string must have its own index. The following is an inefficient and
-verbose way to iterate through the characters of `s`:
+可変長エンコーディングのため，（[`length(s)`](@ref)で与えられる）文字列の文字数は，最後のインデックスと同じとは限りません． 1 から[`lastindex(s)`](@ref)までのインデックスを反復して`s`の文字を参照すると，エラーが発生しなかったときに返される文字列は文字列`s`を構成する文字列となります．このように文字列の各文字にはそれぞれインデックスが必要なので，`length(s) <= lastindex(s)`という恒等式が成り立ちます．以下は，`s`の文字を反復する非効率的で冗長な方法です．
 
 ```jldoctest unicodestring
 julia> for i = firstindex(s):lastindex(s)
@@ -357,9 +287,7 @@ x
 y
 ```
 
-The blank lines actually have spaces on them. Fortunately, the above awkward idiom is unnecessary
-for iterating through the characters in a string, since you can just use the string as an iterable
-object, no exception handling required:
+空白行は実際にはスペースが入っています．幸いなことに，文字列内の文字を反復処理する際には，上記のような厄介なイディオムは必要ありません．文字列を反復可能なオブジェクトとして使用するだけで，例外処理は必要ありません:
 
 ```jldoctest unicodestring
 julia> for c in s
@@ -374,9 +302,7 @@ x
 y
 ```
 
-If you need to obtain valid indices for a string, you can use the [`nextind`](@ref) and
-[`prevind`](@ref) functions to increment/decrement to the next/previous valid index, as mentioned above.
-You can also use the [`eachindex`](@ref) function to iterate over the valid character indices:
+文字列の有効なインデックスを取得する必要がある場合には，前述のように，[`nextind`](@ref) および [`prevind`](@ref) 関数を使って，有効な次/前のインデックスにインクリメント/デクリメントすることができます．また，[`eachindex`](@ref)関数を使って，有効な文字列インデックスを繰り返し処理することもできます:
 
 ```jldoctest unicodestring
 julia> collect(eachindex(s))
@@ -390,26 +316,18 @@ julia> collect(eachindex(s))
  11
 ```
 
-To access the raw code units (bytes for UTF-8) of the encoding, you can use the [`codeunit(s,i)`](@ref)
-function, where the index `i` runs consecutively from `1` to [`ncodeunits(s)`](@ref).  The [`codeunits(s)`](@ref)
-function returns an `AbstractVector{UInt8}` wrapper that lets you access these raw codeunits (bytes) as an array.
+エンコーディングの未加工の符号（UTF-8 の場合はバイト）にアクセスするには，[`codeunit(s,i)`](@ref)関数を使います．ここで，インデックス`i`は`1`から[`ncodeunits(s)`](@ref)まで連続しています．[`codeunits(s)`](@ref)関数は`AbstractVector{UInt8}`というラッパーを返すので，これらの未加工の符号（バイト）を配列として利用することができます．
 
-Strings in Julia can contain invalid UTF-8 code unit sequences. This convention allows to
-treat any byte sequence as a `String`. In such situations a rule is that when parsing
-a sequence of code units from left to right characters are formed by the longest sequence of
-8-bit code units that matches the start of one of the following bit patterns
-(each `x` can be `0` or `1`):
+Julia の文字列には，無効な UTF-8 符号列が含まれることがあります．この規約により，任意のバイト列を `String` として扱うことができます．このような状況では，符号列を左から右に解析する際に，文字は以下のビットパターン（各 `x` は `0` または `1`）のいずれかの開始に一致する，最長の 8 ビットの符号列によって形成されるというルールがあります．
 
-* `0xxxxxxx`;
-* `110xxxxx` `10xxxxxx`;
-* `1110xxxx` `10xxxxxx` `10xxxxxx`;
-* `11110xxx` `10xxxxxx` `10xxxxxx` `10xxxxxx`;
-* `10xxxxxx`;
-* `11111xxx`.
+- `0xxxxxxx`;
+- `110xxxxx` `10xxxxxx`;
+- `1110xxxx` `10xxxxxx` `10xxxxxx`;
+- `11110xxx` `10xxxxxx` `10xxxxxx` `10xxxxxx`;
+- `10xxxxxx`;
+- `11111xxx`.
 
-In particular this means that overlong and too-high code unit sequences and prefixes thereof are treated
-as a single invalid character rather than multiple invalid characters.
-This rule may be best explained with an example:
+特に，冗長すぎたり値が大きすぎたりする符号列とその接頭辞は，複数の無効な文字ではなく，単一の無効な文字として扱われます．このルールは，例を挙げて説明するのが一番わかりやすいでしょう．
 
 ```julia-repl
 julia> s = "\xc0\xa0\xe2\x88\xe2|"
@@ -435,25 +353,13 @@ julia> foreach(display, s2)
 '\U1fffff': Unicode U+1FFFFF (category In: Invalid, too high)
 ```
 
-We can see that the first two code units in the string `s` form an overlong encoding of
-space character. It is invalid, but is accepted in a string as a single character.
-The next two code units form a valid start of a three-byte UTF-8 sequence. However, the fifth
-code unit `\xe2` is not its valid continuation. Therefore code units 3 and 4 are also
-interpreted as malformed characters in this string. Similarly code unit 5 forms a malformed
-character because `|` is not a valid continuation to it. Finally the string `s2` contains
-one too high code point.
+文字列 `s` の最初の 2 つの符号が，空白文字の冗長なエンコーディングを形成していることがわかります．これは無効ですが，文字列では 1 つの文字として受け入れられます．次の 2 つの符号は，3 バイトの UTF-8 の列の有効な開始を形成します．しかし，5 番目の符号`\xe2`は有効な値ではありません．したがって，3 番目と 4 番目の符号もこの文字列では不正な文字として解釈されます．同様に，5 番目の符号は`｜`が有効な継続部分ではないため，不正な文字を形成します．最後に，文字列 `s2` には 大きすぎる符号位置が 1 つ含まれています．
 
-Julia uses the UTF-8 encoding by default, and support for new encodings can be added by packages.
-For example, the [LegacyStrings.jl](https://github.com/JuliaStrings/LegacyStrings.jl) package
-implements `UTF16String` and `UTF32String` types. Additional discussion of other encodings and
-how to implement support for them is beyond the scope of this document for the time being. For
-further discussion of UTF-8 encoding issues, see the section below on [byte array literals](@ref man-byte-array-literals).
-The [`transcode`](@ref) function is provided to convert data between the various UTF-xx encodings,
-primarily for working with external data and libraries.
+Julia はデフォルトでは UTF-8 エンコーディングを使用しますが，新しいエンコーディングのサポートはパッケージによって追加することができます．例えば，[LegacyStrings.jl](https://github.com/JuliaStrings/LegacyStrings.jl)パッケージでは，`UTF16String`型と`UTF32String`型を実装しています．他のエンコーディングやそのサポートの実装方法についての詳しい説明はこのドキュメントの範囲外となります．また UTF-8 エンコーディングの問題については，以下の[`byte array literals`](@ref man-byte-array-literals)の節を参照してください．様々な UTF-xx エンコーディングの間でデータを変換するために，[`transcode`](@ref) 関数が提供されています．これは主に外部のデータやライブラリを扱うためのものです．
 
-## [Concatenation](@id man-concatenation)
+## [連結](@id man-concatenation)
 
-One of the most common and useful string operations is concatenation:
+最も一般的で便利な文字列操作の一つが連結です:
 
 ```jldoctest stringconcat
 julia> greet = "Hello"
@@ -466,10 +372,9 @@ julia> string(greet, ", ", whom, ".\n")
 "Hello, world.\n"
 ```
 
-It's important to be aware of potentially dangerous situations such as concatenation of invalid UTF-8 strings.
-The resulting string may contain different characters than the input strings,
-and its number of characters may be lower than sum of numbers of characters
-of the concatenated strings, e.g.:
+無効な UTF-8 文字列の連結など，潜在的に危険な状況に注意することが重要です．結果として得られる文字列には，入力文字列とは異なる文字が含まれている可能性があり，その文字数は，連結された文字列の文字数の合計よりも少ない可能性があります．
+
+例:
 
 ```julia-repl
 julia> a, b = "\xe2\x88", "\x80"
@@ -491,61 +396,40 @@ julia> length.([a, b, c])
  1
 ```
 
-This situation can happen only for invalid UTF-8 strings. For valid UTF-8 strings
-concatenation preserves all characters in strings and additivity of string lengths.
+この状況は，無効な UTF-8 文字列に対してのみ発生します．有効な UTF-8 文字列の場合，連結は文字列内のすべての文字と文字列長の加法性を保持します．
 
-Julia also provides [`*`](@ref) for string concatenation:
+また，Julia には文字列連結のための[`*`](@ref)が用意されています:
 
 ```jldoctest stringconcat
 julia> greet * ", " * whom * ".\n"
 "Hello, world.\n"
 ```
 
-While `*` may seem like a surprising choice to users of languages that provide `+` for string
-concatenation, this use of `*` has precedent in mathematics, particularly in abstract algebra.
+一方，文字列の連結に `+` を提供している言語のユーザーにとっては，`*` は意外な選択に思えるかもしれませんが，`*` の使用は，数学，特に抽象代数では前例があります．数学では，`+`は通常，被演算子の順序が問題にならない _可換_ の演算を表します．この例として行列の加算を考えると，同じ形の行列 `A` と `B` に対して`A + B == B + A` となります．対照的に，`*` は一般的に _非可換_ 演算を表し，演算子の順序が重要になります．この例として行列の乗算を考えると，一般的には `A * B != B * A` となります．行列の乗算と同様に文字列の連結も _非可換_ です．例えば，`greet * whom != whom * greet`となります．このように， 中置記法の文字列連結演算子としては `*` がより自然な選択であり，一般的な数学的使用と一致しています．
 
-In mathematics, `+` usually denotes a *commutative* operation, where the order of the operands does
-not matter. An example of this is matrix addition, where `A + B == B + A` for any matrices `A` and `B`
-that have the same shape. In contrast, `*` typically denotes a *noncommutative* operation, where the
-order of the operands *does* matter. An example of this is matrix multiplication, where in general
-`A * B != B * A`. As with matrix multiplication, string concatenation is noncommutative:
-`greet * whom != whom * greet`. As such, `*` is a more natural choice for an infix string concatenation
-operator, consistent with common mathematical use.
+より正確には，すべての有限長の文字列 _S_ と文字列連結演算子`*`の集合は，[自由モノイド](https://en.wikipedia.org/wiki/Free_monoid) (_S_, `*`)を形成します．この集合の恒等要素は空文字列 `""` です．自由モノイドが可換でない場合，その演算は通常 `+` ではなく`cdot`, `*`, または同様の記号で表されます．
 
-More precisely, the set of all finite-length strings *S* together with the string concatenation operator
-`*` forms a [free monoid](https://en.wikipedia.org/wiki/Free_monoid) (*S*, `*`). The identity element
-of this set is the empty string, `""`. Whenever a free monoid is not commutative, the operation is
-typically represented as `\cdot`, `*`, or a similar symbol, rather than `+`, which as stated usually
-implies commutativity.
+## [文字列補間](@id string-interpolation)
 
-## [Interpolation](@id string-interpolation)
-
-Constructing strings using concatenation can become a bit cumbersome, however. To reduce the need for these
-verbose calls to [`string`](@ref) or repeated multiplications, Julia allows interpolation into string literals
-using `$`, as in Perl:
+連結で文字列を構築するのは少々面倒な作業です．そこで，[`string`](@ref)のくどい呼び出しや繰り返しの乗算を減らすために，Julia では Perl のように，`$`を用いて文字列リテラルに補間することができます:
 
 ```jldoctest stringconcat
 julia> "$greet, $whom.\n"
 "Hello, world.\n"
 ```
 
-This is more readable and convenient and equivalent to the above string concatenation -- the system
-rewrites this apparent single string literal into the call `string(greet, ", ", whom, ".\n")`.
+こちらはより読みやすく便利で，上記の文字列連結と同値です．システムは，この見かけ上の単一の文字列リテラルを呼び出し`string(greet, ", ", whom, ".\n")`に書き換えます．
 
-The shortest complete expression after the `$` is taken as the expression whose value is to be
-interpolated into the string. Thus, you can interpolate any expression into a string using parentheses:
+`$`の後の最も短い完全な式が，文字列に値を補うべき式とみなされます．このように，括弧を使えば，どんな式でも文字列に補間することができます:
 
 ```jldoctest
 julia> "1 + 2 = $(1 + 2)"
 "1 + 2 = 3"
 ```
 
-Both concatenation and string interpolation call [`string`](@ref) to convert objects into string
-form. However, `string` actually just returns the output of [`print`](@ref), so new types
-should add methods to [`print`](@ref) or [`show`](@ref) instead of `string`.
+連結や文字列補間では，オブジェクトを文字列に変換するために [`string`](@ref) を呼び出します．しかし，`string`は実際には [`print`](@ref) の出力を返すだけなので，新しい型では`string`の代わりに [`print`](@ref) や [`show`](@ref) のメソッドを追加する必要があります．
 
-Most non-`AbstractString` objects are converted to strings closely corresponding to how
-they are entered as literal expressions:
+多くの`AbstractString`ではないオブジェクトは，リテラル式として入力された様式に近い形で文字列に変換されます．
 
 ```jldoctest
 julia> v = [1,2,3]
@@ -558,8 +442,7 @@ julia> "v: $v"
 "v: [1, 2, 3]"
 ```
 
-[`string`](@ref) is the identity for `AbstractString` and `AbstractChar` values, so these are interpolated
-into strings as themselves, unquoted and unescaped:
+[`string`](@ref)は`AbstractString`や`AbstractChar`の値と恒等であり，これらは引用符やエスケープされずにそのまま文字列に補間されます．
 
 ```jldoctest
 julia> c = 'x'
@@ -569,20 +452,18 @@ julia> "hi, $c"
 "hi, x"
 ```
 
-To include a literal `$` in a string literal, escape it with a backslash:
+リテラル `$` を文字列リテラルに含めるには，バックスラッシュでエスケープします:
 
 ```jldoctest
 julia> print("I have \$100 in my account.\n")
 I have $100 in my account.
 ```
 
-## Triple-Quoted String Literals
+## [トリプルクォーテーション付きの文字列リテラル](@id Triple-Quoted String Literals)
 
-When strings are created using triple-quotes (`"""..."""`) they have some special behavior that
-can be useful for creating longer blocks of text.
+トリプルクォーテーション（`"""..."""`）を使った文字列には，長いテキストブロックを作成するのに便利で特別な動作があります．
 
-First, triple-quoted strings are also dedented to the level of the least-indented line.
-This is useful for defining strings within code that is indented. For example:
+まず，トリプルクォーテーションで囲まれた文字列はインデントが少ない行のレベルを基準として，インデントが除去(ディデンテーション)されます．これは，コードの中でインデントを含んだ文字列を定義するのに便利です．例えば，以下のようになります:
 
 ```jldoctest
 julia> str = """
@@ -592,14 +473,12 @@ julia> str = """
 "  Hello,\n  world.\n"
 ```
 
-In this case the final (empty) line before the closing `"""` sets the indentation level.
+この場合は閉じる側の`"""`の直前の(空)行がインデントレベルとして設定されます．
 
-The dedentation level is determined as the longest common starting sequence of spaces or
-tabs in all lines, excluding the line following the opening `"""` and lines containing
-only spaces or tabs (the line containing the closing `"""` is always included).
-Then for all lines, excluding the text following the opening `"""`, the common starting
-sequence is removed (including lines containing only spaces and tabs if they start with
-this sequence), e.g.:
+ディデンテーションレベルは，冒頭の `"""` に続く行と，スペースまたはタブだけを含む行を除いた，すべての行のうち，最も長い先頭のスペースまたはタブ数によって決められます（最後の `"""` を含む行は常に含まれます）．続いて，冒頭の `"""` に続く行を除いたすべての行について，各行先頭の空白やタブが削除されます（スペースとタブだけを含む行を含む）．
+
+例:
+
 ```jldoctest
 julia> """    This
          is
@@ -607,21 +486,20 @@ julia> """    This
 "    This\nis\n  a test"
 ```
 
-Next, if the opening `"""` is followed by a newline,
-the newline is stripped from the resulting string.
+次に，冒頭の `"""` の後に改行がある場合は結果の文字列から改行が取り除かれます．
 
 ```julia
 """hello"""
 ```
 
-is equivalent to
+これは以下と等価です．
 
 ```julia
 """
 hello"""
 ```
 
-but
+しかし
 
 ```julia
 """
@@ -629,9 +507,9 @@ but
 hello"""
 ```
 
-will contain a literal newline at the beginning.
+は先頭に改行リテラルを含みます．
 
-Stripping of the newline is performed after the dedentation. For example:
+改行の除去は，ディテンデーションの後に行われます．例えば以下のようになります:
 
 ```jldoctest
 julia> """
@@ -640,18 +518,15 @@ julia> """
 "Hello,\nworld."
 ```
 
-Trailing whitespace is left unaltered.
+末尾のホワイトスペースはそのまま残されます.
 
-Triple-quoted string literals can contain `"` characters without escaping.
+トリプルクォーテーションで囲まれた文字列リテラルには，エスケープせずに `"` 文字を含めることができます．
 
-Note that line breaks in literal strings, whether single- or triple-quoted, result in a newline
-(LF) character `\n` in the string, even if your editor uses a carriage return `\r` (CR) or CRLF
-combination to end lines. To include a CR in a string, use an explicit escape `\r`; for example,
-you can enter the literal string `"a CRLF line ending\r\n"`.
+リテラル文字列の改行はリテラルがシングルクオーテーション，トリプルクオーテーションどちらで囲まれていても返り値の改行部分は改行（LF）文字`\n`が入ります．これはエディタが CR 文字や CRLF の組み合わせで行を終わらせている場合でも同様です．文字列に CR 文字を含めるには，明示的なエスケープを使用します，例えば/リテラル文字列 `"a CRLF line ending\r\n"` を入力します．
 
-## Common Operations
+## [よくある操作](@id Common Operations)
 
-You can lexicographically compare strings using the standard comparison operators:
+標準的な比較演算子を使って，文字列を辞書的に比較することができます．
 
 ```jldoctest
 julia> "abracadabra" < "xylophone"
@@ -667,8 +542,7 @@ julia> "1 + 2 = 3" == "1 + 2 = $(1 + 2)"
 true
 ```
 
-You can search for the index of a particular character using the
-[`findfirst`](@ref) and [`findlast`](@ref) functions:
+[`findfirst`](@ref)および[`findlast`](@ref)関数を使って，特定の文字のインデックスを検索することができます．
 
 ```jldoctest
 julia> findfirst(isequal('o'), "xylophone")
@@ -680,8 +554,7 @@ julia> findlast(isequal('o'), "xylophone")
 julia> findfirst(isequal('z'), "xylophone")
 ```
 
-You can start the search for a character at a given offset by using
-the functions [`findnext`](@ref) and [`findprev`](@ref):
+関数[`findnext`](@ref)や[`findprev`](@ref)を使えば，指定したオフセットで文字の検索を開始することができます．
 
 ```jldoctest
 julia> findnext(isequal('o'), "xylophone", 1)
@@ -696,7 +569,7 @@ julia> findprev(isequal('o'), "xylophone", 5)
 julia> findnext(isequal('o'), "xylophone", 8)
 ```
 
-You can use the [`occursin`](@ref) function to check if a substring is found within a string:
+文字列の中に部分文字列があるかどうかを調べるには[`occursin`](@ref)関数を使います．
 
 ```jldoctest
 julia> occursin("world", "Hello, world.")
@@ -712,9 +585,9 @@ julia> occursin('o', "Xylophon")
 true
 ```
 
-The last example shows that [`occursin`](@ref) can also look for a character literal.
+最後の例では，[`occursin`](@ref)が文字リテラルを探すこともできることを示しています．
 
-Two other handy string functions are [`repeat`](@ref) and [`join`](@ref):
+他にも便利な文字列関数として[`repeat`](@ref)や[`join`](@ref)があります．
 
 ```jldoctest
 julia> repeat(".:Z:.", 10)
@@ -724,37 +597,26 @@ julia> join(["apples", "bananas", "pineapples"], ", ", " and ")
 "apples, bananas and pineapples"
 ```
 
-Some other useful functions include:
+他にも便利な関数があります:
 
-  * [`firstindex(str)`](@ref) gives the minimal (byte) index that can be used to index into `str` (always 1 for strings, not necessarily true for other containers).
-  * [`lastindex(str)`](@ref) gives the maximal (byte) index that can be used to index into `str`.
-  * [`length(str)`](@ref) the number of characters in `str`.
-  * [`length(str, i, j)`](@ref) the number of valid character indices in `str` from `i` to `j`.
-  * [`ncodeunits(str)`](@ref) number of [code units](https://en.wikipedia.org/wiki/Character_encoding#Terminology) in a string.
-  * [`codeunit(str, i)`](@ref) gives the code unit value in the string `str` at index `i`.
-  * [`thisind(str, i)`](@ref) given an arbitrary index into a string find the first index of the character into which the index points.
-  * [`nextind(str, i, n=1)`](@ref) find the start of the `n`th character starting after index `i`.
-  * [`prevind(str, i, n=1)`](@ref) find the start of the `n`th character starting before index `i`.
+- [`firstindex(str)`](@ref)は`str` へのインデックスに使用できる最小の（バイト）インデックスを返します（文字列の場合は常に 1 ですが，他のコンテナの場合は必ずしもそうではありません）．
+- [`lastindex(str)`](@ref)は，`str` のインデックスに使用できる最大の（バイト）インデックスを返します．
+- [`length(str)`](@ref) は`str`の文字数です．
+- [`length(str, i, j)`](@ref) は`str` の中の `i` から `j` までの有効な文字インデックスの数です．
+- [`ncodeunits(str)`](@ref) は文字列中の[code units](https://en.wikipedia.org/wiki/Character_encoding#Terminology)の数です．
+- [`codeunit(str, i)`](@ref) は文字列 `str` のインデックス `i` にコードユニットの値を返します．
+- [`thisind(str, i)`](@ref) は文字列に任意のインデックスを与えると，そのインデックスが指し示す文字の最初のインデックスを返します．
+- [`nextind(str, i, n=1)`](@ref) は添字 `i` から始まる `n` 番目の文字の先頭を見つけます．
+- [`prevind(str, i, n=1)`](@ref) は添字 `i` より前の `n` 番目の文字の始まりを見つけます．
 
-## [Non-Standard String Literals](@id non-standard-string-literals)
+## [非標準文字列リテラル](@id non-standard-string-literals)
 
-There are situations when you want to construct a string or use string semantics, but the behavior
-of the standard string construct is not quite what is needed. For these kinds of situations, Julia
-provides [non-standard string literals](@ref). A non-standard string literal looks like a regular
-double-quoted string literal, but is immediately prefixed by an identifier, and doesn't behave
-quite like a normal string literal.  Regular expressions, byte array literals and version number
-literals, as described below, are some examples of non-standard string literals. Other examples
-are given in the [Metaprogramming](@ref) section.
+文字列を作成したり文字列セマンティクスを使用したりしたいが，標準的な文字列構築の動作が必要とされるものとは全く異なる場合があります．このような状況のために，Julia は[`非標準文字列リテラル`](@ref non-standard-string-literals)を提供しています．
+非標準文字列リテラルは通常のダブルクオーテーションで囲まれた文字列リテラルのように見えますが，識別子として接頭辞がつけられ，通常の文字列リテラルのようには動作しません．具体的には後述の正規表現，バイト配列リテラル，バージョン番号リテラルなどがなどが挙げられます．その他の例 は[`メタプログラミング`](@ref Metaprogramming)の項を参照してください．
 
-## Regular Expressions
+## [正規表現](@id Regular Expressions)
 
-Julia has Perl-compatible regular expressions (regexes), as provided by the [PCRE](http://www.pcre.org/)
-library (a description of the syntax can be found [here](http://www.pcre.org/current/doc/html/pcre2syntax.html)). Regular expressions are related to strings in two ways: the obvious connection is that
-regular expressions are used to find regular patterns in strings; the other connection is that
-regular expressions are themselves input as strings, which are parsed into a state machine that
-can be used to efficiently search for patterns in strings. In Julia, regular expressions are input
-using non-standard string literals prefixed with various identifiers beginning with `r`. The most
-basic regular expression literal without any options turned on just uses `r"..."`:
+Julia は，[PCRE](http://www.pcre.org/)ライブラリが提供する Perl 互換の正規表現(regexes)を備えています（構文の説明は[こちら](http://www.pcre.org/current/doc/html/pcre2syntax.html)にあります）．正規表現は文字列と 2 つの点で関連しています．まず明らかな関連性として，正規表現が文字列の正規パターンを見つけるために使用される点が挙げられます．もう一つの関連性は，正規表現はそれ自体が文字列として入力され，文字列内のパターンを効率的に検索するために使用される状態機械(ステートマシン)に解析されるということです．Julia では，正規表現は `r`で始まる様々な識別子を前置した非標準の文字列リテラルを使って入力されます．最も基本的な正規表現リテラルは，オプションを何もつけずに`r"..."`を使うだけです:
 
 ```jldoctest
 julia> r"^\s*(?:#|$)"
@@ -764,7 +626,7 @@ julia> typeof(ans)
 Regex
 ```
 
-To check if a regex matches a string, use [`occursin`](@ref):
+正規表現が文字列にマッチするかどうかを調べるには，[`occursin`](@ref)を使います:
 
 ```jldoctest
 julia> occursin(r"^\s*(?:#|$)", "not a comment")
@@ -774,10 +636,7 @@ julia> occursin(r"^\s*(?:#|$)", "# a comment")
 true
 ```
 
-As one can see here, [`occursin`](@ref) simply returns true or false, indicating whether a
-match for the given regex occurs in the string. Commonly, however, one wants to know not
-just whether a string matched, but also *how* it matched. To capture this information about
-a match, use the [`match`](@ref) function instead:
+ここで見られるように，[`occursin`](@ref)は単純に true または false を返し，与えられた正規表現にマッチするものが文字列の中に存在するかどうかを示します．しかし，一般的には文字列がマッチしたかどうかだけでなく，どのようにマッチしたかを知りたい場合があります．このようなマッチに関する情報を取得するには，代わりに [`match`](@ref) 関数を使用します:
 
 ```jldoctest
 julia> match(r"^\s*(?:#|$)", "not a comment")
@@ -786,9 +645,7 @@ julia> match(r"^\s*(?:#|$)", "# a comment")
 RegexMatch("#")
 ```
 
-If the regular expression does not match the given string, [`match`](@ref) returns [`nothing`](@ref)
--- a special value that does not print anything at the interactive prompt. Other than not printing,
-it is a completely normal value and you can test for it programmatically:
+正規表現が与えられた文字列にマッチしなかった場合，[`match`](@ref)は [`nothing`](@ref)を返します．これは，対話型プロンプトに何も表示しない特別な値です．何も表示されないだけであり，正常な値であるのでプログラムは正常に動作します．
 
 ```julia
 m = match(r"^\s*(?:#|$)", line)
@@ -799,19 +656,17 @@ else
 end
 ```
 
-If a regular expression does match, the value returned by [`match`](@ref) is a `RegexMatch`
-object. These objects record how the expression matches, including the substring that the pattern
-matches and any captured substrings, if there are any. This example only captures the portion
-of the substring that matches, but perhaps we want to capture any non-blank text after the comment
-character. We could do the following:
+正規表現にマッチした場合，[`match`](@ref)は `RegexMatch` オブジェクトを返します．これらのオブジェクトはパターンがマッチした部分文字列やキャプチャされた部分文字列に対して正規表現がどのようにマッチしたかを記録したものです．この例では，マッチした部分文字列のみをキャプチャしていますが，コメントの後の空白でないテキストもキャプチャしたい場合があります．
+その場合は次のようにします:
 
 ```jldoctest
 julia> m = match(r"^\s*(?:#\s*(.*?)\s*$|$)", "# a comment ")
 RegexMatch("# a comment ", 1="a comment")
 ```
 
-When calling [`match`](@ref), you have the option to specify an index at which to start the
-search. For example:
+[`match`](@ref)を呼び出す際には検索を開始するインデックスを指定できるオプションがあります．
+
+例:
 
 ```jldoctest
 julia> m = match(r"[0-9]","aaaa1aaaa2aaaa3",1)
@@ -824,16 +679,14 @@ julia> m = match(r"[0-9]","aaaa1aaaa2aaaa3",11)
 RegexMatch("3")
 ```
 
-You can extract the following info from a `RegexMatch` object:
+`RegexMatch`オブジェクトからは以下の情報を抽出することができます:
 
-  * the entire substring matched: `m.match`
-  * the captured substrings as an array of strings: `m.captures`
-  * the offset at which the whole match begins: `m.offset`
-  * the offsets of the captured substrings as a vector: `m.offsets`
+- マッチした部分文字列全体: `m.match`
+- キャプチャされた部分文字列が文字列の配列になったもの: `m.captures`
+- マッチした文字列の開始位置(オフセット): `m.offset`
+- キャプチャされた部分文字列のオフセットをベクトルで表したもの: `m.offsets`
 
-For when a capture doesn't match, instead of a substring, `m.captures` contains `nothing` in that
-position, and `m.offsets` has a zero offset (recall that indices in Julia are 1-based, so a zero
-offset into a string is invalid). Here is a pair of somewhat contrived examples:
+キャプチャがマッチしない場合，`m.captures`にはその位置に`nothing`が含まれ，`m.offsets`にはゼロのオフセットが含まれます(Julia のインデックスは 1 ベースなので，文字列へのゼロの 文字列へのゼロオフセットは無効です）．以下では，やや作為的な例を 2 つ示します:
 
 ```jldoctest acdmatch
 julia> m = match(r"(a|b)(c)?(d)", "acd")
@@ -879,16 +732,14 @@ julia> m.offsets
  2
 ```
 
-It is convenient to have captures returned as an array so that one can use destructuring syntax
-to bind them to local variables:
+キャプチャを配列として返すと分割代入を使ってローカル変数にバインドすることができます:
 
 ```jldoctest acdmatch
 julia> first, second, third = m.captures; first
 "a"
 ```
 
-Captures can also be accessed by indexing the `RegexMatch` object with the number or name of the
-capture group:
+キャプチャは`RegexMatch`のインデックス番号か，名前付きキャプチャグループをインデックスすることでアクセスできます:
 
 ```jldoctest
 julia> m=match(r"(?<hour>\d+):(?<minute>\d+)","12:45")
@@ -901,60 +752,47 @@ julia> m[2]
 "45"
 ```
 
-Captures can be referenced in a substitution string when using [`replace`](@ref) by using `\n`
-to refer to the nth capture group and prefixing the substitution string with `s`. Capture group
-0 refers to the entire match object. Named capture groups can be referenced in the substitution
-with `\g<groupname>`. For example:
+[`replace`](@ref)を使った置換文字列でキャプチャーを参照するには，`\n`を使って n 番目のキャプチャグループを参照し，置換文字列の前に`s`を付けます．キャプチャグループ 0 はマッチオブジェクト全体を指します．名前付きキャプチャグループは，置換文字列の中で `\g<groupname>` を使って参照できます．たとえば，以下のようになります:
 
 ```jldoctest
 julia> replace("first second", r"(\w+) (?<agroup>\w+)" => s"\g<agroup> \1")
 "second first"
 ```
 
-Numbered capture groups can also be referenced as `\g<n>` for disambiguation, as in:
+番号の付いたキャプチャーグループは，曖昧さ回避のために`g<n>`として参照することもでき，以下のようになります:
 
 ```jldoctest
 julia> replace("a", r"." => s"\g<0>1")
 "a1"
 ```
 
-You can modify the behavior of regular expressions by some combination of the flags `i`, `m`,
-`s`, and `x` after the closing double quote mark. These flags have the same meaning as they do
-in Perl, as explained in this excerpt from the [perlre manpage](http://perldoc.perl.org/perlre.html#Modifiers):
+ダブルクォーテーションマークの後のフラグ`i`，`m`，`s`，`x`の組み合わせによって，正規表現の動作を変更することができます．これらのフラグは，[perlre manpage](http://perldoc.perl.org/perlre.html#Modifiers)からの抜粋で説明されているように，Perl におけるフラグと同じ意味を持っています．
 
 ```
-i   Do case-insensitive pattern matching.
+i   大文字小文字を区別しないパターンマッチング
 
-    If locale matching rules are in effect, the case map is taken
-    from the current locale for code points less than 255, and
-    from Unicode rules for larger code points. However, matches
-    that would cross the Unicode rules/non-Unicode rules boundary
-    (ords 255/256) will not succeed.
+    ロケール照合規則が有効な場合，符号位置が255未満の場合は現在のロケールから，
+    それ以上の場合はUnicode規則から，ケースマップを取得します．ただし，Unicode規則と
+    非Unicode規則の境界（コード番号255/256）を超えるようなマッチは (ords 255/256)
+    を超えるマッチは成功しません．
 
-m   Treat string as multiple lines.  That is, change "^" and "$"
-    from matching the start or end of the string to matching the
-    start or end of any line anywhere within the string.
+m   文字列を複数行として扱います．つまり，"^"と"$"は文字列の開始または終了にマッチするのではなく
+    文字列内の任意の行の開始または終了に一致するように変更します．
 
-s   Treat string as single line.  That is, change "." to match any
-    character whatsoever, even a newline, which normally it would
-    not match.
+s   文字列を一行として扱います．つまり，"."を任意の文字や通常はマッチしない
+    "改行"にもマッチするように変更されます．
 
-    Used together, as r""ms, they let the "." match any character
-    whatsoever, while still allowing "^" and "$" to match,
-    respectively, just after and just before newlines within the
-    string.
+    r""msのようにmとsを一緒に使うと". “は任意の文字にマッチする一方で，"^" and “$"は
+    それぞれ任意の行の開始と終了文字にマッチします．
 
-x   Tells the regular expression parser to ignore most whitespace
-    that is neither backslashed nor within a character class. You
-    can use this to break up your regular expression into
-    (slightly) more readable parts. The '#' character is also
-    treated as a metacharacter introducing a comment, just as in
-    ordinary code.
+x   正規表現パーサーは，バックスラッシュでも文字クラスにも含まれないほとんどの空白を無視します．
+    これを使うと，正規表現を（少し）読みやすいパーツに分割することができます．
+    また，'#'文字は，通常のコードと同様に，コメントを表すメタ文字として扱われます．
 ```
 
-For example, the following regex has all three flags turned on:
+例えば，次の正規表現は 3 つのフラグがすべてオンになっています:
 
-```jldoctest
+```jldoctest　　　　　　　
 julia> r"a+.*b+.*?d$"ism
 r"a+.*b+.*?d$"ims
 
@@ -962,9 +800,7 @@ julia> match(r"a+.*b+.*?d$"ism, "Goodbye,\nOh, angry,\nBad world\n")
 RegexMatch("angry,\nBad world")
 ```
 
-The `r"..."` literal is constructed without interpolation and unescaping (except for
-quotation mark `"` which still has to be escaped). Here is an example
-showing the difference from standard string literals:
+`r"..."` リテラルは，補間やエスケープを行わずに構築されます（ただし，引用符 `"` はエスケープが必要です）．以下は標準的な文字列リテラルとの違いを示した例です:
 
 ```julia-repl
 julia> x = 10
@@ -983,10 +819,9 @@ julia> "\x"
 ERROR: syntax: invalid escape sequence
 ```
 
-Triple-quoted regex strings, of the form `r"""..."""`, are also supported (and may be convenient
-for regular expressions containing quotation marks or newlines).
+`r"""..."""`のようにトリプルクォーテーションで囲まれた正規表現の文字列もサポートされています(クオーテーションや改行文字を含む正規表現には便利です)．
 
-The `Regex()` constructor may be used to create a valid regex string programmatically.  This permits using the contents of string variables and other string operations when constructing the regex string. Any of the regex codes above can be used within the single string argument to `Regex()`. Here are some examples:
+`Regex()`コンストラクタを使うと，プログラムで有効な正規表現の文字列を作成することができます．これにより，正規表現文字列を作成する際に文字列変数の内容や他の文字列操作を使用することができます．上記の正規表現コードのいずれも，`Regex()`の文字列引数の中で使用することができます．以下にその例を示します:
 
 ```jldoctest
 julia> using Dates
@@ -1013,21 +848,15 @@ julia> match(regex_name,"[Jon]") === nothing
 true
 ```
 
-## [Byte Array Literals](@id man-byte-array-literals)
+## [バイト列リテラル](@id man-byte-array-literals)
 
-Another useful non-standard string literal is the byte-array string literal: `b"..."`. This
-form lets you use string notation to express read only literal byte arrays -- i.e. arrays of
-[`UInt8`](@ref) values. The type of those objects is `CodeUnits{UInt8, String}`.
-The rules for byte array literals are the following:
+もう一つの便利な非標準の文字列リテラルは，バイト配列の文字列リテラルである`b"..."`です．この形式では文字列記法を用いて，読み取り専用のバイト配列リテラルを表現することができます．すなわち，[`UInt8`](@ref)値の配列です．これらのオブジェクトのタイプは，`CodeUnits{UInt8, String}`です．バイト配列リテラルのルールは以下の通りです:
 
-  * ASCII characters and ASCII escapes produce a single byte.
-  * `\x` and octal escape sequences produce the *byte* corresponding to the escape value.
-  * Unicode escape sequences produce a sequence of bytes encoding that code point in UTF-8.
+- ASCII 文字と ASCII エスケープは 1 バイトを生成します．
+- `\x`と 8 進数のエスケープシーケンスでは，エスケープ値に対応する _byte_ が生成されます．
+- Unicode のエスケープシーケンスは，その符号位置を UTF-8 でエンコードしたバイト列を生成します．
 
-There is some overlap between these rules since the behavior of `\x` and octal escapes less than
-0x80 (128) are covered by both of the first two rules, but here these rules agree. Together, these
-rules allow one to easily use ASCII characters, arbitrary byte values, and UTF-8 sequences to
-produce arrays of bytes. Here is an example using all three:
+`\x`と 0x80(128)以下の 8 進数エスケープの動作は，最初の 2 つのルールの両方でカバーされているため，これらのルールには重複がありますが，ここではこれらのルールは一致しています．これらのルールを合わせるとその規則により，ASCII 文字，任意のバイト値，UTF-8 シーケンスを使ってバイト配列を簡単に作成することができます．この 3 つを使った例を示します:
 
 ```jldoctest
 julia> b"DATA\xff\u2200"
@@ -1042,17 +871,14 @@ julia> b"DATA\xff\u2200"
  0x80
 ```
 
-The ASCII string "DATA" corresponds to the bytes 68, 65, 84, 65. `\xff` produces the single byte 255.
-The Unicode escape `\u2200` is encoded in UTF-8 as the three bytes 226, 136, 128. Note that the
-resulting byte array does not correspond to a valid UTF-8 string:
+ASCII 文字列 "DATA "は，バイト 68，65，84，65 に対応します．`\xff`はシングルバイト 255 になります．Unicode のエスケープである`\u2200`は，UTF-8 では 226, 136, 128 の 3 バイトになります．なお，結果として得られるバイト配列は，有効な UTF-8 文字列には対応していないことに注意してください．
 
 ```jldoctest
 julia> isvalid("DATA\xff\u2200")
 false
 ```
 
-As it was mentioned `CodeUnits{UInt8,String}` type behaves like read only array of `UInt8` and
-if you need a standard vector you can convert it using `Vector{UInt8}`:
+前述したように，`CodeUnits{UInt8,String}`型は`UInt8`の読み取り専用の配列のように動作します．標準的なベクトルが必要な場合は，`Vector{UInt8}`を使って変換できます:
 
 ```jldoctest
 julia> x = b"123"
@@ -1075,9 +901,7 @@ julia> Vector{UInt8}(x)
  0x33
 ```
 
-Also observe the significant distinction between `\xff` and `\uff`: the former escape sequence
-encodes the *byte 255*, whereas the latter escape sequence represents the *code point 255*, which
-is encoded as two bytes in UTF-8:
+また，`xff`と`uff`の大きな違いにも注目してください．前者のエスケープシーケンスは _byte 255_ をエンコードしているのに対し，後者のエスケープシーケンスは _符号位置 255_ を表しており，UTF-8 では 2 バイトでエンコードされています．
 
 ```jldoctest
 julia> b"\xff"
@@ -1090,36 +914,20 @@ julia> b"\uff"
  0xbf
 ```
 
-Character literals use the same behavior.
+文字リテラルも同様の動作をします．
 
-For code points less than `\u80`, it happens that the
-UTF-8 encoding of each code point is just the single byte produced by the corresponding `\x` escape,
-so the distinction can safely be ignored. For the escapes `\x80` through `\xff` as compared to
-`\u80` through `\uff`, however, there is a major difference: the former escapes all encode single
-bytes, which -- unless followed by very specific continuation bytes -- do not form valid UTF-8
-data, whereas the latter escapes all represent Unicode code points with two-byte encodings.
+`\u80`未満の符号位置では，各符号位置の UTF-8 エンコーディングは`\x`に対応したエスケープからが生成されるシングルバイトであるため，この区別は安全に無視できます．しかしながら`\x80` 〜`\xff`エスケープと`\u80` 〜 `\uff`のエスケープでは大きな違いがあります．前者のエスケープは，すべてシングルバイトをエンコードしており，特定の継続バイトが続かない限り，有効な UTF-8 データを形成しませんが，後者はすべて 2 バイトエンコードの Unicode の符号位置を表しています．
 
-If this is all extremely confusing, try reading ["The Absolute Minimum Every
-Software Developer Absolutely, Positively Must Know About Unicode and Character
-Sets"](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/).
-It's an excellent introduction to Unicode and UTF-8, and may help alleviate
-some confusion regarding the matter.
+これだけではよくわからないという方は，["The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets”](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/)を読んでみてください．
+これは Unicode と UTF-8 に関する優れた入門書で，この問題に役立つかもしれません．
 
-## [Version Number Literals](@id man-version-number-literals)
+## [バージョン番号リテラル](@id man-version-number-literals)
 
-Version numbers can easily be expressed with non-standard string literals of the form [`v"..."`](@ref @v_str).
-Version number literals create [`VersionNumber`](@ref) objects which follow the
-specifications of [semantic versioning](https://semver.org/),
-and therefore are composed of major, minor and patch numeric values, followed by pre-release and
-build alpha-numeric annotations. For example, `v"0.2.1-rc1+win64"` is broken into major version
-`0`, minor version `2`, patch version `1`, pre-release `rc1` and build `win64`. When entering
-a version literal, everything except the major version number is optional, therefore e.g.  `v"0.2"`
-is equivalent to `v"0.2.0"` (with empty pre-release/build annotations), `v"2"` is equivalent to
-`v"2.0.0"`, and so on.
+バージョン番号は，[`v"..."`](@ref @v_str)のような非標準の文字列リテラルで簡単に表現できます．バージョン番号リテラルは[semantic versioning](https://semver.org/)の仕様に従った [`VersionNumber`](@ref) オブジェクトを生成します．これは，メジャー・マイナー・パッチの数値から構成され，プレリリースやビルドの英数字による注釈が続きます．例えば，`v"0.2.1-rc1+win64"`はメジャーバージョン`0`，マイナーバージョン`2`，パッチバージョン`1`，プレリリース`rc1`，ビルド`win64`に分けられます．
 
-`VersionNumber` objects are mostly useful to easily and correctly compare two (or more) versions.
-For example, the constant [`VERSION`](@ref) holds Julia version number as a `VersionNumber` object, and
-therefore one can define some version-specific behavior using simple statements as:
+バージョンリテラルを入力する際，メジャーバージョン番号以外はすべて省略可能です．そのため，例えば `v"0.2"` は `v"0.2.0"` (pre-release/build のアノテーションは空)，`v"2"` は `v"2.0.0"` などとなります．
+
+`VersionNumber` オブジェクトは，主に 2 つの（あるいはそれ以上の）バージョンを簡単かつ正確に比較するのに役立ちます．例えば，定数 [`VERSION`](@ref) は Julia のバージョン番号を `VersionNumber` オブジェクトとして保持しています．そのため，以下のような簡単な記述でバージョン固有の動作を定義することができます:
 
 ```julia
 if v"0.2" <= VERSION < v"0.3-"
@@ -1127,46 +935,25 @@ if v"0.2" <= VERSION < v"0.3-"
 end
 ```
 
-Note that in the above example the non-standard version number `v"0.3-"` is used, with a trailing
-`-`: this notation is a Julia extension of the standard, and it's used to indicate a version which
-is lower than any `0.3` release, including all of its pre-releases. So in the above example the
-code would only run with stable `0.2` versions, and exclude such versions as `v"0.3.0-rc1"`. In
-order to also allow for unstable (i.e. pre-release) `0.2` versions, the lower bound check should
-be modified like this: `v"0.2-" <= VERSION`.
+上記では非標準のバージョン番号 `v"0.3-"` が使われており，最後に `-` が付いていることに注意してください．この表記法は標準の Julia 拡張で，プレリリースを含めたあらゆる`0.3`のリリースよりも下位のバージョンを示しています．したがって上記のコードは安定した `0.2` バージョンでのみ動作し， `v"0.3.0-rc1"` などのバージョンは除外されます．
+不安定な（つまりプレリリースの）`0.2`バージョンも許容するための下限チェックは，次のようにできます: `v"0.2-" <= VERSION`
 
-Another non-standard version specification extension allows one to use a trailing `+` to express
-an upper limit on build versions, e.g.  `VERSION > v"0.2-rc1+"` can be used to mean any version
-above `0.2-rc1` and any of its builds: it will return `false` for version `v"0.2-rc1+win64"` and
-`true` for `v"0.2-rc2"`.
+もうひとつの非標準的なバージョン指定の拡張機能として，末尾を`+` とすることでビルドバージョンの上限を表すことができます．
+例えば，`VERSION > v"0.2-rc1+"`とすると`0.2-rc1`よりも上のバージョンを有効なビルドバージョンとして示しており，`v"0.2-rc1+win64"`では`false`，`v"0.2-rc2"`では`true`を返します．
 
-It is good practice to use such special versions in comparisons (particularly, the trailing `-`
-should always be used on upper bounds unless there's a good reason not to), but they must not
-be used as the actual version number of anything, as they are invalid in the semantic versioning
-scheme.
+特別なバージョンを上のような比較で用いることは良いプラクティスです（特に，末尾の`-`は正当な理由がない限りは常に使用されるべきです）が，それらは実際のセマンティックバージョニングスキームではないので，実際のバージョン番号として使用するべきではありません．
 
-Besides being used for the [`VERSION`](@ref) constant, `VersionNumber` objects are widely used
-in the `Pkg` module, to specify packages versions and their dependencies.
+さらに[`VERSION`](@ref)は定数として使われている他，`Pkg`モジュールではパッケージのバージョンとその依存関係を指定するために`VersionNumber`オブジェクトが広く使われています．
 
-## [Raw String Literals](@id man-raw-string-literals)
+## [Raw 文字列リテラル](@id man-raw-string-literals)
 
-Raw strings without interpolation or unescaping can be expressed with
-non-standard string literals of the form `raw"..."`. Raw string literals create
-ordinary `String` objects which contain the enclosed contents exactly as
-entered with no interpolation or unescaping. This is useful for strings which
-contain code or markup in other languages which use `$` or `\` as special
-characters.
+補間やアンエスケープされていない raw 文字列は`raw"..."`という形式の非標準文字列で表現できます．また，raw 文字列リテラルは 通常の `String` オブジェクトを作成します．このオブジェクトは補間やエスケープを行わずに，入力された通りの内容を含みます．これは，コードや`$`や`\`を特殊文字として使用する他のマークアップ言語などを含む文字列の場合に便利です．
 
-The exception is that quotation marks still must be escaped, e.g. `raw"\""` is equivalent
-to `"\""`.
-To make it possible to express all strings, backslashes then also must be escaped, but
-only when appearing right before a quote character:
+例外として，引用符は依然としてエスケープされなければなりません．例えば，`raw"\""`は `"\""` と等価です．すべての文字列を表現できるようにするために，バックスラッシュもエスケープする必要があります．ただし引用符の直前に記述された場合に限ります:
 
 ```jldoctest
 julia> println(raw"\\ \\\"")
 \\ \"
 ```
 
-Notice that the first two backslashes appear verbatim in the output, since they do not
-precede a quote character.
-However, the next backslash character escapes the backslash that follows it, and the
-last backslash escapes a quote, since these backslashes appear before a quote.
+最初の 2 つのバックスラッシュは引用符の前ではないので，出力にそのまま現れます．しかし次のバックスラッシュはそれに続くバックスラッシュをエスケープし，最後のバックスラッシュは引用符の前にあるので引用符をエスケープします．
